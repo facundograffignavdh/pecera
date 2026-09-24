@@ -14,7 +14,6 @@
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
-      "Read(./node_modules/**)",
       "Read(./.next/**)",
       "Bash(git push *)"
     ]
