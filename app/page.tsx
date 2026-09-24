@@ -1,6 +1,8 @@
 import Feed from "@/components/Feed";
-import { getFeed } from "@/lib/mock-data";
+import { getFeed } from "@/lib/datos";
 
-export default function Home() {
-  return <Feed items={getFeed()} />;
+export const revalidate = 60;
+
+export default async function Home() {
+  return <Feed items={await getFeed()} />;
 }

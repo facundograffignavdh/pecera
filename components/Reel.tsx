@@ -9,6 +9,8 @@ import type { ItemFeed } from "@/types/pecera";
 type Props = {
   item: ItemFeed;
   activo: boolean;
+  /** Solo el activo y sus vecinos llevan `src`; el resto muestra el poster. */
+  cargar: boolean;
   silenciado: boolean;
   /** El browser rechazó reproducir con sonido: el feed entero pasa a muteado. */
   onForzarSilencio: () => void;
@@ -20,6 +22,7 @@ type Props = {
 export default function Reel({
   item,
   activo,
+  cargar,
   silenciado,
   onForzarSilencio,
   indice,
@@ -76,6 +79,12 @@ export default function Reel({
     };
   }, [activo, silenciado, pausadoAMano, onForzarSilencio]);
 
+  // Sacar el `src` no suelta el buffer: hace falta load() para que el browser
+  // libere el video y vuelva a mostrar el poster.
+  useEffect(() => {
+    if (!cargar) videoRef.current?.load();
+  }, [cargar]);
+
   function alternarReproduccion() {
     const video = videoRef.current;
     if (!video) return;
@@ -97,7 +106,7 @@ export default function Reel({
     >
       <video
         ref={videoRef}
-        src={pitch.video_url}
+        src={cargar ? pitch.video_url : undefined}
         poster={pitch.poster_url ?? undefined}
         muted
         playsInline

@@ -10,12 +10,16 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - Hecho: feed `/` y perfil `/p/[slug]` con datos de prueba, probados en celular
   real. No rehacer esos componentes (`Feed`, `Reel`, `Avatar`, `VolverAlFeed`):
   extenderlos.
-- Capa de datos: `getFeed`, `getPerfil` y `getSlugs` en `lib/mock-data.ts`. Es la
-  única puerta a los datos: Supabase reemplaza esas funciones sin tocar componentes.
+- Capa de datos: `getFeed`, `getPerfil` y `getSlugs` (async) en `lib/datos.ts`, que
+  leen de Supabase con el cliente único de `lib/supabase.ts`. Es la única puerta a
+  los datos. `lib/mock-data.ts` quedó sin usar.
+- `/` y `/p/[slug]` son ISR con `revalidate = 60`. En el feed, solo el reel activo
+  y sus vecinos llevan `src`.
+- `supabase/test-50.sql` carga 50 perfiles `test-*` y `test-50-limpiar.sql` los borra.
 - Helpers: `lib/rol.ts` (colores y labels de rol/tipo) y `lib/contacto.ts`
   (normalización de canales). Reutilizarlos, no duplicar lógica.
 - Videos y posters de prueba en `public/`; los posters se generaron con ffmpeg.
-- Próximo: deploy en Vercel, después Supabase, después R2.
+- Próximo: deploy en Vercel, después R2.
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind

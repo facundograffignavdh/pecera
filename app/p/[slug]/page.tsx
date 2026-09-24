@@ -6,21 +6,25 @@ import { Suspense } from "react";
 import Avatar from "@/components/Avatar";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
 import { canalesDe } from "@/lib/contacto";
-import { getPerfil, getSlugs } from "@/lib/mock-data";
+import { getPerfil, getSlugs } from "@/lib/datos";
 import { ROLES, TIPOS } from "@/lib/rol";
 
 const LEGAL =
   "Pecera es una capa de descubrimiento y conexión. No capta fondos del público, no custodia activos ni realiza oferta pública de valores o asesoramiento financiero.";
 
-export function generateStaticParams() {
-  return getSlugs().map((slug) => ({ slug }));
+export const revalidate = 60;
+// Un perfil aprobado después del build se genera en la primera visita.
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  return (await getSlugs()).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/p/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const datos = getPerfil(slug);
+  const datos = await getPerfil(slug);
   if (!datos) return { title: "Perfil no encontrado — Pecera" };
 
   const { perfil, pitches } = datos;
@@ -41,7 +45,7 @@ export async function generateMetadata({
 
 export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
   const { slug } = await params;
-  const datos = getPerfil(slug);
+  const datos = await getPerfil(slug);
   if (!datos) notFound();
 
   const { perfil, pitches } = datos;

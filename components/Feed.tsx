@@ -68,6 +68,7 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
           item={item}
           indice={indice}
           activo={indice === indiceActivo}
+          cargar={Math.abs(indice - indiceActivo) <= 1}
           silenciado={silenciado}
           onForzarSilencio={forzarSilencio}
           registrarRef={registrarRef}
