@@ -33,8 +33,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,
-  ángel, fondo, coach/mentor), rol (emprendedor | inversor | aliado), descripcion,
+  angel, fondo, coach), rol (emprendedor | inversor | aliado), descripcion,
   avatar_url, whatsapp, email, linkedin, instagram, web, publicado
+- Esos son los valores que se guardan; las etiquetas visibles ("Inversor ángel",
+  "Coach / mentor", etc.) salen de `lib/rol.ts`.
 - `pitches`: perfil_id, video_url, poster_url, orden, publicado
 
 ## Marca (resumen del manual)
