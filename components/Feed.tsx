@@ -19,6 +19,19 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
 
   const forzarSilencio = useCallback(() => setSilenciado(true), []);
 
+  // Al volver desde un perfil la URL trae /#<pitch.id>: saltamos a ese reel.
+  // No tocamos `indiceActivo` acá — el observer lo corrige solo tras el scroll.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    for (const el of secciones.current.values()) {
+      if (el.id === id) {
+        el.scrollIntoView({ behavior: "instant", block: "start" });
+        return;
+      }
+    }
+  }, []);
+
   // Un solo observer para todas las secciones: la que ocupa más del 60% manda.
   useEffect(() => {
     const observer = new IntersectionObserver(

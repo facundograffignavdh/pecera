@@ -12,7 +12,11 @@ const grotesk = Familjen_Grotesk({
   subsets: ["latin"],
 });
 
+// Absoluta para que la imagen OG resuelva bien al compartir el link.
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Pecera",
   description:
     "Los pitches de la feria en 90 segundos. Mirá quién está construyendo qué y escribile.",

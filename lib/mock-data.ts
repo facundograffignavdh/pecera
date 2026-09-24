@@ -15,7 +15,7 @@ const perfiles: Perfil[] = [
     descripcion:
       "Convertimos la borra de café de bares porteños en sustrato para huertas urbanas. Ocho locales en Chacarita ya nos separan los residuos.",
     avatar_url: null,
-    whatsapp: "+5491144445555",
+    whatsapp: "1144445555",
     email: "hola@raizverde.com.ar",
     linkedin: "https://www.linkedin.com/company/raiz-verde",
     instagram: "https://instagram.com/raizverde.ar",
@@ -47,11 +47,11 @@ const perfiles: Perfil[] = [
     descripcion:
       "Incubadora de Paraná. Damos espacio, mentoría legal y contable durante seis meses a proyectos de la región que recién arrancan.",
     avatar_url: null,
-    whatsapp: "+5493434567890",
+    whatsapp: "3434567890",
     email: "contacto@nodolitoral.org",
     linkedin: null,
-    instagram: "https://instagram.com/nodolitoral",
-    web: "https://nodolitoral.org",
+    instagram: "@nodolitoral",
+    web: "nodolitoral.org",
     publicado: true,
   },
 ];
@@ -93,4 +93,24 @@ export function getFeed(): ItemFeed[] {
       if (!perfil?.publicado) return [];
       return [{ pitch, perfil }];
     });
+}
+
+/** Perfil publicado con sus pitches publicados, o `null` si no existe. */
+export function getPerfil(
+  slug: string
+): { perfil: Perfil; pitches: Pitch[] } | null {
+  const perfil = perfiles.find((p) => p.slug === slug);
+  if (!perfil?.publicado) return null;
+
+  return {
+    perfil,
+    pitches: pitches
+      .filter((pitch) => pitch.publicado && pitch.perfil_id === perfil.id)
+      .sort((a, b) => a.orden - b.orden),
+  };
+}
+
+/** Slugs publicados, para `generateStaticParams`. */
+export function getSlugs(): string[] {
+  return perfiles.filter((p) => p.publicado).map((p) => p.slug);
 }

@@ -37,7 +37,7 @@ export default function Reel({
     if (!activo) setPausadoAMano(false);
   }
 
-  const href = `/p/${perfil.slug}`;
+  const href = `/p/${perfil.slug}?desde=${pitch.id}`;
   const rol = ROLES[perfil.rol];
 
   // El atributo `muted` del DOM no siempre sigue al prop de React, así que lo
@@ -91,6 +91,7 @@ export default function Reel({
   return (
     <section
       ref={(el) => registrarRef(indice, el)}
+      id={pitch.id}
       data-indice={indice}
       className="relative h-dvh w-full snap-start snap-always overflow-hidden bg-tinta"
     >
