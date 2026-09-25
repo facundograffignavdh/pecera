@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import PieLegal from "@/components/PieLegal";
 import Reel from "@/components/Reel";
 import type { ItemFeed } from "@/types/pecera";
-
-const LEGAL =
-  "Pecera es una capa de descubrimiento y conexión. No capta fondos del público, no custodia activos ni realiza oferta pública de valores o asesoramiento financiero.";
 
 export default function Feed({ items }: { items: ItemFeed[] }) {
   const [indiceActivo, setIndiceActivo] = useState(0);
@@ -86,7 +84,7 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
         <p className="max-w-sm text-tinta/80">
           Volvé más tarde: durante la feria seguimos sumando pitches.
         </p>
-        <p className="max-w-md text-xs leading-relaxed text-tinta/60">{LEGAL}</p>
+        <PieLegal tono="claro" className="mt-4" />
       </section>
     </main>
   );

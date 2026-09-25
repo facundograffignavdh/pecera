@@ -28,6 +28,19 @@ body {
   display: none;
 }
 
+/* Vidrio del manual. Sin backdrop-filter, fondo casi opaco para que se lea. */
+.vidrio {
+  background: rgba(255, 253, 246, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .vidrio {
+    background: rgba(255, 253, 246, 0.62);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

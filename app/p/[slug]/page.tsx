@@ -4,13 +4,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Avatar from "@/components/Avatar";
+import Encabezado from "@/components/Encabezado";
+import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
 import { canalesDe } from "@/lib/contacto";
 import { getPerfil, getSlugs } from "@/lib/datos";
 import { ROLES, TIPOS } from "@/lib/rol";
-
-const LEGAL =
-  "Pecera es una capa de descubrimiento y conexión. No capta fondos del público, no custodia activos ni realiza oferta pública de valores o asesoramiento financiero.";
 
 export const revalidate = 60;
 // Un perfil aprobado después del build se genera en la primera visita.
@@ -54,7 +53,9 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
-      <div className="mx-auto w-full max-w-md px-5 py-6">
+      <Encabezado variante="perfil" />
+      {/* El padding de arriba deja "Volver" debajo de la píldora fija. */}
+      <div className="mx-auto w-full max-w-md px-5 pb-6 pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
         <Suspense fallback={<EnlaceVolver href="/" />}>
           <VolverAlFeed />
         </Suspense>
@@ -133,9 +134,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
           </section>
         )}
 
-        <p className="mt-10 pb-8 text-xs leading-relaxed text-tinta/55">
-          {LEGAL}
-        </p>
+        <PieLegal tono="claro" className="mt-10 pb-8" />
       </div>
     </main>
   );
