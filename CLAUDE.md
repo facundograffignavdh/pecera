@@ -28,6 +28,22 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   como el local), nunca el de apt. La rotación se aplica a mano (`-noautorotate` +
   transpose/flip en `video.ts`) y cada corrida arranca con un chequeo sintético
   (`chequeo.ts`, rotaciones 90/180/270) que corta el job si algo sale torcido.
+- Subtítulos (`scripts/ingesta/subtitulos.ts`): fase 2 de la corrida. Después de
+  publicar, con lo que quede de `INGESTA_PRESUPUESTO_MIN` (variable de GitHub, 9 min
+  por defecto, contando toda la corrida) se transcriben los pitches publicados sin
+  subtítulos con el filtro `whisper` de ffmpeg y `ggml-large-v3-turbo-q5_0.bin`
+  (revisión fija de Hugging Face, sha256 verificado, en caché). Nunca afecta la
+  publicación: lo que no entra queda para la próxima; 3 errores y no se reintenta.
+  El factor de estimación arranca en 3,5x y se ajusta a lo medido; el timeout es 8x
+  el audio. `reprocesar` + `solo_subtitulos` rehace solo los subtítulos.
+- whisper usa un **segundo ffmpeg**: BtbN 8.1.1 (2026-05-31), fijo por sha256 y
+  fuera del PATH (`FFMPEG_WHISPER`). BtbN deshabilitó whisper el 2026-06-19 y
+  ningún build 9.0 lo trae. Comprimir sigue siendo del 9.0.1. El chequeo previo
+  prueba el filtro y el modelo; si falla, publica igual sin subtítulos y el job
+  queda en rojo. En el filtro las rutas van relativas y con "/" (los ":" de `C:\`
+  rompen la sintaxis).
+- App: `components/Subtitulos.tsx` dibuja los bloques arriba del nombre del reel;
+  botón CC al lado del mute, recordado con `lib/subtitulos.ts` (localStorage).
 - Migraciones nuevas en `supabase/migrations/` (las corre el usuario).
 - La base guarda claves de R2 (`<id>.mp4`); `lib/media.ts` (`urlMedia`) arma la URL
   con `NEXT_PUBLIC_MEDIA_URL` y `lib/datos.ts` ya la aplica.
@@ -44,6 +60,9 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `npm run build` → verificar antes de cada commit importante
 - `npm run lint` → ESLint; el plugin de React 19 es estricto
 - `npm run ingesta:chequeo` → chequeo de rotación de la ingesta con el ffmpeg local
+  (y de whisper si está `WHISPER_MODELO`)
+- `npm run ingesta:subtitulos -- <video>` → transcribe local e imprime los bloques
+  (con `WHISPER_MODELO`; el modelo está en `../pecera-originales/`)
 - `npm run ingesta:tipos` → chequeo de tipos del script de ingesta (tiene su propio
   tsconfig; el de la app excluye `scripts/`)
 
@@ -57,8 +76,11 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   avatar_url, whatsapp, email, linkedin, instagram, web, publicado, origen_id
 - Esos son los valores que se guardan; las etiquetas visibles ("Inversor ángel",
   "Coach / mentor", etc.) salen de `lib/rol.ts`.
-- `pitches`: perfil_id, video_url, poster_url, orden, publicado, origen_id
-- `ingestas`: origen_id, estado (ok | error), error, intentos, bytes (solo service key)
+- `pitches`: perfil_id, video_url, poster_url, orden, publicado, origen_id,
+  subtitulos (jsonb `[{desde, hasta, texto}]` en segundos; null = falta, [] = sin voz;
+  se corrige editando la celda)
+- `ingestas`: origen_id, estado (ok | error), error, intentos, bytes,
+  subtitulos_intentos, subtitulos_error (solo service key)
 - `r2_borrar`: clave, bytes, borrar_despues — claves viejas de R2 a borrar (solo
   service key)
 - `*_url` guardan la clave de R2 o, en el seed, una ruta `/...`
@@ -102,7 +124,8 @@ panel de admin, doble aprobación, verificación de inversores.
 - Si la suma de bytes en R2 (filas vigentes + `r2_borrar`) supera 8 GB: dejar de subir y fallar el job.
 - El repo es público: los logs de la ingesta solo muestran origen_id, slug, estado
   y números. Nunca nombres, emails, teléfonos ni links; los errores de Supabase van
-  con código y mensaje, nunca con la fila.
+  con código y mensaje, nunca con la fila. Nunca el texto transcripto: el error de
+  subtítulos va solo a `ingestas.subtitulos_error`.
 
 ## Reglas aprendidas
 - Si levantás `npm run dev` para verificar, cerralo al terminar.

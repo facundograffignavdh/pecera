@@ -25,6 +25,9 @@ export type Perfil = {
   publicado: boolean;
 };
 
+/** Un bloque de subtítulos, en segundos desde el inicio del video. */
+export type Subtitulo = { desde: number; hasta: number; texto: string };
+
 export type Pitch = {
   id: string;
   perfil_id: string;
@@ -32,6 +35,8 @@ export type Pitch = {
   poster_url: string | null;
   orden: number;
   publicado: boolean;
+  /** Solo lo trae el feed. `null` o `[]`: no hay subtítulos para mostrar. */
+  subtitulos?: Subtitulo[] | null;
 };
 
 /** Un pitch con su perfil ya resuelto: lo que consume el feed. */

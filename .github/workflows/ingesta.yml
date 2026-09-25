@@ -16,6 +16,10 @@ on:
         description: "origen_id (ID de Drive del video) a procesar de nuevo aunque esté ok"
         type: string
         required: false
+      solo_subtitulos:
+        description: "Con reprocesar: rehacer solo los subtítulos de ese pitch, sin tocar el video"
+        type: boolean
+        default: false
 
 # Nunca dos a la vez: la siguiente espera a que termine la anterior.
 concurrency:
@@ -29,6 +33,14 @@ permissions:
 env:
   FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-08-31-13-27/ffmpeg-n9.0.1-11-ge47273f4d9-linux64-gpl-9.0.tar.xz
   FFMPEG_SHA256: 182c1b509720e939bb47bfb47dc29cc0c298640401128e3dce8627d10707eb5a
+  # Segundo ffmpeg, solo para los subtítulos: BtbN deshabilitó whisper el
+  # 2026-06-19 y ningún build 9.0 lo trae. Este 8.1.1 (2026-05-31) es el último
+  # con --enable-whisper. Comprimir sigue siendo cosa del 9.0.1 de arriba.
+  FFMPEG_WHISPER_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-05-31-13-22/ffmpeg-n8.1.1-9-g58d4114d36-linux64-gpl-8.1.tar.xz
+  FFMPEG_WHISPER_SHA256: 0d14781b885c491f5c3b799cbe7d3a26ba8a7eb01935483185e31ea7d79c8cd3
+  # Modelo de Whisper en una revisión fija de Hugging Face.
+  WHISPER_MODELO_URL: https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q5_0.bin
+  WHISPER_MODELO_SHA256: 394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2
 
 jobs:
   ingesta:
@@ -72,6 +84,40 @@ jobs:
           echo "$RUNNER_TEMP/ffmpeg/bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/ffmpeg/bin/ffmpeg" -hide_banner -version | head -1
 
+      # No va al PATH: taparía al 9.0.1. La ingesta lo usa por FFMPEG_WHISPER.
+      - name: Caché de ffmpeg con whisper
+        id: cache-ffmpeg-whisper
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/ffmpeg-whisper
+          key: ffmpeg-whisper-${{ env.FFMPEG_WHISPER_SHA256 }}
+
+      - name: Instalar ffmpeg con whisper
+        if: steps.cache-ffmpeg-whisper.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/ffmpeg-whisper.tar.xz" "$FFMPEG_WHISPER_URL"
+          echo "$FFMPEG_WHISPER_SHA256  $RUNNER_TEMP/ffmpeg-whisper.tar.xz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/ffmpeg-whisper"
+          tar -xJf "$RUNNER_TEMP/ffmpeg-whisper.tar.xz" -C "$RUNNER_TEMP/ffmpeg-whisper" --strip-components=1
+          rm "$RUNNER_TEMP/ffmpeg-whisper.tar.xz"
+
+      - name: Caché del modelo de Whisper
+        id: cache-whisper
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/whisper
+          key: whisper-${{ env.WHISPER_MODELO_SHA256 }}
+
+      - name: Bajar el modelo de Whisper
+        if: steps.cache-whisper.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/whisper"
+          curl -fsSL -o "$RUNNER_TEMP/whisper/modelo.bin" "$WHISPER_MODELO_URL"
+
+      # También cuando viene de la caché (son unos segundos).
+      - name: Verificar el modelo de Whisper
+        run: echo "$WHISPER_MODELO_SHA256  $RUNNER_TEMP/whisper/modelo.bin" | sha256sum -c -
+
       - id: auth
         uses: google-github-actions/auth@v3
         with:
@@ -82,12 +128,17 @@ jobs:
           create_credentials_file: false
 
       # El chequeo de rotación corre primero dentro de la ingesta y, si falla,
-      # corta antes de leer la hoja.
+      # corta antes de leer la hoja. Si falla el de whisper, publica igual sin
+      # subtítulos y el job termina en rojo.
       - name: Ingestar
         run: npm run ingesta
         env:
           INGESTA_SECO: ${{ inputs.seco && '1' || '' }}
           INGESTA_REPROCESAR: ${{ inputs.reprocesar }}
+          INGESTA_SOLO_SUBTITULOS: ${{ inputs.solo_subtitulos && '1' || '' }}
+          INGESTA_PRESUPUESTO_MIN: ${{ vars.INGESTA_PRESUPUESTO_MIN }}
+          FFMPEG_WHISPER: ${{ runner.temp }}/ffmpeg-whisper/bin/ffmpeg
+          WHISPER_MODELO: ${{ runner.temp }}/whisper/modelo.bin
           GOOGLE_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

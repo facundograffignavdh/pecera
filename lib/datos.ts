@@ -14,6 +14,8 @@ import type { ItemFeed, Perfil, Pitch } from "@/types/pecera";
 const COLUMNAS_PERFIL =
   "id, slug, nombre, tipo, rol, descripcion, avatar_url, whatsapp, email, linkedin, instagram, web, publicado";
 const COLUMNAS_PITCH = "id, perfil_id, video_url, poster_url, orden, publicado";
+// El perfil no dibuja subtítulos: solo el feed los pide.
+const COLUMNAS_PITCH_FEED = `${COLUMNAS_PITCH}, subtitulos`;
 
 function fallo(donde: string, error: { message: string }): never {
   throw new Error(`Supabase (${donde}): ${error.message}`);
@@ -36,7 +38,7 @@ function conUrlsPerfil(perfil: Perfil): Perfil {
 export async function getFeed(): Promise<ItemFeed[]> {
   const { data, error } = await supabase
     .from("pitches")
-    .select(`${COLUMNAS_PITCH}, perfil:perfiles!inner(${COLUMNAS_PERFIL})`)
+    .select(`${COLUMNAS_PITCH_FEED}, perfil:perfiles!inner(${COLUMNAS_PERFIL})`)
     .eq("publicado", true)
     .eq("perfil.publicado", true)
     .order("orden")

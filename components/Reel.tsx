@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Avatar from "@/components/Avatar";
+import Subtitulos from "@/components/Subtitulos";
 import { ROLES, TIPOS } from "@/lib/rol";
 import type { ItemFeed } from "@/types/pecera";
 
@@ -12,6 +13,8 @@ type Props = {
   /** Solo el activo y sus vecinos llevan `src`; el resto muestra el poster. */
   cargar: boolean;
   silenciado: boolean;
+  /** Preferencia del usuario; si el pitch no tiene subtítulos no se dibuja nada. */
+  conSubtitulos: boolean;
   /** El browser rechazó reproducir con sonido: el feed entero pasa a muteado. */
   onForzarSilencio: () => void;
   /** Para que el feed sepa qué índice está en pantalla. */
@@ -24,6 +27,7 @@ export default function Reel({
   activo,
   cargar,
   silenciado,
+  conSubtitulos,
   onForzarSilencio,
   indice,
   registrarRef,
@@ -131,6 +135,12 @@ export default function Reel({
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-tinta via-tinta/80 to-transparent" />
 
       <div className="absolute inset-x-0 bottom-0 p-5 pb-8 text-marfil">
+        {/* Arriba del nombre: el bloque está anclado abajo, así que los
+            subtítulos crecen hacia arriba y nunca tapan los datos del reel. */}
+        {conSubtitulos && pitch.subtitulos && pitch.subtitulos.length > 0 && (
+          <Subtitulos videoRef={videoRef} bloques={pitch.subtitulos} activo={activo} />
+        )}
+
         <div className="flex items-center gap-3">
           <Link href={href} aria-label={`Ver el perfil de ${perfil.nombre}`}>
             <Avatar perfil={perfil} size={48} />

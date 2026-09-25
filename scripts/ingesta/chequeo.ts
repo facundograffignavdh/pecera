@@ -2,6 +2,8 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { env } from "./config.ts";
+import { filtroWhisper } from "./subtitulos.ts";
 import { comprimir, correr, orientacion } from "./video.ts";
 
 /**
@@ -123,10 +125,50 @@ export async function chequeoRotacion(): Promise<void> {
   }
 }
 
-// `npm run ingesta:chequeo`: corre solo el chequeo, sin variables de entorno.
+/**
+ * El ffmpeg de los subtítulos (en el runner, otro binario que el que comprime)
+ * tiene que traer el filtro whisper y poder cargar el modelo. Se prueba con 2 s
+ * de silencio. Si falla, la ingesta publica igual y saltea los subtítulos.
+ */
+export async function chequeoWhisper(): Promise<void> {
+  const version = (await correr(env.ffmpegWhisper, ["-version"])).split("\n")[0];
+  console.log(`Chequeo de whisper con ${version}`);
+
+  const filtros = await correr(env.ffmpegWhisper, ["-filters"]);
+  if (!/^\s*\S+\s+whisper\s/m.test(filtros)) throw new Error("este ffmpeg no tiene el filtro whisper");
+
+  const dir = await mkdtemp(join(tmpdir(), "chequeo-whisper-"));
+  try {
+    await correr(
+      env.ffmpegWhisper,
+      [
+        "-y", "-f", "lavfi", "-i", "anullsrc=r=16000:cl=mono", "-t", "2",
+        "-af", filtroWhisper(dir, "chequeo.srt"), "-f", "null", "-",
+      ],
+      { cwd: dir, timeoutMs: 3 * 60 * 1000 }
+    );
+    console.log("  modelo: ok");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+// `npm run ingesta:chequeo`: corre solo los chequeos, sin variables de entorno.
+// El de whisper, solo si está WHISPER_MODELO.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  chequeoRotacion().catch((e: Error) => {
-    console.error(`Chequeo de rotación FALLÓ: ${e.message}`);
+  (async () => {
+    await chequeoRotacion().catch((e: Error) => {
+      throw new Error(`Chequeo de rotación FALLÓ: ${e.message}`);
+    });
+    if (!process.env.WHISPER_MODELO) {
+      console.log("Chequeo de whisper salteado: falta WHISPER_MODELO.");
+      return;
+    }
+    await chequeoWhisper().catch((e: Error) => {
+      throw new Error(`Chequeo de whisper FALLÓ: ${e.message}`);
+    });
+  })().catch((e: Error) => {
+    console.error(e.message);
     process.exitCode = 1;
   });
 }

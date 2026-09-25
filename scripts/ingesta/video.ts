@@ -10,15 +10,28 @@ import { AVATAR_LADO, DURACION_MAX_S, POSTER_MAX_BYTES } from "./config.ts";
  * no la metadata del archivo (GPS, modelo del celular), que no debe ir al log.
  */
 
-export function correr(cmd: string, args: string[]): Promise<string> {
+export function correr(
+  cmd: string,
+  args: string[],
+  opciones: { cwd?: string; timeoutMs?: number } = {}
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(cmd, ["-hide_banner", "-loglevel", "error", ...args]);
+    const proc = spawn(cmd, ["-hide_banner", "-loglevel", "error", ...args], { cwd: opciones.cwd });
     let salida = "";
     let errores = "";
+    let vencido = false;
+    const reloj = opciones.timeoutMs
+      ? setTimeout(() => {
+          vencido = true;
+          proc.kill("SIGKILL");
+        }, opciones.timeoutMs)
+      : undefined;
     proc.stdout.on("data", (d) => (salida += d));
     proc.stderr.on("data", (d) => (errores += d));
     proc.on("error", reject);
     proc.on("close", (codigo) => {
+      clearTimeout(reloj);
+      if (vencido) return reject(new Error(`${cmd} tardó más de ${Math.round(opciones.timeoutMs! / 1000)} s`));
       if (codigo === 0) return resolve(salida);
       const ultima = errores.trim().split("\n").pop()?.slice(0, 200) ?? "";
       reject(new Error(`${cmd} salió con ${codigo}: ${ultima}`));
@@ -31,6 +44,14 @@ async function pesoDe(ruta: string): Promise<number> {
     (s) => s.size,
     () => 0
   );
+}
+
+/** Duración del archivo en segundos, según el contenedor. */
+export async function duracion(ruta: string): Promise<number> {
+  const salida = await correr("ffprobe", ["-show_entries", "format=duration", "-of", "csv=p=0", ruta]);
+  const segundos = Number(salida.trim());
+  if (!Number.isFinite(segundos) || segundos <= 0) throw new Error("Duración ilegible");
+  return segundos;
 }
 
 /** Giro que hay que aplicar para ver el video derecho, como filtro de ffmpeg. */

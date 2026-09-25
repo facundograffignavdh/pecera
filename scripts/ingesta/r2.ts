@@ -1,9 +1,13 @@
+import { createWriteStream } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import type { ReadableStream } from "node:stream/web";
 import { AwsClient } from "aws4fetch";
 import { CACHE_CONTROL, env } from "./config.ts";
 
 /**
- * Subidas a R2: un PutObject simple por archivo, clase Standard, sin multipart.
+ * R2: un PutObject simple por archivo, clase Standard, sin multipart.
  * Nunca se lista el bucket: qué falta procesar lo decide Supabase.
  */
 
@@ -49,4 +53,12 @@ export async function pesoEnR2(clave: string): Promise<number> {
   if (res.status === 404) return 0;
   if (!res.ok) throw new Error(`R2 respondió ${res.status} al consultar ${clave}`);
   return Number(res.headers.get("content-length") ?? 0);
+}
+
+/** Baja un objeto a disco (GetObject simple), en streaming. */
+export async function bajar(clave: string, destino: string): Promise<void> {
+  const url = `${env.r2Endpoint}/${env.r2Bucket}/${encodeURIComponent(clave)}`;
+  const res = await r2().fetch(url);
+  if (!res.ok || !res.body) throw new Error(`R2 respondió ${res.status} al bajar ${clave}`);
+  await pipeline(Readable.fromWeb(res.body as ReadableStream), createWriteStream(destino));
 }

@@ -1,12 +1,16 @@
 import { appendFile, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { chequeoRotacion } from "./chequeo.ts";
+import { chequeoRotacion, chequeoWhisper } from "./chequeo.ts";
 import {
   BORRAR_DESPUES_MS,
+  FACTOR_INICIAL,
   MAX_INTENTOS,
+  MAX_INTENTOS_SUBTITULOS,
+  PRESUPUESTO_CORRIDA_MS,
   REPROCESAR,
   SECO,
+  SOLO_SUBTITULOS,
   TIEMPO_MAX_MS,
   TOTAL_MAX_BYTES,
   VIDEO_MAX_BYTES,
@@ -15,20 +19,30 @@ import {
   anotarParaBorrar,
   clavesActuales,
   guardarPerfilYPitch,
+  guardarSubtitulos,
   leerIngestas,
   leerParaBorrar,
+  pendientesDeSubtitulos,
+  pitchParaSubtitular,
   quitarDeBorrar,
   registrar,
+  registrarErrorSubtitulos,
   type Ingesta,
+  type ParaSubtitular,
 } from "./db.ts";
 import { leerFila, type Entrada, type Lectura } from "./formulario.ts";
 import { bajarDeDrive, leerHoja } from "./google.ts";
-import { borrar, pesoEnR2, subir } from "./r2.ts";
-import { avatar, comprimir, hash8, poster } from "./video.ts";
+import { bajar, borrar, pesoEnR2, subir } from "./r2.ts";
+import { subtitular } from "./subtitulos.ts";
+import { avatar, comprimir, duracion, hash8, poster } from "./video.ts";
 
 /**
  * Ingesta: Form → Drive → ffmpeg → R2 + Supabase. Se procesa fila por fila y
  * una fila con error no frena a las demás.
+ *
+ * Fase 1: publicar los videos nuevos. Fase 2: con lo que quede del presupuesto
+ * de la corrida, transcribir los pitches publicados sin subtítulos. La fase 2
+ * nunca afecta la publicación: lo que no entra queda para la próxima corrida.
  *
  * El repo es público: el log y el resumen solo muestran origen_id, slug, estado
  * y números. Nunca nombres, emails, teléfonos ni links.
@@ -51,6 +65,13 @@ const resumen = {
   quedanParaDespues: 0,
   subidos: 0,
   viejasBorradas: 0,
+  subtitulados: 0,
+  erroresSubtitulos: 0,
+  agotadosSubtitulos: 0,
+  subtitulosParaDespues: 0,
+  segundosAudio: 0,
+  segundosTranscripcion: 0,
+  subtitulosDesactivados: null as string | null,
 };
 
 async function peso(ruta: string) {
@@ -116,6 +137,7 @@ async function procesar(
     }
 
     const actuales = await clavesActuales(entrada.origenId);
+    const videoNuevo = !actuales.includes(archivos[0].clave);
     let slug: string;
     subidos.bytes = 0;
     try {
@@ -125,11 +147,11 @@ async function procesar(
         await subir(a.clave, a.ruta, a.tipo);
         subidos.bytes += pesos[i];
       }
-      slug = await guardarPerfilYPitch(entrada, {
-        video: archivos[0].clave,
-        poster: archivos[1].clave,
-        avatar: archivos[2]?.clave ?? null,
-      });
+      slug = await guardarPerfilYPitch(
+        entrada,
+        { video: archivos[0].clave, poster: archivos[1].clave, avatar: archivos[2]?.clave ?? null },
+        videoNuevo
+      );
     } catch (e) {
       // Nada apunta todavía a las claves nuevas: se borran ya. Las que coinciden
       // con las actuales (mismo contenido) están en uso y no se tocan.
@@ -173,6 +195,15 @@ async function escribirResumen(usados: number, fatal: string | null) {
     `Subido en esta corrida: ${mb(resumen.subidos)}`,
     `Claves viejas borradas de R2: ${resumen.viejasBorradas}`,
     `Total usado en R2: ${mb(usados)} de ${mb(TOTAL_MAX_BYTES)}`,
+    ...(resumen.subtitulosDesactivados
+      ? [`Subtítulos desactivados: ${resumen.subtitulosDesactivados}`]
+      : [
+          `Subtítulos hechos: ${resumen.subtitulados}`,
+          `Subtítulos con error: ${resumen.erroresSubtitulos}`,
+          `Subtítulos agotados (${MAX_INTENTOS_SUBTITULOS} errores, no se reintentan): ${resumen.agotadosSubtitulos}`,
+          `Subtítulos para la próxima corrida: ${resumen.subtitulosParaDespues}`,
+          `Transcripción: ${resumen.segundosAudio.toFixed(0)} s de audio en ${resumen.segundosTranscripcion.toFixed(0)} s`,
+        ]),
     ...(fatal ? [`CORTADA: ${fatal}`] : []),
   ];
   console.log(`\n=== Resumen ===\n${lineas.join("\n")}`);
@@ -209,9 +240,111 @@ async function borrarVencidas(): Promise<number> {
   return quedan;
 }
 
+/**
+ * Baja un pitch de R2 y lo transcribe. Si no entra en el presupuesto (y no es
+ * forzado) devuelve "sin tiempo" sin tocar nada. Los errores se registran y
+ * no se propagan: nunca afectan la publicación.
+ */
+async function subtitularUno(
+  pitch: ParaSubtitular,
+  intentos: number,
+  factor: number,
+  forzar: boolean
+): Promise<{ factor: number } | "sin tiempo" | "error"> {
+  const id = pitch.origen_id;
+  const dir = await mkdtemp(join(tmpdir(), "fase2-"));
+  try {
+    const video = join(dir, "video.mp4");
+    await bajar(pitch.video_url, video);
+    const audio = await duracion(video);
+
+    const estimado = audio * factor * 1000 + 30 * 1000;
+    if (!forzar && Date.now() - inicio + estimado > PRESUPUESTO_CORRIDA_MS) return "sin tiempo";
+
+    // El texto transcripto nunca va al log: solo números.
+    const { bloques, transcripcion } = await subtitular(video, audio);
+    await guardarSubtitulos(id, bloques);
+    resumen.subtitulados++;
+    resumen.segundosAudio += audio;
+    resumen.segundosTranscripcion += transcripcion;
+    const medido = transcripcion / audio;
+    log(
+      id,
+      forzar ? "subtítulos rehechos" : "subtítulos",
+      `${audio.toFixed(1)} s de audio en ${transcripcion.toFixed(1)} s (${medido.toFixed(2)}x) · ${bloques.length} bloques`
+    );
+    return { factor: medido };
+  } catch (e) {
+    // El detalle va a la tabla privada; al log público solo el intento.
+    resumen.erroresSubtitulos++;
+    log(id, "error subtítulos", `intento ${intentos + 1}`);
+    try {
+      await registrarErrorSubtitulos(id, (e as Error).message, intentos);
+    } catch {
+      log(id, "aviso", "no se pudo registrar el error de subtítulos");
+    }
+    return "error";
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Fase 2: subtítulos de los pitches publicados que no los tienen, con el tiempo
+ * que quede del presupuesto. `factor` (segundos de transcripción por segundo de
+ * audio) arranca conservador y pasa a ser el peor medido en la corrida.
+ * Devuelve un error fatal (solo si el pitch pedido a mano no existe) o null.
+ */
+async function fase2(): Promise<string | null> {
+  // Se relee: la fase 1 pudo sumar filas o reiniciar intentos.
+  const ingestas = await leerIngestas();
+  const intentosDe = (id: string) => ingestas.get(id)?.subtitulos_intentos ?? 0;
+  let factor = FACTOR_INICIAL;
+  let medidos = 0;
+  const medir = (r: Awaited<ReturnType<typeof subtitularUno>>) => {
+    if (typeof r !== "object") return;
+    factor = medidos === 0 ? r.factor : Math.max(factor, r.factor);
+    medidos++;
+  };
+
+  // A pedido: se rehace aunque ya tenga subtítulos o haya agotado los intentos,
+  // fuera del presupuesto (es un solo pitch).
+  let pedido: string | null = null;
+  if (SOLO_SUBTITULOS && REPROCESAR) {
+    const pitch = await pitchParaSubtitular(REPROCESAR);
+    if (!pitch) return `solo_subtitulos: ${REPROCESAR} no es un pitch publicado de la ingesta`;
+    pedido = pitch.origen_id;
+    medir(await subtitularUno(pitch, intentosDe(pedido), factor, true));
+  }
+
+  const sinSubtitulos = (await pendientesDeSubtitulos()).filter((p) => p.origen_id !== pedido);
+  const pendientes = sinSubtitulos.filter((p) => intentosDe(p.origen_id) < MAX_INTENTOS_SUBTITULOS);
+  resumen.agotadosSubtitulos = sinSubtitulos.length - pendientes.length;
+  for (const [i, pitch] of pendientes.entries()) {
+    const r =
+      Date.now() - inicio > PRESUPUESTO_CORRIDA_MS
+        ? "sin tiempo"
+        : await subtitularUno(pitch, intentosDe(pitch.origen_id), factor, false);
+    if (r === "sin tiempo") {
+      resumen.subtitulosParaDespues = pendientes.length - i;
+      break;
+    }
+    medir(r);
+  }
+  return null;
+}
+
 async function main() {
   // Si ffmpeg no endereza bien los videos rotados, no se procesa nada.
   await chequeoRotacion();
+
+  // Si el whisper no anda, se publica igual y se saltea la fase 2.
+  try {
+    await chequeoWhisper();
+  } catch (e) {
+    resumen.subtitulosDesactivados = (e as Error).message.slice(0, 200);
+    console.log(`Aviso: subtítulos desactivados en esta corrida (${resumen.subtitulosDesactivados})`);
+  }
 
   const pendientesDeBorrar = SECO ? 0 : await borrarVencidas();
 
@@ -240,7 +373,9 @@ async function main() {
       }
     }
     console.log(`\nVálidas o inválidas: ${porVideo.size} · Salteadas: ${resumen.salteadas}`);
-    if (REPROCESAR) {
+    if (SOLO_SUBTITULOS) {
+      console.log(`Se reharían solo los subtítulos de ${REPROCESAR} (en modo seco no se consulta Supabase).`);
+    } else if (REPROCESAR) {
       console.log(
         porVideo.has(REPROCESAR)
           ? `Se reprocesaría ${REPROCESAR} aunque esté ok.`
@@ -256,13 +391,13 @@ async function main() {
   let usados = [...ingestas.values()].reduce((suma, i) => suma + i.bytes, pendientesDeBorrar);
   let fatal: string | null = null;
 
-  if (REPROCESAR && !porVideo.has(REPROCESAR)) {
+  if (REPROCESAR && !SOLO_SUBTITULOS && !porVideo.has(REPROCESAR)) {
     fatal = `reprocesar: ${REPROCESAR} no está en la hoja (o no tiene consentimiento)`;
   }
 
   for (const [id, lectura] of fatal ? [] : porVideo) {
     const previa: Ingesta | undefined = ingestas.get(id);
-    const forzar = id === REPROCESAR;
+    const forzar = id === REPROCESAR && !SOLO_SUBTITULOS;
     if (previa?.estado === "ok" && !forzar) {
       resumen.yaHechas++;
       continue;
@@ -313,8 +448,20 @@ async function main() {
     }
   }
 
+  // Fase 2. Un error acá no deshace nada de lo publicado.
+  if (!resumen.subtitulosDesactivados) {
+    try {
+      fatal ??= await fase2();
+    } catch (e) {
+      resumen.subtitulosDesactivados = `la fase 2 se cortó: ${(e as Error).message.slice(0, 200)}`;
+      console.log(`Aviso: ${resumen.subtitulosDesactivados}`);
+    }
+  }
+
   await escribirResumen(usados, fatal);
-  if (fatal || resumen.errores > 0) process.exitCode = 1;
+  // Los errores de subtítulos quedan en el resumen sin poner el job en rojo;
+  // que el whisper no ande, sí.
+  if (fatal || resumen.errores > 0 || resumen.subtitulosDesactivados) process.exitCode = 1;
 }
 
 main().catch((e: Error) => {

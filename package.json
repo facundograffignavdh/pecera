@@ -9,6 +9,7 @@
     "lint": "eslint",
     "ingesta": "node scripts/ingesta/index.ts",
     "ingesta:chequeo": "node scripts/ingesta/chequeo.ts",
+    "ingesta:subtitulos": "node scripts/ingesta/subtitulos.ts",
     "ingesta:tipos": "tsc -p scripts/ingesta"
   },
   "dependencies": {

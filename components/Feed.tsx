@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PieLegal from "@/components/PieLegal";
 import Reel from "@/components/Reel";
+import { useSubtitulosActivos } from "@/lib/subtitulos";
 import type { ItemFeed } from "@/types/pecera";
 
 export default function Feed({ items }: { items: ItemFeed[] }) {
   const [indiceActivo, setIndiceActivo] = useState(0);
   const [silenciado, setSilenciado] = useState(true);
+  const [conSubtitulos, setConSubtitulos] = useSubtitulosActivos();
+  const haySubtitulos = items.some((item) => (item.pitch.subtitulos?.length ?? 0) > 0);
   const secciones = useRef(new Map<number, HTMLElement>());
 
   const registrarRef = useCallback((indice: number, el: HTMLElement | null) => {
@@ -51,14 +54,29 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
 
   return (
     <main className="no-scrollbar h-dvh snap-y snap-mandatory overflow-y-auto overscroll-y-contain">
-      <button
-        type="button"
-        onClick={() => setSilenciado((s) => !s)}
-        aria-label={silenciado ? "Activar sonido" : "Silenciar"}
-        className="fixed right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-tinta/60 text-marfil backdrop-blur-sm transition-colors duration-200 ease-pecera"
-      >
-        {silenciado ? "🔇" : "🔊"}
-      </button>
+      <div className="fixed right-4 top-4 z-10 flex gap-2">
+        {haySubtitulos && (
+          <button
+            type="button"
+            onClick={() => setConSubtitulos(!conSubtitulos)}
+            aria-label="Subtítulos"
+            aria-pressed={conSubtitulos}
+            className={`flex h-10 w-10 items-center justify-center rounded-full bg-tinta/60 text-xs font-semibold tracking-wide text-marfil backdrop-blur-sm transition-opacity duration-200 ease-pecera ${
+              conSubtitulos ? "" : "line-through opacity-60"
+            }`}
+          >
+            CC
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setSilenciado((s) => !s)}
+          aria-label={silenciado ? "Activar sonido" : "Silenciar"}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-tinta/60 text-marfil backdrop-blur-sm transition-colors duration-200 ease-pecera"
+        >
+          {silenciado ? "🔇" : "🔊"}
+        </button>
+      </div>
 
       {items.map((item, indice) => (
         <Reel
@@ -68,6 +86,7 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
           activo={indice === indiceActivo}
           cargar={Math.abs(indice - indiceActivo) <= 1}
           silenciado={silenciado}
+          conSubtitulos={conSubtitulos}
           onForzarSilencio={forzarSilencio}
           registrarRef={registrarRef}
         />
