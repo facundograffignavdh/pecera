@@ -43,4 +43,6 @@ export type Pitch = {
 export type ItemFeed = {
   pitch: Pitch;
   perfil: Perfil;
+  /** Piques del pitch según el último ISR; el cliente lo refresca al montar. */
+  piques: number;
 };

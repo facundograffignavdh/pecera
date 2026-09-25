@@ -3,6 +3,9 @@ import Image from "next/image";
 const LEGAL =
   "Pecera es una capa de descubrimiento y conexión. No capta fondos del público, no custodia activos ni realiza oferta pública de valores o asesoramiento financiero.";
 
+const PRIVACIDAD =
+  "Para contar los piques guardamos en tu celular un identificador anónimo al azar. No pedimos ni guardamos datos personales.";
+
 const TONOS = {
   claro: { src: "/brand/wordmark-tinta.png", texto: "text-tinta/55" },
   oscuro: { src: "/brand/wordmark-marfil.png", texto: "text-marfil/60" },
@@ -22,6 +25,8 @@ export default function PieLegal({
       <Image src={src} alt="Pecera" width={147} height={32} />
       <p className={`max-w-md text-center text-xs leading-relaxed ${texto}`}>
         {LEGAL}
+        <br />
+        {PRIVACIDAD}
       </p>
     </footer>
   );

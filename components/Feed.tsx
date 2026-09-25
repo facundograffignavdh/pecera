@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import PieLegal from "@/components/PieLegal";
+import PopupPique from "@/components/PopupPique";
 import Reel from "@/components/Reel";
+import { usePiques } from "@/lib/piques";
 import { useSubtitulosActivos } from "@/lib/subtitulos";
 import type { ItemFeed } from "@/types/pecera";
 
@@ -12,6 +14,9 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
   const [conSubtitulos, setConSubtitulos] = useSubtitulosActivos();
   const haySubtitulos = items.some((item) => (item.pitch.subtitulos?.length ?? 0) > 0);
   const secciones = useRef(new Map<number, HTMLElement>());
+  const piques = usePiques(items);
+  // Reel al que se le acaba de dar pique: abre el pop-up y pausa el video.
+  const [popup, setPopup] = useState<ItemFeed | null>(null);
 
   const registrarRef = useCallback((indice: number, el: HTMLElement | null) => {
     if (el) secciones.current.set(indice, el);
@@ -88,9 +93,22 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
           silenciado={silenciado}
           conSubtitulos={conSubtitulos}
           onForzarSilencio={forzarSilencio}
+          retenido={popup !== null}
+          piques={piques.conteos.get(item.pitch.id) ?? 0}
+          piqueado={piques.mios.has(item.pitch.id)}
+          onAlternarPique={() => {
+            const dado = piques.alternar(item.pitch.id);
+            if (dado) setPopup(item);
+            return dado;
+          }}
+          onDarPique={() => {
+            if (piques.dar(item.pitch.id)) setPopup(item);
+          }}
           registrarRef={registrarRef}
         />
       ))}
+
+      <PopupPique item={popup} onCerrado={() => setPopup(null)} />
 
       <section
         ref={(el) => registrarRef(items.length, el)}

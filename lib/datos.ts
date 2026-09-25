@@ -36,21 +36,41 @@ function conUrlsPerfil(perfil: Perfil): Perfil {
 
 /** Pitches publicados con perfil publicado, ordenados por `orden`. */
 export async function getFeed(): Promise<ItemFeed[]> {
-  const { data, error } = await supabase
-    .from("pitches")
-    .select(`${COLUMNAS_PITCH_FEED}, perfil:perfiles!inner(${COLUMNAS_PERFIL})`)
-    .eq("publicado", true)
-    .eq("perfil.publicado", true)
-    .order("orden")
-    .order("id")
-    .overrideTypes<Array<Pitch & { perfil: Perfil }>, { merge: false }>();
+  const [feed, conteos] = await Promise.all([
+    supabase
+      .from("pitches")
+      .select(`${COLUMNAS_PITCH_FEED}, perfil:perfiles!inner(${COLUMNAS_PERFIL})`)
+      .eq("publicado", true)
+      .eq("perfil.publicado", true)
+      .order("orden")
+      .order("id")
+      .overrideTypes<Array<Pitch & { perfil: Perfil }>, { merge: false }>(),
+    getConteoPiques(),
+  ]);
 
-  if (error) fallo("getFeed", error);
+  if (feed.error) fallo("getFeed", feed.error);
 
-  return data.map(({ perfil, ...pitch }) => ({
+  return feed.data.map(({ perfil, ...pitch }) => ({
     pitch: conUrlsPitch(pitch),
     perfil: conUrlsPerfil(perfil),
+    piques: conteos.get(pitch.id) ?? 0,
   }));
+}
+
+/**
+ * Piques por pitch (solo los que tienen alguno). anon nunca lee las filas.
+ * A diferencia del resto no lanza: un contador no puede tumbar el feed. Sale en
+ * 0 y el cliente vuelve a pedirlo al montar.
+ */
+async function getConteoPiques(): Promise<Map<string, number>> {
+  const { data, error } = await supabase.rpc("conteo_piques");
+  if (error) {
+    console.error(`Supabase (getConteoPiques): ${error.message}`);
+    return new Map();
+  }
+
+  const filas = (data ?? []) as Array<{ pitch_id: string; total: number }>;
+  return new Map(filas.map((fila) => [fila.pitch_id, fila.total]));
 }
 
 /**

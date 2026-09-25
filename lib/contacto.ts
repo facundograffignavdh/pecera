@@ -12,11 +12,11 @@ const SALUDO = "Hola! Te vi en Pecera";
  * Los números se cargan como 10 dígitos con código de área (3516123456).
  * wa.me los quiere con prefijo de país y el 9 de celular: 549 + los 10.
  */
-function hrefWhatsapp(numero: string): string | null {
+function hrefWhatsapp(numero: string, saludo: string): string | null {
   let digitos = numero.replace(/\D/g, "");
   if (digitos.length === 10) digitos = `549${digitos}`;
   if (!digitos) return null;
-  return `https://wa.me/${digitos}?text=${encodeURIComponent(SALUDO)}`;
+  return `https://wa.me/${digitos}?text=${encodeURIComponent(saludo)}`;
 }
 
 /** Los perfiles cargan la URL a mano: puede venir sin protocolo. */
@@ -30,19 +30,22 @@ function hrefInstagram(valor: string): string {
   return `https://instagram.com/${valor.replace(/^@/, "")}`;
 }
 
-/** Solo los canales que el perfil tiene cargados, listos para un <a>. */
-export function canalesDe(perfil: Perfil): Canal[] {
+/**
+ * Solo los canales que el perfil tiene cargados, listos para un <a>.
+ * `saludo` va como texto de WhatsApp y cuerpo del email.
+ */
+export function canalesDe(perfil: Perfil, saludo = SALUDO): Canal[] {
   const canales: Canal[] = [];
 
   if (perfil.whatsapp) {
-    const href = hrefWhatsapp(perfil.whatsapp);
+    const href = hrefWhatsapp(perfil.whatsapp, saludo);
     if (href) canales.push({ clave: "whatsapp", label: "WhatsApp", href });
   }
   if (perfil.email) {
     canales.push({
       clave: "email",
       label: "Email",
-      href: `mailto:${perfil.email}`,
+      href: `mailto:${perfil.email}?body=${encodeURIComponent(saludo)}`,
     });
   }
   if (perfil.linkedin) {

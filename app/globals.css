@@ -41,7 +41,76 @@ body {
   }
 }
 
+/* Pop-up del Pique: más opaco que el vidrio base para que el texto pase AA
+   aunque atrás haya un video negro. El fallback sin blur ya es 0.92. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .vidrio.vidrio-denso {
+    background: rgba(255, 253, 246, 0.8);
+  }
+}
+
+/* Pique: "tirón" de la caña al activarse. */
+@keyframes tiron {
+  0% { transform: rotate(0) scale(1); }
+  40% { transform: rotate(-14deg) scale(1.15); }
+  100% { transform: rotate(0) scale(1); }
+}
+.tiron {
+  transform-origin: 20% 85%;
+  animation: tiron 320ms var(--ease-pecera);
+}
+
+/* Pop-up del Pique: entra con fade + 14 px, sale con fade. */
+@keyframes popup-entrada {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes popup-salida {
+  to { opacity: 0; }
+}
+@keyframes fundido {
+  from { opacity: 0; }
+}
+.popup-pique::backdrop {
+  background: rgb(28 27 22 / 0.35);
+  animation: fundido 550ms var(--ease-pecera);
+}
+.popup-pique[data-saliendo]::backdrop {
+  animation: popup-salida 150ms var(--ease-pecera) forwards;
+}
+.popup-tarjeta {
+  animation: popup-entrada 550ms var(--ease-pecera);
+}
+.popup-pique[data-saliendo] .popup-tarjeta {
+  animation: popup-salida 150ms var(--ease-pecera) forwards;
+}
+
+/* El pez nada de lado a lado y ondula. */
+@keyframes pez-nado {
+  from { transform: translateX(-28px); }
+  to { transform: translateX(28px); }
+}
+@keyframes pez-ondula {
+  from { transform: rotate(-4deg) skewY(3deg); }
+  to { transform: rotate(4deg) skewY(-3deg); }
+}
+.pez-nado {
+  animation: pez-nado 3.2s ease-in-out infinite alternate;
+}
+.pez-ondula {
+  animation: pez-ondula 0.9s ease-in-out infinite alternate;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  /* La regla general los dejaría en el último frame, corridos: mejor quietos. */
+  .pez-nado,
+  .pez-ondula,
+  .tiron,
+  .popup-tarjeta,
+  .popup-pique::backdrop {
+    animation: none !important;
+  }
+
   *,
   *::before,
   *::after {

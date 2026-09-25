@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Avatar from "@/components/Avatar";
+import IconoCana from "@/components/IconoCana";
 import Subtitulos from "@/components/Subtitulos";
 import { ROLES, TIPOS } from "@/lib/rol";
 import type { ItemFeed } from "@/types/pecera";
@@ -17,6 +18,14 @@ type Props = {
   conSubtitulos: boolean;
   /** El browser rechazó reproducir con sonido: el feed entero pasa a muteado. */
   onForzarSilencio: () => void;
+  /** El pop-up del pique está abierto: el video espera. */
+  retenido: boolean;
+  piques: number;
+  piqueado: boolean;
+  /** Botón de la caña. Devuelve `true` si el pique quedó dado. */
+  onAlternarPique: () => boolean;
+  /** Doble toque en el video: da pique, nunca lo quita. */
+  onDarPique: () => void;
   /** Para que el feed sepa qué índice está en pantalla. */
   indice: number;
   registrarRef: (indice: number, el: HTMLElement | null) => void;
@@ -29,12 +38,20 @@ export default function Reel({
   silenciado,
   conSubtitulos,
   onForzarSilencio,
+  retenido,
+  piques,
+  piqueado,
+  onAlternarPique,
+  onDarPique,
   indice,
   registrarRef,
 }: Props) {
   const { pitch, perfil } = item;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [pausadoAMano, setPausadoAMano] = useState(false);
+  // Cada tirón nuevo remonta el ícono para que la animación vuelva a correr.
+  const [tirones, setTirones] = useState(0);
+  const primerToque = useRef<number | null>(null);
 
   // Al salir de pantalla se olvida la pausa manual, así el reel vuelve a
   // arrancar solo cuando el usuario regresa. Ajuste en render, no en efecto.
@@ -64,6 +81,10 @@ export default function Reel({
       return;
     }
 
+    if (retenido) {
+      video.pause();
+      return;
+    }
     if (pausadoAMano) return;
 
     let cancelado = false;
@@ -81,13 +102,39 @@ export default function Reel({
     return () => {
       cancelado = true;
     };
-  }, [activo, silenciado, pausadoAMano, onForzarSilencio]);
+  }, [activo, silenciado, pausadoAMano, retenido, onForzarSilencio]);
 
   // Sacar el `src` no suelta el buffer: hace falta load() para que el browser
   // libere el video y vuelva a mostrar el poster.
   useEffect(() => {
     if (!cargar) videoRef.current?.load();
   }, [cargar]);
+
+  useEffect(
+    () => () => {
+      if (primerToque.current !== null) clearTimeout(primerToque.current);
+    },
+    []
+  );
+
+  // Un toque pausa, pero espera 250 ms por si es un doble toque (pique).
+  function alTocarVideo() {
+    if (primerToque.current !== null) {
+      clearTimeout(primerToque.current);
+      primerToque.current = null;
+      setTirones((n) => n + 1);
+      onDarPique();
+      return;
+    }
+    primerToque.current = window.setTimeout(() => {
+      primerToque.current = null;
+      alternarReproduccion();
+    }, 250);
+  }
+
+  function alTocarCana() {
+    if (onAlternarPique()) setTirones((n) => n + 1);
+  }
 
   function alternarReproduccion() {
     const video = videoRef.current;
@@ -116,8 +163,8 @@ export default function Reel({
         playsInline
         loop
         preload={activo ? "auto" : "metadata"}
-        onClick={alternarReproduccion}
-        className="absolute inset-0 h-full w-full cursor-pointer object-cover"
+        onClick={alTocarVideo}
+        className="absolute inset-0 h-full w-full cursor-pointer touch-manipulation object-cover"
       />
 
       {pausadoAMano && (
@@ -141,39 +188,70 @@ export default function Reel({
           <Subtitulos videoRef={videoRef} bloques={pitch.subtitulos} activo={activo} />
         )}
 
-        <div className="flex items-center gap-3">
-          <Link href={href} aria-label={`Ver el perfil de ${perfil.nombre}`}>
-            <Avatar perfil={perfil} size={48} />
-          </Link>
-          <div className="min-w-0">
+        <div className="flex items-end gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3">
+              <Link href={href} aria-label={`Ver el perfil de ${perfil.nombre}`}>
+                <Avatar perfil={perfil} size={48} />
+              </Link>
+              <div className="min-w-0">
+                <Link
+                  href={href}
+                  className="font-display text-xl font-semibold leading-tight"
+                >
+                  {perfil.nombre}
+                </Link>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${rol.bg}`}
+                  >
+                    {rol.label}
+                  </span>
+                  <span className="text-marfil/70">{TIPOS[perfil.tipo]}</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="mt-3 max-w-prose text-sm leading-relaxed text-marfil/90">
+              {perfil.descripcion}
+            </p>
+
             <Link
               href={href}
-              className="font-display text-xl font-semibold leading-tight"
+              className="mt-4 inline-flex rounded-full bg-arcilla px-5 py-2.5 font-medium text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera"
             >
-              {perfil.nombre}
+              Ver perfil
             </Link>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${rol.bg}`}
-              >
-                {rol.label}
-              </span>
-              <span className="text-marfil/70">{TIPOS[perfil.tipo]}</span>
-            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={alTocarCana}
+            aria-pressed={piqueado}
+            aria-label={`${piqueado ? "Quitar pique" : "Dar pique"} (${piques} ${piques === 1 ? "pique" : "piques"})`}
+            className="-mr-1 flex w-14 shrink-0 flex-col items-center gap-1"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-tinta/40 backdrop-blur-sm">
+              <IconoCana
+                key={tirones}
+                className={`h-7 w-7 transition-colors duration-200 ease-pecera ${
+                  piqueado ? "text-pecera" : "text-marfil"
+                } ${tirones > 0 ? "tiron" : ""}`}
+              />
+            </span>
+            <span aria-hidden className="text-xs font-semibold tabular-nums">
+              {formatoPiques(piques)}
+            </span>
+          </button>
         </div>
-
-        <p className="mt-3 max-w-prose text-sm leading-relaxed text-marfil/90">
-          {perfil.descripcion}
-        </p>
-
-        <Link
-          href={href}
-          className="mt-4 inline-flex rounded-full bg-arcilla px-5 py-2.5 font-medium text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera"
-        >
-          Ver perfil
-        </Link>
       </div>
     </section>
   );
+}
+
+/** 0 muestra el nombre del gesto; desde 1000, "1,2 mil". */
+function formatoPiques(n: number): string {
+  if (n === 0) return "Pique";
+  if (n < 1000) return String(n);
+  return `${(n / 1000).toLocaleString("es-AR", { maximumFractionDigits: 1 })} mil`;
 }

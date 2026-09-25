@@ -91,7 +91,7 @@ export function getFeed(): ItemFeed[] {
     .flatMap((pitch) => {
       const perfil = perfiles.find((p) => p.id === pitch.perfil_id);
       if (!perfil?.publicado) return [];
-      return [{ pitch, perfil }];
+      return [{ pitch, perfil, piques: 0 }];
     });
 }
 

@@ -44,6 +44,12 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   rompen la sintaxis).
 - App: `components/Subtitulos.tsx` dibuja los bloques arriba del nombre del reel;
   botón CC al lado del mute, recordado con `lib/subtitulos.ts` (localStorage).
+- Pique ("me picó", el like): caña en `components/IconoCana.tsx` al costado del
+  reel, doble toque en el video (un toque pausa tras 250 ms) y pop-up
+  `components/PopupPique.tsx` (`<dialog>` nativo, `.vidrio.vidrio-denso`) solo al
+  darlo. `lib/piques.ts`: uuid anónimo en localStorage, piques propios recordados,
+  optimista con RPC `dar_pique`/`quitar_pique`; los conteos salen de
+  `conteo_piques` (ISR + refresco al montar). Si el conteo falla, el feed sale igual.
 - Migraciones nuevas en `supabase/migrations/` (las corre el usuario).
 - La base guarda claves de R2 (`<id>.mp4`); `lib/media.ts` (`urlMedia`) arma la URL
   con `NEXT_PUBLIC_MEDIA_URL` y `lib/datos.ts` ya la aplica.
@@ -81,6 +87,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   se corrige editando la celda)
 - `ingestas`: origen_id, estado (ok | error), error, intentos, bytes,
   subtitulos_intentos, subtitulos_error (solo service key)
+- `piques`: pitch_id, dispositivo (uuid anónimo), created_at; PK pitch + dispositivo.
+  anon no la lee: usa las funciones security definer `dar_pique`, `quitar_pique`
+  (validan pitch publicado; límite 30 acciones/min por dispositivo en
+  `piques_frecuencia`) y `conteo_piques` (solo agregados)
 - `r2_borrar`: clave, bytes, borrar_despues — claves viejas de R2 a borrar (solo
   service key)
 - `*_url` guardan la clave de R2 o, en el seed, una ruta `/...`
