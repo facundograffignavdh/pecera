@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { urlMedia } from "@/lib/media";
 import { supabase } from "@/lib/supabase";
 import type { ItemFeed, Perfil, Pitch } from "@/types/pecera";
 
@@ -18,6 +19,19 @@ function fallo(donde: string, error: { message: string }): never {
   throw new Error(`Supabase (${donde}): ${error.message}`);
 }
 
+/** La base guarda claves de R2; los componentes reciben URLs listas. */
+function conUrlsPitch(pitch: Pitch): Pitch {
+  return {
+    ...pitch,
+    video_url: urlMedia(pitch.video_url),
+    poster_url: pitch.poster_url && urlMedia(pitch.poster_url),
+  };
+}
+
+function conUrlsPerfil(perfil: Perfil): Perfil {
+  return { ...perfil, avatar_url: perfil.avatar_url && urlMedia(perfil.avatar_url) };
+}
+
 /** Pitches publicados con perfil publicado, ordenados por `orden`. */
 export async function getFeed(): Promise<ItemFeed[]> {
   const { data, error } = await supabase
@@ -31,7 +45,10 @@ export async function getFeed(): Promise<ItemFeed[]> {
 
   if (error) fallo("getFeed", error);
 
-  return data.map(({ perfil, ...pitch }) => ({ pitch, perfil }));
+  return data.map(({ perfil, ...pitch }) => ({
+    pitch: conUrlsPitch(pitch),
+    perfil: conUrlsPerfil(perfil),
+  }));
 }
 
 /**
@@ -54,7 +71,7 @@ export const getPerfil = cache(
     if (!data) return null;
 
     const { pitches, ...perfil } = data;
-    return { perfil, pitches };
+    return { perfil: conUrlsPerfil(perfil), pitches: pitches.map(conUrlsPitch) };
   }
 );
 

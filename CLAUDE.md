@@ -19,7 +19,16 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - Helpers: `lib/rol.ts` (colores y labels de rol/tipo) y `lib/contacto.ts`
   (normalización de canales). Reutilizarlos, no duplicar lógica.
 - Videos y posters de prueba en `public/`; los posters se generaron con ffmpeg.
-- Próximo: deploy en Vercel, después R2.
+- Ingesta automática: `.github/workflows/ingesta.yml` (cron cada 10 min + manual,
+  con modo seco) corre `scripts/ingesta/` (Node 24 corriendo TS directo, sin
+  build). Lee el Google Form, comprime con ffmpeg, sube a R2 y crea perfil + pitch
+  publicados. La tabla `ingestas` lleva el estado por video (`origen_id` = ID de
+  Drive).
+- Migraciones nuevas en `supabase/migrations/` (las corre el usuario).
+- La base guarda claves de R2 (`<id>.mp4`); `lib/media.ts` (`urlMedia`) arma la URL
+  con `NEXT_PUBLIC_MEDIA_URL` y `lib/datos.ts` ya la aplica.
+- La service key de Supabase vive solo en los secrets del workflow, jamás en la app.
+- Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind
@@ -30,6 +39,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `npm run dev` → servidor local en localhost:3000
 - `npm run build` → verificar antes de cada commit importante
 - `npm run lint` → ESLint; el plugin de React 19 es estricto
+- `npm run ingesta:tipos` → chequeo de tipos del script de ingesta (tiene su propio
+  tsconfig; el de la app excluye `scripts/`)
 
 ## Rutas
 - `/` → feed de reels
@@ -38,10 +49,12 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,
   angel, fondo, coach), rol (emprendedor | inversor | aliado), descripcion,
-  avatar_url, whatsapp, email, linkedin, instagram, web, publicado
+  avatar_url, whatsapp, email, linkedin, instagram, web, publicado, origen_id
 - Esos son los valores que se guardan; las etiquetas visibles ("Inversor ángel",
   "Coach / mentor", etc.) salen de `lib/rol.ts`.
-- `pitches`: perfil_id, video_url, poster_url, orden, publicado
+- `pitches`: perfil_id, video_url, poster_url, orden, publicado, origen_id
+- `ingestas`: origen_id, estado (ok | error), error, intentos, bytes (solo service key)
+- `*_url` guardan la clave de R2 o, en el seed, una ruta `/...`
 
 ## Marca (resumen del manual)
 - Colores: fondo Marfil #F5F4EC · texto Tinta #1C1B16 · naranja Pecera #F87C43 (solo
@@ -64,6 +77,18 @@ panel de admin, doble aprobación, verificación de inversores.
 - Cambios chicos y enfocados; no reescribir archivos que no tienen que ver con la tarea.
 - Preguntar antes de instalar dependencias nuevas.
 - Videos: `muted` + `playsInline` + autoplay solo en el reel visible.
+
+## Reglas de R2
+- Solo storage class Standard. PutObject simple, sin multipart.
+- Si el video comprimido pesa > 40 MB: no subir, registrar error.
+- Claves: `<driveId>.mp4`, `<driveId>.jpg` (poster), `<fotoId>.jpg` (avatar). Un
+  reintento sobrescribe, nunca duplica.
+- Cache-Control: `public, max-age=31536000, immutable`.
+- Nunca listar el bucket: qué falta procesar se decide con Supabase.
+- Si la suma de bytes subidos supera 8 GB: dejar de subir y fallar el job.
+- El repo es público: los logs de la ingesta solo muestran origen_id, slug, estado
+  y números. Nunca nombres, emails, teléfonos ni links; los errores de Supabase van
+  con código y mensaje, nunca con la fila.
 
 ## Reglas aprendidas
 - Si levantás `npm run dev` para verificar, cerralo al terminar.

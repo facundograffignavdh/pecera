@@ -1,0 +1,66 @@
+# Ingesta: Google Form → ffmpeg → R2 + Supabase. Ver scripts/ingesta/.
+# El repo es público: el script no loguea datos personales, solo origen_id,
+# slug, estado y números.
+name: Ingesta
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      seco:
+        description: "Modo seco: leer la hoja y mostrar qué haría, sin subir ni escribir nada"
+        type: boolean
+        default: false
+
+# Nunca dos a la vez: la siguiente espera a que termine la anterior.
+concurrency:
+  group: ingesta
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # para Workload Identity Federation
+
+jobs:
+  ingesta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Chequear tipos del script
+        run: npm run ingesta:tipos
+
+      # ubuntu-latest (24.04) no trae ffmpeg.
+      - name: Instalar ffmpeg si falta
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg)
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/drive.readonly,https://www.googleapis.com/auth/spreadsheets.readonly
+          create_credentials_file: false
+
+      - name: Ingestar
+        run: npm run ingesta
+        env:
+          INGESTA_SECO: ${{ inputs.seco && '1' || '' }}
+          GOOGLE_TOKEN: ${{ steps.auth.outputs.access_token }}
+          GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

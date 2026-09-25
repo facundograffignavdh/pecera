@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ingesta": "node scripts/ingesta/index.ts",
+    "ingesta:tipos": "tsc -p scripts/ingesta"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",
@@ -19,6 +21,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "aws4fetch": "^1.0.20",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
