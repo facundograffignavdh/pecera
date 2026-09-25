@@ -80,6 +80,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 ## Rutas
 - `/` → feed de reels
 - `/p/[slug]` → perfil del participante
+- `/sumate` → landing de captación: el CTA abre el Google Form (`lib/landing.ts`) en
+  pestaña nueva. Escena three.js (`components/landing/`) que carga después del
+  contenido, pausa fuera de pantalla y cae a `EscenaEstatica` sin WebGL o con
+  reducir movimiento. "Antes de empezar" espeja las validaciones del Form.
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,

@@ -204,6 +204,24 @@ body {
   animation: texto-pique 450ms var(--ease-pecera) 1100ms both;
 }
 
+/* Landing: entradas de 550 ms con fade + 14 px. El hero entra al cargar; el
+   resto al aparecer en pantalla (components/landing/Revelar.tsx). */
+@keyframes entrada {
+  from { opacity: 0; transform: translateY(14px); }
+}
+.entrada {
+  animation: entrada 550ms var(--ease-pecera) both;
+}
+[data-revelar] {
+  transition:
+    opacity 550ms var(--ease-pecera),
+    transform 550ms var(--ease-pecera);
+}
+html[data-revelar] [data-revelar]:not([data-visible]) {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* La regla general los dejaría en el último frame, corridos: mejor quietos.
      La escena queda en reposo: pez junto al anzuelo, caña recta. */
