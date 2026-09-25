@@ -80,6 +80,7 @@ export type Claves = { video: string; poster: string; avatar: string | null };
 /**
  * Crea (o actualiza, si es un reintento) el perfil y su pitch, publicados.
  * El perfil se busca por `origen_id` para no duplicarlo; el slug se conserva.
+ * Las claves que reemplaza las anota `procesar()` para borrarlas más tarde.
  * Devuelve el slug.
  */
 export async function guardarPerfilYPitch(entrada: Entrada, claves: Claves): Promise<string> {
@@ -125,4 +126,62 @@ export async function guardarPerfilYPitch(entrada: Entrada, claves: Claves): Pro
   if (errorPitch) fallo("guardarPitch", errorPitch);
 
   return perfil.slug;
+}
+
+/**
+ * Claves de R2 que usa hoy la fila (video, poster y avatar). Las rutas `/...`
+ * del seed no son de R2 y quedan afuera.
+ */
+export async function clavesActuales(origenId: string): Promise<string[]> {
+  const [pitch, perfil] = await Promise.all([
+    db()
+      .from("pitches")
+      .select("video_url, poster_url")
+      .eq("origen_id", origenId)
+      .maybeSingle()
+      .overrideTypes<{ video_url: string | null; poster_url: string | null } | null, { merge: false }>(),
+    db()
+      .from("perfiles")
+      .select("avatar_url")
+      .eq("origen_id", origenId)
+      .maybeSingle()
+      .overrideTypes<{ avatar_url: string | null } | null, { merge: false }>(),
+  ]);
+  if (pitch.error) fallo("clavesPitch", pitch.error);
+  if (perfil.error) fallo("clavesPerfil", perfil.error);
+  return [pitch.data?.video_url, pitch.data?.poster_url, perfil.data?.avatar_url].filter(
+    (c): c is string => !!c && !c.startsWith("/")
+  );
+}
+
+export type ParaBorrar = { clave: string; bytes: number; borrar_despues: string };
+
+/** Claves viejas anotadas para borrar de R2 (vencidas o no). */
+export async function leerParaBorrar(): Promise<ParaBorrar[]> {
+  const { data, error } = await db()
+    .from("r2_borrar")
+    .select("clave, bytes, borrar_despues")
+    .order("borrar_despues")
+    .overrideTypes<ParaBorrar[], { merge: false }>();
+  if (error) fallo("leerParaBorrar", error);
+  return data.map((f) => ({ ...f, bytes: Number(f.bytes) }));
+}
+
+/** Anota claves viejas para borrar después de `cuando`. */
+export async function anotarParaBorrar(claves: { clave: string; bytes: number }[], cuando: Date) {
+  if (claves.length === 0) return;
+  const { error } = await db()
+    .from("r2_borrar")
+    .upsert(
+      claves.map((c) => ({ ...c, borrar_despues: cuando.toISOString() })),
+      { onConflict: "clave" }
+    );
+  if (error) fallo("anotarParaBorrar", error);
+}
+
+/** Saca claves de la lista: ya se borraron de R2 o volvieron a estar en uso. */
+export async function quitarDeBorrar(claves: string[]) {
+  if (claves.length === 0) return;
+  const { error } = await db().from("r2_borrar").delete().in("clave", claves);
+  if (error) fallo("quitarDeBorrar", error);
 }

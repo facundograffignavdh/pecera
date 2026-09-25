@@ -1,12 +1,30 @@
 import { appendFile, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { MAX_INTENTOS, SECO, TIEMPO_MAX_MS, TOTAL_MAX_BYTES, VIDEO_MAX_BYTES } from "./config.ts";
-import { guardarPerfilYPitch, leerIngestas, registrar, type Ingesta } from "./db.ts";
+import { chequeoRotacion } from "./chequeo.ts";
+import {
+  BORRAR_DESPUES_MS,
+  MAX_INTENTOS,
+  REPROCESAR,
+  SECO,
+  TIEMPO_MAX_MS,
+  TOTAL_MAX_BYTES,
+  VIDEO_MAX_BYTES,
+} from "./config.ts";
+import {
+  anotarParaBorrar,
+  clavesActuales,
+  guardarPerfilYPitch,
+  leerIngestas,
+  leerParaBorrar,
+  quitarDeBorrar,
+  registrar,
+  type Ingesta,
+} from "./db.ts";
 import { leerFila, type Entrada, type Lectura } from "./formulario.ts";
 import { bajarDeDrive, leerHoja } from "./google.ts";
-import { subir } from "./r2.ts";
-import { avatar, comprimir, poster } from "./video.ts";
+import { borrar, pesoEnR2, subir } from "./r2.ts";
+import { avatar, comprimir, hash8, poster } from "./video.ts";
 
 /**
  * Ingesta: Form → Drive → ffmpeg → R2 + Supabase. Se procesa fila por fila y
@@ -32,6 +50,7 @@ const resumen = {
   yaHechas: 0,
   quedanParaDespues: 0,
   subidos: 0,
+  viejasBorradas: 0,
 };
 
 async function peso(ruta: string) {
@@ -40,13 +59,14 @@ async function peso(ruta: string) {
 
 /**
  * Procesa una entrada válida. `subidos` se va actualizando para que, si algo
- * falla a mitad de camino, se registre lo que ya quedó en R2.
+ * falla a mitad de camino, se registre lo que ya quedó en R2. `usados` incluye
+ * la versión actual de esta fila: sigue en R2 hasta que se borre.
  */
 async function procesar(
   entrada: Entrada,
-  usadosPorOtras: number,
+  usados: number,
   subidos: { bytes: number }
-): Promise<string> {
+): Promise<{ slug: string; anotados: number }> {
   const dir = await mkdtemp(join(tmpdir(), "ingesta-"));
   try {
     const original = join(dir, "original");
@@ -77,33 +97,66 @@ async function procesar(
       }
     }
 
+    // Clave nueva por contenido: R2 sirve con `immutable`, sobrescribir no alcanza.
     const archivos = [
-      { clave: `${entrada.origenId}.mp4`, ruta: video, tipo: "video/mp4" },
-      { clave: `${entrada.origenId}.jpg`, ruta: imagen, tipo: "image/jpeg" },
+      { clave: `${entrada.origenId}-${await hash8(video)}.mp4`, ruta: video, tipo: "video/mp4" },
+      { clave: `${entrada.origenId}-${await hash8(imagen)}.jpg`, ruta: imagen, tipo: "image/jpeg" },
       ...(archivoAvatar && entrada.fotoId
-        ? [{ clave: `${entrada.fotoId}.jpg`, ruta: archivoAvatar, tipo: "image/jpeg" }]
+        ? [{ clave: `${entrada.fotoId}-${await hash8(archivoAvatar)}.jpg`, ruta: archivoAvatar, tipo: "image/jpeg" }]
         : []),
     ];
+    const nuevas = archivos.map((a) => a.clave);
     const pesos = await Promise.all(archivos.map((a) => peso(a.ruta)));
     const total = pesos.reduce((a, b) => a + b, 0);
 
-    if (usadosPorOtras + total > TOTAL_MAX_BYTES) {
+    if (usados + total > TOTAL_MAX_BYTES) {
       throw new TopeSuperado(
-        `Subir esta fila (${mb(total)}) supera el tope de ${mb(TOTAL_MAX_BYTES)}; ya hay ${mb(usadosPorOtras)}`
+        `Subir esta fila (${mb(total)}) supera el tope de ${mb(TOTAL_MAX_BYTES)}; ya hay ${mb(usados)}`
       );
     }
 
+    const actuales = await clavesActuales(entrada.origenId);
+    let slug: string;
     subidos.bytes = 0;
-    for (const [i, a] of archivos.entries()) {
-      await subir(a.clave, a.ruta, a.tipo);
-      subidos.bytes += pesos[i];
+    try {
+      // Si alguna clave nueva estaba anotada para borrar, vuelve a estar en uso.
+      await quitarDeBorrar(nuevas);
+      for (const [i, a] of archivos.entries()) {
+        await subir(a.clave, a.ruta, a.tipo);
+        subidos.bytes += pesos[i];
+      }
+      slug = await guardarPerfilYPitch(entrada, {
+        video: archivos[0].clave,
+        poster: archivos[1].clave,
+        avatar: archivos[2]?.clave ?? null,
+      });
+    } catch (e) {
+      // Nada apunta todavía a las claves nuevas: se borran ya. Las que coinciden
+      // con las actuales (mismo contenido) están en uso y no se tocan.
+      try {
+        for (const clave of nuevas.filter((c) => !actuales.includes(c))) await borrar(clave);
+        subidos.bytes = 0;
+      } catch {
+        log(entrada.origenId, "aviso", "no se pudieron borrar las claves nuevas");
+      }
+      throw e;
     }
 
-    return await guardarPerfilYPitch(entrada, {
-      video: archivos[0].clave,
-      poster: archivos[1].clave,
-      avatar: archivos[2]?.clave ?? null,
-    });
+    // Las viejas se borran más tarde: el ISR puede seguir sirviéndolas un rato.
+    let anotados = 0;
+    try {
+      const viejas = await Promise.all(
+        actuales
+          .filter((c) => !nuevas.includes(c))
+          .map(async (clave) => ({ clave, bytes: await pesoEnR2(clave) }))
+      );
+      await anotarParaBorrar(viejas, new Date(Date.now() + BORRAR_DESPUES_MS));
+      anotados = viejas.reduce((suma, v) => suma + v.bytes, 0);
+      if (viejas.length > 0) log(entrada.origenId, "reemplazo", `${viejas.length} claves viejas se borran en 1 h`);
+    } catch (e) {
+      log(entrada.origenId, "aviso", `no se anotaron las claves viejas: ${(e as Error).message}`);
+    }
+    return { slug, anotados };
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -118,6 +171,7 @@ async function escribirResumen(usados: number, fatal: string | null) {
     `Agotadas (${MAX_INTENTOS} errores, no se reintentan): ${resumen.agotadas}`,
     `Quedan para la próxima corrida: ${resumen.quedanParaDespues}`,
     `Subido en esta corrida: ${mb(resumen.subidos)}`,
+    `Claves viejas borradas de R2: ${resumen.viejasBorradas}`,
     `Total usado en R2: ${mb(usados)} de ${mb(TOTAL_MAX_BYTES)}`,
     ...(fatal ? [`CORTADA: ${fatal}`] : []),
   ];
@@ -129,7 +183,38 @@ async function escribirResumen(usados: number, fatal: string | null) {
   }
 }
 
+/**
+ * Borra de R2 las claves viejas que ya vencieron. Si una falla, queda para la
+ * próxima corrida. Devuelve los bytes que siguen ocupando las que quedan.
+ */
+async function borrarVencidas(): Promise<number> {
+  const ahora = Date.now();
+  const borradas: string[] = [];
+  let quedan = 0;
+  for (const f of await leerParaBorrar()) {
+    if (Date.parse(f.borrar_despues) > ahora) {
+      quedan += f.bytes;
+      continue;
+    }
+    try {
+      await borrar(f.clave);
+      borradas.push(f.clave);
+    } catch (e) {
+      quedan += f.bytes;
+      console.log(`Aviso: queda para la próxima una clave vieja (${(e as Error).message})`);
+    }
+  }
+  await quitarDeBorrar(borradas);
+  resumen.viejasBorradas = borradas.length;
+  return quedan;
+}
+
 async function main() {
+  // Si ffmpeg no endereza bien los videos rotados, no se procesa nada.
+  await chequeoRotacion();
+
+  const pendientesDeBorrar = SECO ? 0 : await borrarVencidas();
+
   const filas = await leerHoja();
   console.log(`Hoja leída: ${filas.length} filas.`);
 
@@ -155,20 +240,34 @@ async function main() {
       }
     }
     console.log(`\nVálidas o inválidas: ${porVideo.size} · Salteadas: ${resumen.salteadas}`);
+    if (REPROCESAR) {
+      console.log(
+        porVideo.has(REPROCESAR)
+          ? `Se reprocesaría ${REPROCESAR} aunque esté ok.`
+          : `reprocesar: ${REPROCESAR} no está en la hoja (o no tiene consentimiento).`
+      );
+      if (!porVideo.has(REPROCESAR)) process.exitCode = 1;
+    }
     return;
   }
 
   const ingestas = await leerIngestas();
-  let usados = [...ingestas.values()].reduce((suma, i) => suma + i.bytes, 0);
+  // Lo vigente de cada fila más las claves viejas que todavía no se borraron.
+  let usados = [...ingestas.values()].reduce((suma, i) => suma + i.bytes, pendientesDeBorrar);
   let fatal: string | null = null;
 
-  for (const [id, lectura] of porVideo) {
+  if (REPROCESAR && !porVideo.has(REPROCESAR)) {
+    fatal = `reprocesar: ${REPROCESAR} no está en la hoja (o no tiene consentimiento)`;
+  }
+
+  for (const [id, lectura] of fatal ? [] : porVideo) {
     const previa: Ingesta | undefined = ingestas.get(id);
-    if (previa?.estado === "ok") {
+    const forzar = id === REPROCESAR;
+    if (previa?.estado === "ok" && !forzar) {
       resumen.yaHechas++;
       continue;
     }
-    if (previa && previa.intentos >= MAX_INTENTOS) {
+    if (previa && previa.intentos >= MAX_INTENTOS && !forzar) {
       resumen.agotadas++;
       continue;
     }
@@ -187,16 +286,17 @@ async function main() {
       continue;
     }
 
-    // Un reintento sobrescribe las mismas claves: lo de esta fila no se cuenta dos veces.
+    // Los bytes previos de la fila pasan a r2_borrar (`anotados`) o se descartan si
+    // la subida falló y se limpió lo nuevo.
     const usadosPorOtras = usados - bytesPrevios;
     const subidos = { bytes: 0 };
     try {
-      const slug = await procesar(lectura.entrada, usadosPorOtras, subidos);
+      const { slug, anotados } = await procesar(lectura.entrada, usados, subidos);
       await registrar(id, { estado: "ok", bytes: subidos.bytes }, intentos);
-      usados = usadosPorOtras + subidos.bytes;
+      usados = usadosPorOtras + subidos.bytes + anotados;
       resumen.ok++;
       resumen.subidos += subidos.bytes;
-      log(id, "ok", `/p/${slug} · ${mb(subidos.bytes)}`);
+      log(id, forzar ? "reprocesada" : "ok", `/p/${slug} · ${mb(subidos.bytes)}`);
     } catch (e) {
       if (e instanceof TopeSuperado) {
         fatal = e.message;

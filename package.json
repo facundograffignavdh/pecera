@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "ingesta": "node scripts/ingesta/index.ts",
+    "ingesta:chequeo": "node scripts/ingesta/chequeo.ts",
     "ingesta:tipos": "tsc -p scripts/ingesta"
   },
   "dependencies": {

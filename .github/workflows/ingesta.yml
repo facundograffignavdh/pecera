@@ -12,6 +12,10 @@ on:
         description: "Modo seco: leer la hoja y mostrar qué haría, sin subir ni escribir nada"
         type: boolean
         default: false
+      reprocesar:
+        description: "origen_id (ID de Drive del video) a procesar de nuevo aunque esté ok"
+        type: string
+        required: false
 
 # Nunca dos a la vez: la siguiente espera a que termine la anterior.
 concurrency:
@@ -22,14 +26,18 @@ permissions:
   contents: read
   id-token: write # para Workload Identity Federation
 
+env:
+  FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-08-31-13-27/ffmpeg-n9.0.1-11-ge47273f4d9-linux64-gpl-9.0.tar.xz
+  FFMPEG_SHA256: 182c1b509720e939bb47bfb47dc29cc0c298640401128e3dce8627d10707eb5a
+
 jobs:
   ingesta:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -39,12 +47,33 @@ jobs:
       - name: Chequear tipos del script
         run: npm run ingesta:tipos
 
-      # ubuntu-latest (24.04) no trae ffmpeg.
-      - name: Instalar ffmpeg si falta
-        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg)
+      # ffmpeg estático con versión fija (la misma generación 9.0 que se usa en
+      # local), no el de apt: el 6.x de Ubuntu trataba distinto la rotación. Se
+      # verifica contra el sha256 fijado acá, no contra el que publica la release.
+      # BtbN conserva por años las releases de fin de mes.
+      - name: Caché de ffmpeg
+        id: cache-ffmpeg
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/ffmpeg
+          key: ffmpeg-${{ env.FFMPEG_SHA256 }}
+
+      - name: Instalar ffmpeg estático
+        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/ffmpeg.tar.xz" "$FFMPEG_URL"
+          echo "$FFMPEG_SHA256  $RUNNER_TEMP/ffmpeg.tar.xz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/ffmpeg"
+          tar -xJf "$RUNNER_TEMP/ffmpeg.tar.xz" -C "$RUNNER_TEMP/ffmpeg" --strip-components=1
+          rm "$RUNNER_TEMP/ffmpeg.tar.xz"
+
+      - name: Usar ffmpeg estático
+        run: |
+          echo "$RUNNER_TEMP/ffmpeg/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/ffmpeg/bin/ffmpeg" -hide_banner -version | head -1
 
       - id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
@@ -52,10 +81,13 @@ jobs:
           access_token_scopes: https://www.googleapis.com/auth/drive.readonly,https://www.googleapis.com/auth/spreadsheets.readonly
           create_credentials_file: false
 
+      # El chequeo de rotación corre primero dentro de la ingesta y, si falla,
+      # corta antes de leer la hoja.
       - name: Ingestar
         run: npm run ingesta
         env:
           INGESTA_SECO: ${{ inputs.seco && '1' || '' }}
+          INGESTA_REPROCESAR: ${{ inputs.reprocesar }}
           GOOGLE_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

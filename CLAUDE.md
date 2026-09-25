@@ -23,7 +23,11 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   con modo seco) corre `scripts/ingesta/` (Node 24 corriendo TS directo, sin
   build). Lee el Google Form, comprime con ffmpeg, sube a R2 y crea perfil + pitch
   publicados. La tabla `ingestas` lleva el estado por video (`origen_id` = ID de
-  Drive).
+  Drive). El input `reprocesar` (un origen_id) lo vuelve a procesar aunque esté ok.
+- ffmpeg en el workflow: build estático de BtbN con versión y sha256 fijos (9.0,
+  como el local), nunca el de apt. La rotación se aplica a mano (`-noautorotate` +
+  transpose/flip en `video.ts`) y cada corrida arranca con un chequeo sintético
+  (`chequeo.ts`, rotaciones 90/180/270) que corta el job si algo sale torcido.
 - Migraciones nuevas en `supabase/migrations/` (las corre el usuario).
 - La base guarda claves de R2 (`<id>.mp4`); `lib/media.ts` (`urlMedia`) arma la URL
   con `NEXT_PUBLIC_MEDIA_URL` y `lib/datos.ts` ya la aplica.
@@ -39,6 +43,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `npm run dev` → servidor local en localhost:3000
 - `npm run build` → verificar antes de cada commit importante
 - `npm run lint` → ESLint; el plugin de React 19 es estricto
+- `npm run ingesta:chequeo` → chequeo de rotación de la ingesta con el ffmpeg local
 - `npm run ingesta:tipos` → chequeo de tipos del script de ingesta (tiene su propio
   tsconfig; el de la app excluye `scripts/`)
 
@@ -54,6 +59,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   "Coach / mentor", etc.) salen de `lib/rol.ts`.
 - `pitches`: perfil_id, video_url, poster_url, orden, publicado, origen_id
 - `ingestas`: origen_id, estado (ok | error), error, intentos, bytes (solo service key)
+- `r2_borrar`: clave, bytes, borrar_despues — claves viejas de R2 a borrar (solo
+  service key)
 - `*_url` guardan la clave de R2 o, en el seed, una ruta `/...`
 
 ## Marca (resumen del manual)
@@ -81,11 +88,18 @@ panel de admin, doble aprobación, verificación de inversores.
 ## Reglas de R2
 - Solo storage class Standard. PutObject simple, sin multipart.
 - Si el video comprimido pesa > 40 MB: no subir, registrar error.
-- Claves: `<driveId>.mp4`, `<driveId>.jpg` (poster), `<fotoId>.jpg` (avatar). Un
-  reintento sobrescribe, nunca duplica.
+- Claves con hash del contenido: `<driveId>-<hash8>.mp4`, `<driveId>-<hash8>.jpg`
+  (poster), `<fotoId>-<hash8>.jpg` (avatar); hash8 = primeros 8 hex del sha256 del
+  archivo final. Cada versión nueva tiene clave nueva (con `immutable`, sobrescribir
+  no invalida cachés). Las filas viejas pueden tener `<id>.mp4` sin hash.
+- La clave anterior no se borra enseguida: después de actualizar Supabase se anota
+  en `r2_borrar` con `borrar_despues` = ahora + 1 hora (el ISR puede seguir
+  sirviéndola) y cada corrida borra las vencidas al arrancar. Hasta entonces sus
+  bytes cuentan para el tope.
+- Si la subida o Supabase fallan, las claves nuevas recién subidas se borran ya.
 - Cache-Control: `public, max-age=31536000, immutable`.
 - Nunca listar el bucket: qué falta procesar se decide con Supabase.
-- Si la suma de bytes subidos supera 8 GB: dejar de subir y fallar el job.
+- Si la suma de bytes en R2 (filas vigentes + `r2_borrar`) supera 8 GB: dejar de subir y fallar el job.
 - El repo es público: los logs de la ingesta solo muestran origen_id, slug, estado
   y números. Nunca nombres, emails, teléfonos ni links; los errores de Supabase van
   con código y mensaje, nunca con la fila.

@@ -19,7 +19,7 @@ function r2(): AwsClient {
   return cliente;
 }
 
-/** Sube un archivo con la clave dada. Si ya existe, lo sobrescribe. */
+/** Sube un archivo con la clave dada. Las claves llevan hash del contenido. */
 export async function subir(clave: string, ruta: string, tipo: string): Promise<void> {
   const cuerpo = await readFile(ruta);
   const url = `${env.r2Endpoint}/${env.r2Bucket}/${encodeURIComponent(clave)}`;
@@ -33,4 +33,20 @@ export async function subir(clave: string, ruta: string, tipo: string): Promise<
     },
   });
   if (!res.ok) throw new Error(`R2 respondió ${res.status} al subir ${clave}`);
+}
+
+/** Borra un objeto (DeleteObject simple). Que ya no exista no es error. */
+export async function borrar(clave: string): Promise<void> {
+  const url = `${env.r2Endpoint}/${env.r2Bucket}/${encodeURIComponent(clave)}`;
+  const res = await r2().fetch(url, { method: "DELETE" });
+  if (!res.ok && res.status !== 404) throw new Error(`R2 respondió ${res.status} al borrar ${clave}`);
+}
+
+/** Peso de un objeto con HEAD (0 si no existe). No lista el bucket. */
+export async function pesoEnR2(clave: string): Promise<number> {
+  const url = `${env.r2Endpoint}/${env.r2Bucket}/${encodeURIComponent(clave)}`;
+  const res = await r2().fetch(url, { method: "HEAD" });
+  if (res.status === 404) return 0;
+  if (!res.ok) throw new Error(`R2 respondió ${res.status} al consultar ${clave}`);
+  return Number(res.headers.get("content-length") ?? 0);
 }
