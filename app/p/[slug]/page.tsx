@@ -55,7 +55,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
       {/* El padding de arriba deja "Volver" debajo de la píldora fija. */}
-      <div className="mx-auto w-full max-w-md px-5 pb-6 pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
         <Suspense fallback={<EnlaceVolver href="/" />}>
           <VolverAlFeed />
         </Suspense>

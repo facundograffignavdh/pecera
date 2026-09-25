@@ -42,12 +42,17 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   prueba el filtro y el modelo; si falla, publica igual sin subtítulos y el job
   queda en rojo. En el filtro las rutas van relativas y con "/" (los ":" de `C:\`
   rompen la sintaxis).
-- App: `components/Subtitulos.tsx` dibuja los bloques arriba del nombre del reel;
-  botón CC al lado del mute, recordado con `lib/subtitulos.ts` (localStorage).
-- Pique ("me picó", el like): caña en `components/IconoCana.tsx` al costado del
-  reel, doble toque en el video (un toque pausa tras 250 ms) y pop-up
-  `components/PopupPique.tsx` (`<dialog>` nativo, `.vidrio.vidrio-denso`) solo al
-  darlo. `lib/piques.ts`: uuid anónimo en localStorage, piques propios recordados,
+- App: `components/Subtitulos.tsx` dibuja los bloques arriba del nombre del reel,
+  a la izquierda de la columna; CC recordado con `lib/subtitulos.ts` (localStorage).
+- Columna de acciones del reel (estilo TikTok, termina arriba del nombre; el
+  bloque de datos reserva `pr-14`): corazón + contador, CC y sonido. Íconos en
+  `components/Iconos.tsx` (mismo trazo, `.icono-sombra`). `viewportFit: "cover"`
+  en el layout para que funcionen los `env(safe-area-inset-*)`.
+- Pique ("me picó", el like): corazón de la columna, doble toque en el video (un
+  toque pausa tras 250 ms; sale un corazón donde tocó) y pop-up
+  `components/PopupPique.tsx` (`<dialog>` nativo, `.vidrio.vidrio-popup` al 0,50:
+  la menor opacidad con AA sobre video negro; todo el texto en Tinta sólida) solo
+  al darlo, con la escena animada `components/EscenaPique.tsx`. `lib/piques.ts`: uuid anónimo en localStorage, piques propios recordados,
   optimista con RPC `dar_pique`/`quitar_pique`; los conteos salen de
   `conteo_piques` (ISR + refresco al montar). Si el conteo falla, el feed sale igual.
 - Migraciones nuevas en `supabase/migrations/` (las corre el usuario).

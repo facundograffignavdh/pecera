@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import EscenaPique from "@/components/EscenaPique";
+import { IconoCerrar } from "@/components/Iconos";
 import { canalesDe } from "@/lib/contacto";
 import type { ItemFeed } from "@/types/pecera";
 
@@ -52,14 +54,8 @@ export default function PopupPique({ item, onCerrado }: Props) {
   const canales = canalesDe(perfil, SALUDO);
   const canal =
     canales.find((c) => c.clave === "whatsapp") ?? canales.find((c) => c.clave === "email");
-  const invitacion =
-    canal?.clave === "whatsapp"
-      ? "Escribile por WhatsApp y arrancá la charla."
-      : canal?.clave === "email"
-        ? "Escribile por email y arrancá la charla."
-        : "Pasá por su perfil y arrancá la charla.";
   const clasesBoton =
-    "flex w-full items-center justify-center rounded-full bg-arcilla px-5 py-3 text-[19px] font-bold text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera";
+    "flex w-full items-center justify-center rounded-full bg-arcilla px-4 py-3 text-lg font-bold text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera";
 
   return (
     <dialog
@@ -80,25 +76,26 @@ export default function PopupPique({ item, onCerrado }: Props) {
       }}
       className="popup-pique m-0 h-dvh max-h-none w-full max-w-none items-center justify-center bg-transparent p-4 open:flex"
     >
-      <div className="popup-tarjeta vidrio vidrio-denso w-full max-w-sm rounded-2xl px-6 pb-5 pt-6 text-center text-tinta shadow-[0_1px_2px_rgb(28_27_22/0.12),0_16px_40px_rgb(28_27_22/0.22)]">
-        <div aria-hidden className="pez-nado mx-auto h-16 w-20">
-          {/* eslint-disable-next-line @next/next/no-img-element -- SVG chico y local, sin optimizar */}
-          <img src="/brand/pez.svg" alt="" className="pez-ondula h-full w-full object-contain" />
+      {/* Todo el texto en Tinta sólida: con el vidrio al 0,50 el peor caso (video
+          negro) da 4,6:1. Cualquier transparencia en el texto baja de AA. */}
+      <div className="popup-tarjeta vidrio vidrio-popup relative w-full max-w-[280px] rounded-2xl px-5 pb-4 pt-5 text-center text-tinta shadow-[0_1px_2px_rgb(28_27_22/0.12),0_16px_40px_rgb(28_27_22/0.22)]">
+        <EscenaPique className="mx-auto h-[72px] w-36" />
+
+        <div className="texto-pique">
+          <h2
+            id="popup-pique-titulo"
+            className="mt-2 font-display text-[26px] font-semibold leading-tight"
+          >
+            ¡Te picó!
+          </h2>
+          <p className="font-display text-lg leading-tight">¡Que no se te escape!</p>
+
+          <p className="mt-2.5 break-words text-[15px] leading-snug">
+            A {perfil.nombre} le va a gustar saber que te interesó. Arrancá la charla.
+          </p>
         </div>
 
-        <h2
-          id="popup-pique-titulo"
-          className="mt-3 font-display text-3xl font-semibold leading-tight"
-        >
-          ¡Te picó!
-        </h2>
-        <p className="font-display text-xl leading-tight">¿Nadamos juntos?</p>
-
-        <p className="mt-3 leading-relaxed">
-          A {perfil.nombre} le va a gustar saber que te interesó. {invitacion}
-        </p>
-
-        <div className="mt-5 flex flex-col gap-2">
+        <div className="mt-4">
           {canal ? (
             <a
               href={canal.href}
@@ -114,18 +111,21 @@ export default function PopupPique({ item, onCerrado }: Props) {
               Ver perfil
             </Link>
           )}
-          <button
-            type="button"
-            onClick={cerrar}
-            className="rounded-full px-5 py-3 font-medium text-tinta transition-colors duration-200 ease-pecera hover:bg-tinta/5"
-          >
-            Seguir scrolleando
-          </button>
         </div>
 
-        <p className="mt-3 text-xs leading-relaxed text-tinta/75">
-          Un pique es una muestra de interés, no un compromiso.
-        </p>
+        <p className="mt-3 whitespace-nowrap text-xs">Un pique es interés, no compromiso.</p>
+
+        {/* Último en el DOM para que showModal() enfoque primero la acción principal. */}
+        <button
+          type="button"
+          onClick={cerrar}
+          aria-label="Cerrar"
+          className="group absolute right-1 top-1 flex h-11 w-11 items-center justify-center"
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-tinta/15 bg-marfil/55 transition-colors duration-200 ease-pecera group-hover:bg-marfil/80">
+            <IconoCerrar className="h-[18px] w-[18px]" />
+          </span>
+        </button>
       </div>
     </dialog>
   );

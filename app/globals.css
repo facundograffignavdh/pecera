@@ -41,23 +41,52 @@ body {
   }
 }
 
-/* Pop-up del Pique: más opaco que el vidrio base para que el texto pase AA
-   aunque atrás haya un video negro. El fallback sin blur ya es 0.92. */
+/* Pop-up del Pique: más transparente que el vidrio base y con más blur. 0,50 es
+   la menor opacidad con la que el texto en Tinta sigue en AA (4,64:1) con un
+   video negro detrás; con uno blanco da 10,6:1. El fallback sin blur ya es 0,92. */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .vidrio.vidrio-denso {
-    background: rgba(255, 253, 246, 0.8);
+  .vidrio.vidrio-popup {
+    background: rgba(255, 253, 246, 0.5);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    backdrop-filter: blur(28px) saturate(160%);
   }
 }
 
-/* Pique: "tirón" de la caña al activarse. */
-@keyframes tiron {
-  0% { transform: rotate(0) scale(1); }
-  40% { transform: rotate(-14deg) scale(1.15); }
-  100% { transform: rotate(0) scale(1); }
+/* Íconos y contador sobre el video: sombra suave para leerse en cualquier frame. */
+.icono-sombra {
+  filter: drop-shadow(0 1px 2px rgb(28 27 22 / 0.55));
 }
-.tiron {
-  transform-origin: 20% 85%;
-  animation: tiron 320ms var(--ease-pecera);
+.texto-sombra {
+  text-shadow: 0 1px 2px rgb(28 27 22 / 0.55);
+}
+
+/* Pique: latido del corazón al activarse, con rebote. */
+@keyframes latido {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.28); }
+  60% { transform: scale(0.9); }
+  80% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.latido {
+  animation: latido 450ms var(--ease-pecera);
+}
+
+/* Doble toque: corazón donde tocó el dedo; entra con rebote, sube y se va. */
+@keyframes corazon-toque {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--giro)) scale(0.5); }
+  15% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--giro)) scale(1.15); }
+  30% { transform: translate(-50%, -50%) rotate(var(--giro)) scale(1); }
+  65% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--giro)) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 40px)) rotate(var(--giro)) scale(1.1); }
+}
+@keyframes corazon-quieto {
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.corazon-toque {
+  transform: translate(-50%, -50%) rotate(var(--giro));
+  animation: corazon-toque 900ms var(--ease-pecera) forwards;
 }
 
 /* Pop-up del Pique: entra con fade + 14 px, sale con fade. */
@@ -72,7 +101,7 @@ body {
   from { opacity: 0; }
 }
 .popup-pique::backdrop {
-  background: rgb(28 27 22 / 0.35);
+  background: rgb(28 27 22 / 0.45);
   animation: fundido 550ms var(--ease-pecera);
 }
 .popup-pique[data-saliendo]::backdrop {
@@ -85,30 +114,109 @@ body {
   animation: popup-salida 150ms var(--ease-pecera) forwards;
 }
 
-/* El pez nada de lado a lado y ondula. */
-@keyframes pez-nado {
-  from { transform: translateX(-28px); }
-  to { transform: translateX(28px); }
+/* Escena del pique (~1,5 s): el pez llega nadando, muerde, la punta de la caña
+   se dobla con un tirón y rebota como un resorte, salen burbujas y después entra
+   el texto. El reposo de cada parte es la escena final. */
+@keyframes pez-llega {
+  from { opacity: 0; transform: translate(70px, 5px); }
+  20% { opacity: 1; }
+  to { opacity: 1; transform: none; }
 }
-@keyframes pez-ondula {
-  from { transform: rotate(-4deg) skewY(3deg); }
-  to { transform: rotate(4deg) skewY(-3deg); }
+@keyframes pez-muerde {
+  40% { transform: translateX(-4px) rotate(-4deg); }
 }
-.pez-nado {
-  animation: pez-nado 3.2s ease-in-out infinite alternate;
+@keyframes pez-aleteo {
+  0%, 100% { transform: none; }
+  25% { transform: rotate(-16deg) skewY(4deg); }
+  75% { transform: rotate(16deg) skewY(-4deg); }
 }
-.pez-ondula {
-  animation: pez-ondula 0.9s ease-in-out infinite alternate;
+@keyframes pez-aleteo-suave {
+  0%, 100% { transform: none; }
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+/* Cada tramo de la punta gira la mitad; el colgante contrarrota la suma. */
+@keyframes cana-tiron {
+  0% { transform: none; }
+  20% { transform: rotate(9deg); }
+  42% { transform: rotate(-3deg); }
+  62% { transform: rotate(1.8deg); }
+  80% { transform: rotate(-0.6deg); }
+  100% { transform: none; }
+}
+@keyframes cana-colgante {
+  0% { transform: none; }
+  20% { transform: rotate(-18deg); }
+  42% { transform: rotate(6deg); }
+  62% { transform: rotate(-3.6deg); }
+  80% { transform: rotate(1.2deg); }
+  100% { transform: none; }
+}
+@keyframes burbuja {
+  from { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  20% { opacity: 1; }
+  to { opacity: 0; transform: translate(-3px, -18px) scale(1); }
+}
+@keyframes texto-pique {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+/* Los tramos y el colgante giran sobre puntos del viewBox (90,18 · 112,13 · 132,8). */
+.escena-pique .cana-punta {
+  transform-origin: 90px 18px;
+  animation: cana-tiron 700ms ease-in-out 850ms both;
+}
+.escena-pique .cana-punta-fina {
+  transform-origin: 112px 13px;
+  animation: cana-tiron 700ms ease-in-out 850ms both;
+}
+.escena-pique .cana-colgante {
+  transform-origin: 132px 8px;
+  animation: cana-colgante 700ms ease-in-out 850ms both;
+}
+.escena-pique .pez-llega {
+  animation: pez-llega 800ms var(--ease-pecera) both;
+}
+.escena-pique .pez-muerde {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pez-muerde 260ms ease-in-out 780ms;
+}
+.escena-pique .pez-cola {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+  animation:
+    pez-aleteo 320ms ease-in-out 3,
+    pez-aleteo-suave 1.2s ease-in-out 960ms infinite;
+}
+.escena-pique .burbuja {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: burbuja 900ms ease-out 850ms both;
+}
+.escena-pique .burbuja-2 {
+  animation-delay: 980ms;
+}
+.escena-pique .burbuja-3 {
+  animation-delay: 1100ms;
+}
+.texto-pique {
+  animation: texto-pique 450ms var(--ease-pecera) 1100ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* La regla general los dejaría en el último frame, corridos: mejor quietos. */
-  .pez-nado,
-  .pez-ondula,
-  .tiron,
+  /* La regla general los dejaría en el último frame, corridos: mejor quietos.
+     La escena queda en reposo: pez junto al anzuelo, caña recta. */
+  .latido,
+  .escena-pique *,
+  .texto-pique,
   .popup-tarjeta,
   .popup-pique::backdrop {
     animation: none !important;
+  }
+  /* El corazón del doble toque aparece quieto y se desvanece. */
+  .corazon-toque {
+    animation: corazon-quieto 700ms linear forwards !important;
   }
 
   *,

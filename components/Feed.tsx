@@ -24,6 +24,7 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
   }, []);
 
   const forzarSilencio = useCallback(() => setSilenciado(true), []);
+  const alternarSonido = useCallback(() => setSilenciado((s) => !s), []);
 
   // Al volver desde un perfil la URL trae /#<pitch.id>: saltamos a ese reel.
   // No tocamos `indiceActivo` acá — el observer lo corrige solo tras el scroll.
@@ -59,30 +60,6 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
 
   return (
     <main className="no-scrollbar h-dvh snap-y snap-mandatory overflow-y-auto overscroll-y-contain">
-      <div className="fixed right-4 top-4 z-10 flex gap-2">
-        {haySubtitulos && (
-          <button
-            type="button"
-            onClick={() => setConSubtitulos(!conSubtitulos)}
-            aria-label="Subtítulos"
-            aria-pressed={conSubtitulos}
-            className={`flex h-10 w-10 items-center justify-center rounded-full bg-tinta/60 text-xs font-semibold tracking-wide text-marfil backdrop-blur-sm transition-opacity duration-200 ease-pecera ${
-              conSubtitulos ? "" : "line-through opacity-60"
-            }`}
-          >
-            CC
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setSilenciado((s) => !s)}
-          aria-label={silenciado ? "Activar sonido" : "Silenciar"}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-tinta/60 text-marfil backdrop-blur-sm transition-colors duration-200 ease-pecera"
-        >
-          {silenciado ? "🔇" : "🔊"}
-        </button>
-      </div>
-
       {items.map((item, indice) => (
         <Reel
           key={item.pitch.id}
@@ -91,7 +68,10 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
           activo={indice === indiceActivo}
           cargar={Math.abs(indice - indiceActivo) <= 1}
           silenciado={silenciado}
+          onAlternarSonido={alternarSonido}
           conSubtitulos={conSubtitulos}
+          mostrarCC={haySubtitulos}
+          onAlternarSubtitulos={() => setConSubtitulos(!conSubtitulos)}
           onForzarSilencio={forzarSilencio}
           retenido={popup !== null}
           piques={piques.conteos.get(item.pitch.id) ?? 0}

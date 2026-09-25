@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Familjen_Grotesk } from "next/font/google";
 import "./globals.css";
 
@@ -20,6 +20,12 @@ export const metadata: Metadata = {
   title: "Pecera",
   description:
     "Los pitches de la feria en 90 segundos. Mirá quién está construyendo qué y escribile.",
+};
+
+// "cover" para que env(safe-area-inset-*) tenga valor en iOS: el feed va de borde
+// a borde y los controles se corren solos de la barra de inicio y la muesca.
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
