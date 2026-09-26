@@ -4,8 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 import Encabezado from "@/components/Encabezado";
 import { IconoCorazon, IconoSubtitulos } from "@/components/Iconos";
 import PieLegal from "@/components/PieLegal";
-import HeroEscena from "@/components/landing/HeroEscena";
-import MaquetaReel from "@/components/landing/MaquetaReel";
+import MaquetaReel, { type EjemploPitch } from "@/components/landing/MaquetaReel";
 import Movimiento from "@/components/landing/Movimiento";
 import PasosPorRol from "@/components/landing/PasosPorRol";
 import Rotador from "@/components/landing/Rotador";
@@ -54,6 +53,26 @@ const ESTADISTICAS: { valor: number; prefijo?: string; sufijo?: string; unidad?:
   { valor: 115, prefijo: "+", texto: "actores del ecosistema mapeados: fondos, ángeles y aceleradoras." },
   { valor: 90, unidad: "seg.", texto: "por pitch. Deal flow escaneable, sin decks de 40 slides." },
   { valor: 0, sufijo: "%", texto: "de equity o comisión para Pecera. La negociación es entre ustedes." },
+];
+
+const EJEMPLOS: EjemploPitch[] = [
+  {
+    poster: "/posters/pitch_1.jpg",
+    nombre: "Raíz Verde",
+    rol: "emprendedor",
+    tipo: "startup",
+    subtitulo: "Convertimos la borra de café en sustrato para huertas",
+    piques: 128,
+    piqueado: true,
+  },
+  {
+    poster: "/posters/pitch_3.jpg",
+    nombre: "Nodo Litoral",
+    rol: "aliado",
+    tipo: "incubadora",
+    subtitulo: "Damos espacio y mentoría a proyectos que recién arrancan",
+    piques: 64,
+  },
 ];
 
 const FUNCIONES = [
@@ -411,7 +430,6 @@ export default function SumatePage() {
           poster="/landing/pecera-hero-poster.jpg"
           className="hero-video absolute inset-0 -z-10 h-full w-full object-cover"
         />
-        <HeroEscena className="absolute inset-0 -z-10" escala={0.62} />
         <div aria-hidden className="hero-velo absolute inset-0 -z-10" />
         <div aria-hidden className="burbujas pointer-events-none absolute inset-0 -z-10">
           <span />
@@ -557,29 +575,39 @@ export default function SumatePage() {
         bajada="Así se ve tu pitch en el feed: vertical, como los Reels, con tu perfil a un toque."
         className="bg-[#EFEDE2]"
       >
-        <div className="mt-14 grid items-center gap-16 lg:grid-cols-[auto_1fr] lg:gap-24">
-          <div data-revelar className="relative mx-auto">
-            <div className="flotar">
-              <MaquetaReel />
+        <div className="mt-14 grid items-center gap-16 lg:grid-cols-[auto_1fr] lg:gap-20">
+          <div data-revelar className="mx-auto">
+            {/* En celular entran los dos achicados: zoom escala también el layout. */}
+            <div className="relative flex items-start gap-6 [zoom:0.62] sm:[zoom:1]">
+              {EJEMPLOS.map((pitch, i) => (
+                <div
+                  key={pitch.nombre}
+                  className={`flotar ${i === 1 ? "mt-16" : ""}`}
+                  style={{ animationDelay: `${i * -3}s` }}
+                >
+                  <MaquetaReel pitch={pitch} />
+                </div>
+              ))}
+              <span
+                aria-hidden
+                className="vidrio flotar absolute -left-20 top-28 hidden items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold shadow-[0_8px_24px_rgb(28_27_22/0.12)] xl:inline-flex"
+                style={{ animationDelay: "-2s" }}
+              >
+                <IconoCorazon lleno className="h-5 w-5 text-pecera" />
+                Te dieron un pique
+              </span>
+              <span
+                aria-hidden
+                className="vidrio flotar absolute -right-20 bottom-24 hidden items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold shadow-[0_8px_24px_rgb(28_27_22/0.12)] xl:inline-flex"
+                style={{ animationDelay: "-4s" }}
+              >
+                <IconoSubtitulos activo className="h-5 w-5" />
+                Subtítulos automáticos
+              </span>
             </div>
-            <span
-              aria-hidden
-              className="vidrio flotar absolute -left-24 top-24 hidden items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold shadow-[0_8px_24px_rgb(28_27_22/0.12)] lg:inline-flex"
-              style={{ animationDelay: "-2s" }}
-            >
-              <IconoCorazon lleno className="h-5 w-5 text-pecera" />
-              Te dieron un pique
-            </span>
-            <span
-              aria-hidden
-              className="vidrio flotar absolute -right-28 bottom-40 hidden items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold shadow-[0_8px_24px_rgb(28_27_22/0.12)] lg:inline-flex"
-              style={{ animationDelay: "-4s" }}
-            >
-              <IconoSubtitulos activo className="h-5 w-5" />
-              Subtítulos automáticos
-            </span>
+            <p className="mt-6 text-center text-sm text-tinta/70">Pitches de ejemplo</p>
           </div>
-          <ul className="grid gap-5 sm:grid-cols-2">
+          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
             {FUNCIONES.map((f, i) => (
               <li key={f.titulo} data-revelar style={{ transitionDelay: `${i * 80}ms` }}>
                 <article

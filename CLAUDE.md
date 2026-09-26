@@ -82,9 +82,9 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/p/[slug]` → perfil del participante
 - `/sumate` → landing de captación, basada en la landing anterior (`pecera-vc`): el
   CTA abre el Google Form (`lib/landing.ts`) en pestaña nueva. Hero con video de
-  acuario (`public/landing/`) y cardumen three.js encima solo desde 768 px, que
-  pausa fuera de pantalla y nunca carga sin WebGL o con reducir movimiento. La
-  capa de movimiento (reveals, contadores, tilt, imán, progreso) es
+  acuario (`public/landing/`), que se pausa fuera de pantalla y con reducir
+  movimiento. `MaquetaReel` dibuja un reel en un celular a partir de un
+  `EjemploPitch`. La capa de movimiento (reveals, contadores, tilt, imán, progreso) es
   `components/landing/Movimiento.tsx` sobre atributos `data-*`. "Antes de
   empezar" espeja las validaciones del Form.
 
