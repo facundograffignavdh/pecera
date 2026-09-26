@@ -80,10 +80,13 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 ## Rutas
 - `/` → feed de reels
 - `/p/[slug]` → perfil del participante
-- `/sumate` → landing de captación: el CTA abre el Google Form (`lib/landing.ts`) en
-  pestaña nueva. Escena three.js (`components/landing/`) que carga después del
-  contenido, pausa fuera de pantalla y cae a `EscenaEstatica` sin WebGL o con
-  reducir movimiento. "Antes de empezar" espeja las validaciones del Form.
+- `/sumate` → landing de captación, basada en la landing anterior (`pecera-vc`): el
+  CTA abre el Google Form (`lib/landing.ts`) en pestaña nueva. Hero con video de
+  acuario (`public/landing/`) y cardumen three.js encima solo desde 768 px, que
+  pausa fuera de pantalla y nunca carga sin WebGL o con reducir movimiento. La
+  capa de movimiento (reveals, contadores, tilt, imán, progreso) es
+  `components/landing/Movimiento.tsx` sobre atributos `data-*`. "Antes de
+  empezar" espeja las validaciones del Form.
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,

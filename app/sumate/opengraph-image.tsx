@@ -2,9 +2,10 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "Pecera: tu proyecto en 90 segundos, frente a quien lo tiene que ver.";
+export const alt = "Pecera: construí tu startup en público. Subí tu pitch de 90 segundos.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+export const dynamic = "force-static";
 
 async function dataUrl(archivo: string, tipo: string) {
   const datos = await readFile(join(process.cwd(), "public/brand", archivo));
@@ -42,10 +43,10 @@ export default async function Image() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={logo} alt="" width={262} height={56} />
           <div style={{ display: "flex", fontSize: 68, fontWeight: 700, lineHeight: 1.05, letterSpacing: -1 }}>
-            Tu proyecto en 90 segundos, frente a quien lo tiene que ver.
+            Construí tu startup en público.
           </div>
           <div style={{ display: "flex", fontSize: 30, color: "#D95A22", fontWeight: 700 }}>
-            Subí tu pitch →
+            Subí tu pitch de 90 segundos →
           </div>
         </div>
       </div>

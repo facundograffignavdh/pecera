@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Encabezado from "@/components/Encabezado";
+import { IconoCorazon, IconoSubtitulos } from "@/components/Iconos";
 import PieLegal from "@/components/PieLegal";
 import HeroEscena from "@/components/landing/HeroEscena";
 import MaquetaReel from "@/components/landing/MaquetaReel";
-import Revelar from "@/components/landing/Revelar";
+import Movimiento from "@/components/landing/Movimiento";
+import PasosPorRol from "@/components/landing/PasosPorRol";
+import Rotador from "@/components/landing/Rotador";
+import VideoFondo from "@/components/landing/VideoFondo";
 import { FEED_DESDE_LANDING, FORM_URL } from "@/lib/landing";
-import { ROLES } from "@/lib/rol";
 
 const TITULO = "Subí tu pitch — Pecera";
 const DESCRIPCION =
-  "Tu proyecto en 90 segundos, frente a quien lo tiene que ver. Subí tu pitch en video, aparecé en el feed de Pecera y que te escriban directo.";
+  "Construí tu startup en público: subí tu pitch de 90 segundos y dejá que inversores, mentores y aliados de Latinoamérica te encuentren y te escriban directo.";
 
 export const metadata: Metadata = {
   title: TITULO,
@@ -28,38 +31,46 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: TITULO, description: DESCRIPCION },
 };
 
-const PASOS = [
-  {
-    titulo: "Grabá tu pitch",
-    texto:
-      "Hasta 90 segundos, en vertical. Con el celular alcanza. Contá qué hacés, para quién y qué estás buscando.",
-  },
-  {
-    titulo: "Subilo con el formulario",
-    texto:
-      "Cargás el video, una foto o logo, una descripción de una línea y cómo contactarte. Google te pide iniciar sesión para subir los archivos.",
-  },
-  {
-    titulo: "Aparecés en el feed",
-    texto:
-      "En 10 a 15 minutos tu pitch está publicado, con subtítulos automáticos y un perfil propio con tus canales de contacto.",
-  },
+const ID_SCROLL = "landing";
+
+const INDUSTRIAS = [
+  "Fintech",
+  "AI Agents",
+  "Agtech",
+  "Biotech",
+  "Climatech",
+  "Healthtech",
+  "Edtech",
+  "Foodtech",
+  "Govtech",
+  "Proptech",
+  "Gaming",
+  "IoT",
+  "Blockchain",
+];
+
+const ESTADISTICAS: { valor: number; prefijo?: string; sufijo?: string; unidad?: string; texto: string }[] = [
+  { valor: 150, prefijo: "+", texto: "startups ya nadan en la pecera, de toda Latinoamérica." },
+  { valor: 115, prefijo: "+", texto: "actores del ecosistema mapeados: fondos, ángeles y aceleradoras." },
+  { valor: 90, unidad: "seg.", texto: "por pitch. Deal flow escaneable, sin decks de 40 slides." },
+  { valor: 0, sufijo: "%", texto: "de equity o comisión para Pecera. La negociación es entre ustedes." },
 ];
 
 const FUNCIONES = [
   {
-    titulo: "Feed vertical",
-    texto: "Los pitches pasan uno atrás del otro, como en Reels. Arrancan solos y sin sonido.",
+    titulo: "Feed de pitches",
+    texto:
+      "Pitches de hasta 90 segundos que capturan la esencia de cada proyecto. Scrolleá para descubrir, entrá para profundizar.",
   },
   {
     titulo: "Perfil con contacto directo",
     texto:
-      "Tocando tu pitch se abre tu perfil con WhatsApp, email, LinkedIn, Instagram o web: los que hayas cargado.",
+      "Tocando un pitch se abre el perfil con WhatsApp, email, LinkedIn, Instagram o web. Sin intermediarios.",
   },
   {
     titulo: "Piques",
     texto:
-      "Quien se interesa te da un pique, el “me picó” de Pecera, y lo invitamos a escribirte en el momento.",
+      "El “me picó” de Pecera: quien se interesa te da un pique y lo invitamos a escribirte en el momento.",
   },
   {
     titulo: "Subtítulos automáticos",
@@ -67,24 +78,86 @@ const FUNCIONES = [
   },
 ];
 
-const PERFILES = [
+const OFERTAS = [
   {
-    rol: ROLES.emprendedor,
-    titulo: "Emprendedores",
-    texto: "Startups y emprendimientos que buscan inversión, clientes, socios o visibilidad.",
-    tipos: "Startup · Emprendimiento",
+    titulo: "Innovadores",
+    color: "text-arcilla",
+    borde: "border-t-pecera",
+    foco: "rgb(217 90 34 / 0.09)",
+    tilde: "text-arcilla",
+    texto:
+      "¿Tenés una startup —o una idea— que puede cambiar el juego pero te faltan recursos para construir y escalar?",
+    puntos: [
+      "Subí tu pitch en video y hacete descubrir por todo el ecosistema",
+      "Tu perfil con todos tus canales: WhatsApp, email, LinkedIn y web",
+      "Enterate de quién se interesa: cada pique cuenta",
+    ],
+    cta: "Subir mi pitch",
   },
   {
-    rol: ROLES.inversor,
     titulo: "Inversores",
-    texto: "Inversores ángeles y fondos que quieren descubrir proyectos y hablar directo con quienes los hacen.",
-    tipos: "Inversor ángel · Fondo de inversión",
+    color: "text-inversor",
+    borde: "border-t-inversor",
+    foco: "rgb(12 106 168 / 0.09)",
+    tilde: "text-inversor",
+    texto:
+      "¿Sos inversor ángel o fondo? La Pecera es tu ventana al deal flow de la región, antes de que sea mainstream.",
+    puntos: [
+      "Pitches de 90 segundos, uno atrás del otro",
+      "Escribile directo al fundador, sin intermediarios",
+      "Descubrí y respaldá lo próximo de Latinoamérica, temprano",
+    ],
+    cta: "Sumarme como inversor",
   },
   {
-    rol: ROLES.aliado,
     titulo: "Aliados",
-    texto: "Quienes acompañan al ecosistema y quieren que los proyectos los encuentren.",
-    tipos: "Aceleradora · Incubadora · Coach / mentor",
+    color: "text-aliado",
+    borde: "border-t-aliado",
+    foco: "rgb(31 122 82 / 0.09)",
+    tilde: "text-aliado",
+    texto:
+      "¿Sos aceleradora, incubadora, coach o mentor? Las startups se construyen con gente: mostrá lo que ofrecés.",
+    puntos: [
+      "Presentá tu programa o tu experiencia en 90 segundos",
+      "Que los proyectos te encuentren y te escriban",
+      "Ayudá con tu experiencia donde más suma",
+    ],
+    cta: "Sumarme como aliado",
+  },
+];
+
+const ROLES_PASOS = [
+  {
+    nombre: "Innovadores",
+    pasos: [
+      { titulo: "Grabá tu pitch", texto: "Hasta 90 segundos, en vertical. Con el celular alcanza. Alcanza con una idea." },
+      {
+        titulo: "Completá el formulario",
+        texto: "Video, foto o logo, una descripción de una línea y cómo contactarte. Te lleva unos minutos.",
+      },
+      {
+        titulo: "Aparecés en el feed",
+        texto: "En 10 a 15 minutos tu pitch está publicado, con subtítulos automáticos y tu perfil.",
+      },
+      { titulo: "Recibí piques y mensajes", texto: "Quien se interesa te da un pique y te escribe directo." },
+      { titulo: "Lanzá y escalá", texto: "Con el respaldo de inversores y la ayuda de tus aliados." },
+    ],
+  },
+  {
+    nombre: "Inversores y aliados",
+    pasos: [
+      {
+        titulo: "Subí tu pitch",
+        texto: "Presentate en 90 segundos: quién sos, qué buscás y cómo acompañás a los proyectos.",
+      },
+      { titulo: "Scrolleá la Pecera", texto: "Pitches de 90 segundos de toda la región, uno atrás del otro." },
+      { titulo: "Dá un pique", texto: "Marcá lo que te interesó. Un pique es interés, no compromiso." },
+      { titulo: "Escribí directo", texto: "WhatsApp, email o LinkedIn, desde el perfil de cada proyecto." },
+      {
+        titulo: "Invertí, mentoreá, acelerá",
+        texto: "Cerrá entre ustedes, como siempre. Sin comisiones de la plataforma.",
+      },
+    ],
   },
 ];
 
@@ -103,11 +176,7 @@ const NECESITAS: { titulo: string; detalle: string; opcional?: boolean }[] = [
     detalle: "10 dígitos con código de área, sin 0 ni 15. Ejemplo: 3516123456.",
     opcional: true,
   },
-  {
-    titulo: "Email, LinkedIn, Instagram o web",
-    detalle: "Los que quieras mostrar en tu perfil.",
-    opcional: true,
-  },
+  { titulo: "Email, LinkedIn, Instagram o web", detalle: "Los que quieras mostrar en tu perfil.", opcional: true },
 ];
 
 const CONSEJOS = [
@@ -117,7 +186,50 @@ const CONSEJOS = [
   "Mirá a cámara. El sonido importa más que la imagen.",
 ];
 
+const VALORES = [
+  {
+    titulo: "Accesibilidad",
+    texto:
+      "La innovación no puede depender del apellido, la red de contactos ni la geografía. La Pecera está abierta para cualquiera, de cualquier país de la región.",
+  },
+  {
+    titulo: "Transparencia",
+    texto: "Comunicación clara y procesos a la vista. La confianza se construye con apertura.",
+  },
+  {
+    titulo: "Construir y fondear en público",
+    texto:
+      "Construir en público ya demostró que funciona. Lo que viene es fondear en público: que el capital también se mueva a la vista de todos.",
+  },
+  {
+    titulo: "Comunidad",
+    texto:
+      "Construimos una comunidad, no solo una plataforma: fundadores, inversores y aliados que se encuentran y se escriben.",
+  },
+  {
+    titulo: "Impacto",
+    texto:
+      "Medimos el éxito por las startups que ayudamos a lanzar, los equipos que ayudamos a armar y las inversiones que ayudamos a concretar.",
+  },
+];
+
 const PREGUNTAS = [
+  {
+    pregunta: "¿Qué es Pecera?",
+    respuesta:
+      "La plataforma donde el ecosistema emprendedor de Latinoamérica se encuentra: subís tu pitch en video, aparece en un feed público y quien se interesa te escribe directo. Shark Tank, en tu bolsillo.",
+  },
+  {
+    pregunta: "¿Puedo subir mi pitch si solo tengo una idea?",
+    respuesta:
+      "Sí. Contá la idea, para quién es y qué necesitás. Vale más un pitch claro que un deck perfecto.",
+  },
+  { pregunta: "¿Cuánto cuesta?", respuesta: "Subir tu pitch es gratis." },
+  {
+    pregunta: "¿Cuánto equity tengo que ceder?",
+    respuesta:
+      "Nada. Pecera no toma equity ni cobra comisión por inversión. La negociación y la inversión ocurren directamente entre las partes.",
+  },
   {
     pregunta: "¿Quién puede ver mi pitch?",
     respuesta:
@@ -149,11 +261,21 @@ const PREGUNTAS = [
   },
 ];
 
+const PEZ = "M2 10c4-5.5 9.5-7.3 14.8-4.7L22.5 2l-1.2 8 1.2 8-5.7-3.3C11.5 17.3 6 16.5 2 10Z";
+
+function Pez({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 20" aria-hidden className={`h-4 w-[26px] shrink-0 ${className}`}>
+      <path d={PEZ} fill="currentColor" />
+    </svg>
+  );
+}
+
 function Flecha({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
       <path
-        d="M6 14 14 6m0 0H7.5M14 6v6.5"
+        d="M4 10h11m0 0-4.5-4.5M15 10l-4.5 4.5"
         stroke="currentColor"
         strokeWidth={2}
         strokeLinecap="round"
@@ -163,30 +285,52 @@ function Flecha({ className = "" }: { className?: string }) {
   );
 }
 
+const NUEVA_PESTANA = <span className="sr-only">(se abre en una pestaña nueva)</span>;
+
 /** CTA principal. Pestaña nueva: el Form con archivos pide login de Google y falla en iframes. */
-function BotonForm({ className = "" }: { className?: string }) {
+function BotonForm({ children = "Subí tu pitch", className = "" }: { children?: ReactNode; className?: string }) {
   return (
     <a
       href={FORM_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center justify-center gap-2 rounded-full bg-arcilla px-7 py-3.5 text-[19px] font-bold text-marfil shadow-[0_1px_2px_rgb(28_27_22/0.15),0_8px_20px_rgb(217_90_34/0.28)] transition-[transform,box-shadow] duration-200 ease-pecera hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgb(28_27_22/0.15),0_12px_28px_rgb(217_90_34/0.36)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta ${className}`}
+      data-magnetic
+      className={`brillo group inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-arcilla px-8 text-[19px] font-bold text-marfil shadow-[0_1px_2px_rgb(28_27_22/0.15),0_8px_20px_rgb(217_90_34/0.28)] transition-shadow duration-200 ease-pecera hover:shadow-[0_1px_2px_rgb(28_27_22/0.15),0_12px_28px_rgb(217_90_34/0.4)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta ${className}`}
     >
-      Subí tu pitch
-      <Flecha className="h-5 w-5" />
-      <span className="sr-only">(se abre en una pestaña nueva)</span>
+      {children}
+      <Flecha className="h-5 w-5 transition-transform duration-200 ease-pecera group-hover:translate-x-1" />
+      {NUEVA_PESTANA}
     </a>
   );
 }
 
-function EnlaceFeed({ children }: { children: ReactNode }) {
+/** Título que entra palabra por palabra al revelarse su bloque. */
+function Palabras({ texto }: { texto: string }) {
+  const palabras = texto.split(" ");
   return (
-    <Link
-      href={FEED_DESDE_LANDING}
-      className="inline-flex items-center justify-center rounded-full border border-tinta/25 px-6 py-3.5 font-medium text-tinta transition-colors duration-200 ease-pecera hover:border-tinta/60 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta"
+    <>
+      {palabras.map((p, i) => (
+        <span key={i}>
+          <span className="palabra" style={{ "--i": i } as CSSProperties}>
+            {p}
+          </span>
+          {i < palabras.length - 1 && " "}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function Etiqueta({ children, clara = false }: { children: ReactNode; clara?: boolean }) {
+  return (
+    <p
+      className={`flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.12em] ${
+        clara ? "justify-center text-marfil/75" : "text-tinta/70"
+      }`}
     >
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-pecera" />
       {children}
-    </Link>
+    </p>
   );
 }
 
@@ -194,30 +338,33 @@ function Seccion({
   id,
   etiqueta,
   titulo,
+  bajada,
   children,
   className = "",
 }: {
-  id?: string;
+  id: string;
   etiqueta: string;
-  titulo: ReactNode;
+  titulo: string;
+  bajada?: string;
   children: ReactNode;
   className?: string;
 }) {
-  const idTitulo = `${id ?? etiqueta.toLowerCase().replace(/\s+/g, "-")}-titulo`;
   return (
-    <section id={id} aria-labelledby={idTitulo} className={`scroll-mt-24 px-5 py-20 sm:py-28 ${className}`}>
-      <div className="mx-auto w-full max-w-5xl">
+    <section id={id} aria-labelledby={`${id}-titulo`} className={`scroll-mt-20 px-5 py-20 sm:py-28 ${className}`}>
+      <div className="mx-auto w-full max-w-6xl">
         <div data-revelar>
-          <p className="flex items-center gap-2 text-sm font-medium uppercase tracking-[0.14em] text-tinta/70">
-            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-pecera" />
-            {etiqueta}
-          </p>
+          <Etiqueta>{etiqueta}</Etiqueta>
           <h2
-            id={idTitulo}
-            className="mt-3 max-w-2xl font-display text-[2rem] font-semibold leading-[1.1] text-tinta sm:text-5xl"
+            id={`${id}-titulo`}
+            className="mt-3 max-w-3xl font-display text-[2rem] font-semibold leading-[1.08] sm:text-5xl"
           >
-            {titulo}
+            <Palabras texto={titulo} />
           </h2>
+          {bajada && (
+            <p className="mt-5 max-w-2xl border-l-[3px] border-pecera pl-4 text-lg leading-relaxed text-tinta/80">
+              {bajada}
+            </p>
+          )}
         </div>
         {children}
       </div>
@@ -225,145 +372,299 @@ function Seccion({
   );
 }
 
+function Tilde({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden className={`mt-1 h-[18px] w-[18px] shrink-0 ${className}`}>
+      <path
+        d="m4.5 10.5 3.5 3.5 7.5-8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function SumatePage() {
   return (
-    <main className="h-dvh overflow-y-auto overscroll-y-contain scroll-smooth bg-marfil text-tinta">
+    <main
+      id={ID_SCROLL}
+      className="h-dvh overflow-y-auto overflow-x-clip overscroll-y-contain scroll-smooth bg-marfil text-tinta"
+    >
+      <div
+        id="progreso"
+        aria-hidden
+        className="fixed inset-x-0 top-0 z-30 h-[3px] origin-left scale-x-0 bg-arcilla"
+      />
       <Encabezado variante="perfil" />
-      <Revelar />
+      <Movimiento scroller={ID_SCROLL} />
 
-      {/* Hero: todo el contenido es HTML y aparece al instante; la escena es decoración. */}
+      {/* ===== HERO: acuario de fondo, cardumen 3D, velo y burbujas ===== */}
       <section
         aria-labelledby="hero-titulo"
-        className="relative px-5 pb-16 pt-[calc(max(0.75rem,env(safe-area-inset-top))+5.5rem)] sm:pb-24 lg:pt-36"
+        className="relative isolate flex min-h-[clamp(600px,94dvh,920px)] flex-col overflow-hidden"
       >
-        <div className="mx-auto grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-          <div className="entrada">
-            <p className="flex items-center gap-2 text-sm font-medium uppercase tracking-[0.14em] text-tinta/70">
-              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-pecera" />
-              Pitches en video para el ecosistema
+        <VideoFondo
+          src="/landing/pecera-hero.mp4"
+          poster="/landing/pecera-hero-poster.jpg"
+          className="hero-video absolute inset-0 -z-10 h-full w-full object-cover"
+        />
+        <HeroEscena className="absolute inset-0 -z-10" escala={0.62} />
+        <div aria-hidden className="hero-velo absolute inset-0 -z-10" />
+        <div aria-hidden className="burbujas pointer-events-none absolute inset-0 -z-10">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+
+        <div className="flex flex-1 items-center px-5 pb-24 pt-[calc(max(0.75rem,env(safe-area-inset-top))+5.5rem)]">
+          <div data-parallax className="hero-texto mx-auto w-full max-w-3xl text-center">
+            <p className="entrada mx-auto inline-flex items-center gap-2 rounded-full border border-tinta/15 bg-marfil/70 px-4 py-1.5 text-sm font-medium text-tinta/80">
+              <span aria-hidden className="h-2 w-2 animate-pulse rounded-full bg-aliado" />
+              Beta abierta · Latinoamérica · Gratis
             </p>
             <h1
               id="hero-titulo"
-              className="mt-4 font-display text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.01em] sm:text-6xl lg:text-[4.1rem]"
+              className="entrada mt-6 font-display text-[2.9rem] font-semibold leading-[1.02] tracking-[-0.015em] sm:text-7xl lg:text-[5.25rem]"
+              style={{ animationDelay: "90ms" }}
             >
-              Tu proyecto en 90&nbsp;segundos, frente a quien lo tiene que ver.
+              <span className="sr-only">
+                Construí tu startup en público: subí tu pitch de 90 segundos y que el ecosistema te encuentre.
+              </span>
+              <Rotador />
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-tinta/80">
-              Pecera es un feed de pitches en video, como Reels, para emprendedores, inversores y
-              aliados. Subís tu pitch, aparece en el feed y quien se interesa te escribe directo.
+            <p className="marea mt-4 font-display text-2xl italic sm:text-3xl">
+              Construí en público y en comunidad: las bocas cerradas no se alimentan.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <p
+              className="entrada mx-auto mt-6 max-w-xl text-lg leading-relaxed text-tinta/85"
+              style={{ animationDelay: "260ms" }}
+            >
+              La plataforma donde las startups de <strong className="font-semibold text-tinta">Latinoamérica</strong>{" "}
+              se muestran en pitches de 90 segundos. Inversores, mentores y aliados: todo el que quiera ayudar,
+              tiene lugar.
+            </p>
+            <div
+              className="entrada mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+              style={{ animationDelay: "340ms" }}
+            >
               <BotonForm />
-              <EnlaceFeed>Mirá el feed</EnlaceFeed>
+              <Link
+                href={FEED_DESDE_LANDING}
+                className="inline-flex min-h-14 items-center justify-center rounded-full border border-tinta/30 bg-marfil/60 px-7 font-semibold text-tinta transition-colors duration-200 ease-pecera hover:border-tinta hover:bg-marfil focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta"
+              >
+                Mirá el feed
+              </Link>
             </div>
-            <p className="mt-4 text-sm text-tinta/70">
-              Se abre un formulario de Google. Te lleva unos minutos.
+            <p className="entrada mt-5 text-sm font-medium text-tinta/75" style={{ animationDelay: "430ms" }}>
+              Gratis · Pitch de 90 segundos · En el feed en 10–15 minutos
             </p>
           </div>
-
-          <HeroEscena className="h-72 w-full sm:h-96 lg:h-[30rem]" />
         </div>
+
+        <svg
+          aria-hidden
+          viewBox="0 0 1440 70"
+          preserveAspectRatio="none"
+          className="absolute inset-x-0 bottom-0 -z-10 block h-[70px] w-full"
+        >
+          <path d="M0 40 C 240 70 480 8 720 32 C 960 56 1200 18 1440 42 L 1440 70 L 0 70 Z" fill="#F5F4EC" />
+        </svg>
       </section>
 
-      {/* Números, no promesas. */}
-      <section aria-label="Pecera en números" className="border-y border-tinta/10 px-5 py-10">
-        <dl className="mx-auto grid w-full max-w-5xl grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
+      {/* ===== LA PECERA ===== */}
+      <Seccion id="la-pecera" etiqueta="La Pecera" titulo="Shark Tank, en tu bolsillo.">
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
           {[
-            { valor: "90 s", texto: "máximo por pitch" },
-            { valor: "3 pasos", texto: "para publicarlo" },
-            { valor: "10–15 min", texto: "hasta que aparece en el feed" },
-            { valor: "Directo", texto: "por WhatsApp, email o LinkedIn, sin intermediarios" },
-          ].map((n, i) => (
-            <div key={n.valor} data-revelar style={{ transitionDelay: `${i * 70}ms` }}>
-              <dt className="sr-only">{n.texto}</dt>
-              <dd>
-                <span className="block font-display text-3xl font-semibold sm:text-4xl">{n.valor}</span>
-                <span className="mt-1 block text-sm leading-snug text-tinta/70">{n.texto}</span>
-              </dd>
+            {
+              titulo: "Fundadores",
+              color: "text-arcilla",
+              borde: "border-t-pecera",
+              foco: "rgb(217 90 34 / 0.09)",
+              texto:
+                "Subí tu pitch. Hacete descubrir. Sin cámaras de TV, sin gatekeepers: solo tu proyecto y quienes quieren respaldarlo. Desde una idea sin validar hasta una startup que ya escala.",
+            },
+            {
+              titulo: "Inversores y aliados",
+              color: "text-inversor",
+              borde: "border-t-inversor",
+              foco: "rgb(12 106 168 / 0.09)",
+              texto:
+                "Descubrí lo próximo de Latinoamérica antes de que sea mainstream. Ángeles, fondos, mentores y aceleradoras: scrolleá pitches de 90 segundos y escribí directo.",
+            },
+          ].map((t, i) => (
+            <div key={t.titulo} data-revelar style={{ transitionDelay: `${i * 80}ms` }}>
+              <article
+                data-tilt
+                style={{ "--foco": t.foco } as CSSProperties}
+                className={`h-full rounded-3xl border border-t-[3px] border-tinta/10 bg-[#FBFAF4] p-8 shadow-[0_1px_2px_rgb(28_27_22/0.06),0_10px_30px_rgb(28_27_22/0.06)] ${t.borde}`}
+              >
+                <h3 className={`font-display text-3xl font-semibold ${t.color}`}>{t.titulo}</h3>
+                <p className="mt-3 text-lg leading-relaxed text-tinta/80">{t.texto}</p>
+              </article>
             </div>
           ))}
-        </dl>
-      </section>
+        </div>
 
-      <Seccion id="como-funciona" etiqueta="Cómo funciona" titulo="Del celular al feed en tres pasos.">
-        <ol className="mt-12 grid gap-5 md:grid-cols-3">
-          {PASOS.map((paso, i) => (
-            <li
-              key={paso.titulo}
-              data-revelar
-              style={{ transitionDelay: `${i * 90}ms` }}
-              className="rounded-3xl border border-tinta/10 bg-[#FBFAF4] p-7"
-            >
-              <span aria-hidden className="font-display text-5xl font-semibold text-arcilla">
-                {i + 1}
-              </span>
-              <h3 className="mt-4 font-display text-2xl font-semibold">{paso.titulo}</h3>
-              <p className="mt-2 leading-relaxed text-tinta/80">{paso.texto}</p>
-            </li>
-          ))}
-        </ol>
+        <ul aria-label="Pecera en números" className="mt-16 grid gap-8 border-t border-tinta/15 pt-10 sm:grid-cols-2 lg:grid-cols-4">
+          {ESTADISTICAS.map((e, i) => {
+            const final = `${e.prefijo ?? ""}${e.valor}${e.sufijo ?? ""}`;
+            return (
+              <li key={e.texto} data-revelar style={{ transitionDelay: `${i * 70}ms` }} className="max-w-72">
+                <p className="font-display text-5xl font-bold tabular-nums leading-none">
+                  <span data-contar={e.valor} data-prefijo={e.prefijo} data-sufijo={e.sufijo}>
+                    {final}
+                  </span>
+                  {e.unidad && <span className="text-3xl">&nbsp;{e.unidad}</span>}
+                </p>
+                <p className="mt-2 leading-snug text-tinta/75">{e.texto}</p>
+              </li>
+            );
+          })}
+        </ul>
       </Seccion>
 
+      {/* ===== CARDUMEN DE INDUSTRIAS ===== */}
+      <div aria-hidden className="cardumen overflow-hidden border-y border-tinta/10 bg-[#FBFAF4] py-5">
+        <div className="cardumen-pista">
+          {[0, 1].map((copia) => (
+            <span
+              key={copia}
+              className="inline-flex items-center gap-9 whitespace-nowrap pr-9 font-display text-2xl italic text-tinta/75"
+            >
+              {INDUSTRIAS.map((ind, i) => (
+                <span key={ind} className="inline-flex items-center gap-9">
+                  <Pez className={i % 2 ? "-scale-x-100 text-inversor/70" : "text-pecera"} />
+                  {ind}
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== ASÍ SE VE ===== */}
       <Seccion
-        etiqueta="Así se ve"
-        titulo="Tu pitch, donde la gente ya está mirando."
+        id="funciones"
+        etiqueta="Las funciones"
+        titulo="Lo que vive adentro de la Pecera."
+        bajada="Así se ve tu pitch en el feed: vertical, como los Reels, con tu perfil a un toque."
         className="bg-[#EFEDE2]"
       >
-        <div className="mt-12 grid items-center gap-12 lg:grid-cols-[auto_1fr] lg:gap-20">
-          <div data-revelar>
-            <MaquetaReel />
+        <div className="mt-14 grid items-center gap-16 lg:grid-cols-[auto_1fr] lg:gap-24">
+          <div data-revelar className="relative mx-auto">
+            <div className="flotar">
+              <MaquetaReel />
+            </div>
+            <span
+              aria-hidden
+              className="vidrio flotar absolute -left-24 top-24 hidden items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold shadow-[0_8px_24px_rgb(28_27_22/0.12)] lg:inline-flex"
+              style={{ animationDelay: "-2s" }}
+            >
+              <IconoCorazon lleno className="h-5 w-5 text-pecera" />
+              Te dieron un pique
+            </span>
+            <span
+              aria-hidden
+              className="vidrio flotar absolute -right-28 bottom-40 hidden items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold shadow-[0_8px_24px_rgb(28_27_22/0.12)] lg:inline-flex"
+              style={{ animationDelay: "-4s" }}
+            >
+              <IconoSubtitulos activo className="h-5 w-5" />
+              Subtítulos automáticos
+            </span>
           </div>
-          <ul className="grid gap-8 sm:grid-cols-2">
+          <ul className="grid gap-5 sm:grid-cols-2">
             {FUNCIONES.map((f, i) => (
               <li key={f.titulo} data-revelar style={{ transitionDelay: `${i * 80}ms` }}>
-                <h3 className="font-display text-xl font-semibold">{f.titulo}</h3>
-                <p className="mt-2 leading-relaxed text-tinta/80">{f.texto}</p>
+                <article
+                  data-tilt
+                  className="h-full rounded-3xl border border-tinta/10 bg-marfil p-7 shadow-[0_1px_2px_rgb(28_27_22/0.05)]"
+                >
+                  <h3 className="font-display text-2xl font-semibold">{f.titulo}</h3>
+                  <p className="mt-2 leading-relaxed text-tinta/80">{f.texto}</p>
+                </article>
               </li>
             ))}
           </ul>
         </div>
       </Seccion>
 
-      <Seccion etiqueta="Para quién" titulo="Un lugar para los tres lados del ecosistema.">
-        <ul className="mt-12 grid gap-5 md:grid-cols-3">
-          {PERFILES.map((p, i) => (
-            <li
-              key={p.titulo}
-              data-revelar
-              style={{ transitionDelay: `${i * 90}ms` }}
-              className="flex flex-col rounded-3xl border border-tinta/10 bg-[#FBFAF4] p-7"
-            >
-              <span aria-hidden className={`h-1.5 w-10 rounded-full ${p.rol.bg}`} />
-              <h3 className="mt-5 font-display text-2xl font-semibold">{p.titulo}</h3>
-              <p className="mt-2 flex-1 leading-relaxed text-tinta/80">{p.texto}</p>
-              <p className="mt-5 text-sm text-tinta/70">{p.tipos}</p>
+      {/* ===== TODO EL ECOSISTEMA ===== */}
+      <Seccion
+        id="ecosistema"
+        etiqueta="Todo el ecosistema"
+        titulo="Una sola plataforma."
+        bajada="Una startup no se construye sola. Acá hay lugar para los que la fundan, los que la fondean y los que la ayudan a crecer."
+      >
+        <ul className="mt-12 grid gap-6 lg:grid-cols-3">
+          {OFERTAS.map((o, i) => (
+            <li key={o.titulo} data-revelar style={{ transitionDelay: `${i * 90}ms` }}>
+              <a
+                href={FORM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-tilt
+                style={{ "--foco": o.foco } as CSSProperties}
+                className={`group flex h-full flex-col rounded-3xl border border-t-[3px] border-tinta/10 bg-[#FBFAF4] p-8 shadow-[0_1px_2px_rgb(28_27_22/0.06),0_10px_30px_rgb(28_27_22/0.06)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta ${o.borde}`}
+              >
+                <h3 className={`font-display text-3xl font-semibold ${o.color}`}>{o.titulo}</h3>
+                <p className="mt-3 leading-relaxed text-tinta/80">{o.texto}</p>
+                <ul className="mb-8 mt-6 grid gap-3.5">
+                  {o.puntos.map((p) => (
+                    <li key={p} className="flex gap-3 leading-snug text-tinta/80">
+                      <Tilde className={o.tilde} />
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+                <span className="mt-auto inline-flex items-center gap-2 font-bold text-tinta">
+                  {o.cta}
+                  <Flecha className="h-[18px] w-[18px] transition-transform duration-200 ease-pecera group-hover:translate-x-1" />
+                </span>
+                {NUEVA_PESTANA}
+              </a>
             </li>
           ))}
         </ul>
       </Seccion>
 
+      {/* ===== FRANJA ===== */}
+      <section aria-labelledby="franja-titulo" data-revelar className="haz bg-tinta px-5 py-20 text-center text-marfil">
+        <div className="relative mx-auto max-w-4xl">
+          <h2 id="franja-titulo" className="font-display text-[2.1rem] font-semibold leading-[1.12] sm:text-5xl">
+            ¿Listo para fondear al próximo{" "}
+            <span className="destello whitespace-nowrap italic">[&nbsp;unicornio&nbsp;]</span>?
+          </h2>
+          <BotonForm className="mt-10">Subí tu pitch</BotonForm>
+        </div>
+      </section>
+
+      {/* ===== CÓMO FUNCIONA ===== */}
       <Seccion
-        id="antes-de-empezar"
-        etiqueta="Antes de empezar"
-        titulo="Tené esto a mano y lo cargás de una."
+        id="como-funciona"
+        etiqueta="Cómo funciona"
+        titulo="Grabá, subí y hacete descubrir."
+        bajada="Del celular al feed, sin vueltas. Elegí tu rol:"
         className="bg-[#EFEDE2]"
       >
+        <PasosPorRol roles={ROLES_PASOS} />
+      </Seccion>
+
+      {/* ===== ANTES DE EMPEZAR ===== */}
+      <Seccion id="antes-de-empezar" etiqueta="Antes de empezar" titulo="Tené esto a mano y lo cargás de una.">
         <div className="mt-12 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
-          <ul className="divide-y divide-tinta/10 rounded-3xl border border-tinta/10 bg-marfil px-6">
+          <ul className="divide-y divide-tinta/10 rounded-3xl border border-tinta/10 bg-[#FBFAF4] px-6">
             {NECESITAS.map((n) => (
               <li key={n.titulo} data-revelar className="flex gap-4 py-5">
-                <svg viewBox="0 0 20 20" aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-aliado">
-                  <path
-                    d="m4.5 10.5 3.5 3.5 7.5-8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <Tilde className="text-aliado" />
                 <div>
-                  <p className="font-medium">
+                  <p className="font-semibold">
                     {n.titulo}
                     {n.opcional && <span className="ml-2 text-sm font-normal text-tinta/70">(opcional)</span>}
                   </p>
@@ -373,28 +674,82 @@ export default function SumatePage() {
             ))}
           </ul>
 
-          <div data-revelar className="self-start rounded-3xl bg-tinta p-7 text-marfil">
-            <h3 className="font-display text-2xl font-semibold">Consejos para el video</h3>
-            <ul className="mt-5 space-y-4">
-              {CONSEJOS.map((c) => (
-                <li key={c} className="flex gap-3 leading-relaxed text-marfil/90">
-                  <span aria-hidden className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-pecera" />
-                  {c}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-6 border-t border-marfil/15 pt-5 text-[15px] leading-relaxed text-marfil/80">
-              Al final del formulario marcás el consentimiento. Sin eso, el pitch no se publica.
-            </p>
+          <div data-revelar className="haz self-start rounded-3xl bg-tinta p-8 text-marfil">
+            <div className="relative">
+              <h3 className="font-display text-2xl font-semibold">Consejos para el video</h3>
+              <ul className="mt-5 space-y-4">
+                {CONSEJOS.map((c) => (
+                  <li key={c} className="flex gap-3 leading-relaxed text-marfil/90">
+                    <Pez className="mt-1 text-pecera" />
+                    {c}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 border-t border-marfil/15 pt-5 text-[15px] leading-relaxed text-marfil/80">
+                Al final del formulario marcás el consentimiento. Sin eso, el pitch no se publica.
+              </p>
+            </div>
           </div>
         </div>
       </Seccion>
 
-      <Seccion etiqueta="Preguntas" titulo="Lo que nos suelen preguntar.">
-        <div className="mt-10 max-w-3xl divide-y divide-tinta/10 border-y border-tinta/10">
+      {/* ===== VALORES ===== */}
+      <section aria-labelledby="valores-titulo" data-carrusel-raiz className="bg-[#EFEDE2] px-5 py-20 sm:py-28">
+        <div className="mx-auto w-full max-w-6xl">
+          <div data-revelar className="flex items-end justify-between gap-6">
+            <div>
+              <Etiqueta>Nuestros valores</Etiqueta>
+              <h2 id="valores-titulo" className="mt-3 font-display text-[2rem] font-semibold leading-[1.08] sm:text-5xl">
+                <Palabras texto="En qué creemos" />
+              </h2>
+            </div>
+            <div className="hidden gap-2 sm:flex">
+              {[
+                { attr: { "data-carrusel-prev": "" }, label: "Valor anterior", texto: "←" },
+                { attr: { "data-carrusel-next": "" }, label: "Valor siguiente", texto: "→" },
+              ].map((b) => (
+                <button
+                  key={b.label}
+                  type="button"
+                  {...b.attr}
+                  aria-label={b.label}
+                  className="grid h-12 w-12 place-items-center rounded-full border border-tinta/25 text-xl transition-colors duration-200 ease-pecera hover:border-tinta hover:bg-tinta hover:text-marfil disabled:pointer-events-none disabled:opacity-35"
+                >
+                  {b.texto}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ul
+            data-carrusel
+            className="no-scrollbar -mx-5 mt-10 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 [scroll-padding-inline:1.25rem]"
+          >
+            {VALORES.map((v, i) => (
+              <li
+                key={v.titulo}
+                data-revelar
+                style={{ transitionDelay: `${i * 70}ms` }}
+                className="w-[min(82vw,340px)] shrink-0 snap-start"
+              >
+                <article className="h-full rounded-3xl border border-tinta/10 bg-marfil p-7">
+                  <span aria-hidden className="font-display text-sm font-semibold text-tinta/60">
+                    0{i + 1}
+                  </span>
+                  <h3 className="mt-3 font-display text-2xl font-semibold">{v.titulo}</h3>
+                  <p className="mt-2 leading-relaxed text-tinta/80">{v.texto}</p>
+                </article>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ===== PREGUNTAS ===== */}
+      <Seccion id="preguntas" etiqueta="Preguntas frecuentes" titulo="Antes de que preguntes.">
+        <div className="preguntas mt-10 max-w-3xl divide-y divide-tinta/10 border-y border-tinta/10">
           {PREGUNTAS.map((p) => (
-            <details key={p.pregunta} data-revelar className="group py-1">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-lg font-medium [&::-webkit-details-marker]:hidden">
+            <details key={p.pregunta} data-revelar className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-lg font-semibold [&::-webkit-details-marker]:hidden">
                 {p.pregunta}
                 <span
                   aria-hidden
@@ -409,26 +764,37 @@ export default function SumatePage() {
         </div>
       </Seccion>
 
-      {/* Cierre */}
+      {/* ===== CIERRE ===== */}
       <section aria-labelledby="cierre-titulo" className="px-5 pb-16">
         <div
           data-revelar
-          className="relative mx-auto w-full max-w-5xl overflow-hidden rounded-[2rem] bg-tinta px-7 py-14 text-center text-marfil sm:px-12 sm:py-20"
+          className="haz relative isolate mx-auto w-full max-w-6xl overflow-hidden rounded-[2rem] bg-tinta px-7 py-16 text-center text-marfil sm:px-12 sm:py-24"
         >
+          <div
+            aria-hidden
+            className="burbujas pointer-events-none absolute inset-0 -z-10"
+            style={{ "--color-burbuja": "rgb(245 244 236 / 0.3)" } as CSSProperties}
+          >
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+          <Etiqueta clara>Las bocas cerradas no se alimentan</Etiqueta>
           <h2
             id="cierre-titulo"
-            className="mx-auto max-w-2xl font-display text-[2rem] font-semibold leading-[1.1] sm:text-5xl"
+            className="mx-auto mt-4 max-w-3xl font-display text-[2.1rem] font-semibold leading-[1.1] sm:text-6xl"
           >
-            Que tu proyecto no se quede en el celular.
+            El próximo unicornio latinoamericano ya está nadando por acá.
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-marfil/80">
-            Grabalo, subilo y en unos minutos está en el feed, listo para que te escriban.
+          <p className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-marfil/80">
+            Que no te lo cuenten. Subí tu pitch y en unos minutos estás en el feed.
           </p>
-          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <BotonForm />
             <Link
               href={FEED_DESDE_LANDING}
-              className="inline-flex items-center justify-center rounded-full border border-marfil/30 px-6 py-3.5 font-medium text-marfil transition-colors duration-200 ease-pecera hover:border-marfil/70 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-marfil"
+              className="inline-flex min-h-14 items-center justify-center rounded-full border border-marfil/30 px-7 font-semibold text-marfil transition-colors duration-200 ease-pecera hover:border-marfil/70 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-marfil"
             >
               Mirá el feed
             </Link>
@@ -436,7 +802,31 @@ export default function SumatePage() {
         </div>
       </section>
 
-      <PieLegal tono="claro" className="px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))]" />
+      <div className="px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+        <PieLegal tono="claro" />
+        <p className="mt-4 text-center text-xs text-tinta/70">
+          © {new Date().getFullYear()} Pecera · Nacida en Córdoba, para toda Latinoamérica
+        </p>
+      </div>
+
+      <button
+        id="arriba"
+        type="button"
+        data-oculto
+        aria-label="Volver arriba"
+        className="vidrio fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-20 grid h-12 w-12 place-items-center rounded-full shadow-[0_6px_20px_rgb(28_27_22/0.18)]"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5">
+          <path
+            d="M12 19V5m0 0-6 6m6-6 6 6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
     </main>
   );
 }

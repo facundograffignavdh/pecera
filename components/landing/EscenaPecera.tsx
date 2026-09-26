@@ -68,7 +68,7 @@ function usePezGeometria() {
   }, [svg]);
 }
 
-function Cardumen({ onLista }: { onLista: () => void }) {
+function Cardumen({ onLista, escala }: { onLista: () => void; escala: number }) {
   const geometria = usePezGeometria();
   const malla = useRef<THREE.InstancedMesh>(null);
   const { viewport } = useThree();
@@ -101,7 +101,7 @@ function Cardumen({ onLista }: { onLista: () => void }) {
     centro.current.x += (state.pointer.x * ancho * 0.08 - centro.current.x) * Math.min(1, dt * 1.5);
     centro.current.y += (state.pointer.y * alto * 0.06 - centro.current.y) * Math.min(1, dt * 1.5);
 
-    const tamano = Math.min(ancho, alto * 1.4) * 0.26;
+    const tamano = Math.min(ancho, alto * 1.4) * 0.26 * escala;
 
     PECES.forEach((p, i) => {
       const a = t * p.velocidad + p.fase;
@@ -188,11 +188,14 @@ function Burbujas() {
 export default function EscenaPecera({
   activa,
   onLista,
+  escala = 1,
 }: {
   /** Fuera de pantalla o con la pestaña oculta no se dibuja nada. */
   activa: boolean;
   /** Primer cuadro con los peces cargados: se puede mostrar. */
   onLista: () => void;
+  /** Tamaño de los peces respecto del cuadro. */
+  escala?: number;
 }) {
   return (
     <Canvas
@@ -200,14 +203,16 @@ export default function EscenaPecera({
       frameloop={activa ? "always" : "never"}
       camera={{ position: [0, 0, 8], fov: 35 }}
       gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
-      style={{ touchAction: "pan-y" }}
+      // La capa no recibe clics (no tapa los botones): el puntero se lee del body.
+      eventSource={document.body}
+      eventPrefix="client"
     >
       <ambientLight intensity={1.6} />
       <directionalLight position={[2, 4, 6]} intensity={2.2} />
       <directionalLight position={[-3, -2, 2]} intensity={0.5} />
       <Burbujas />
       <Suspense fallback={null}>
-        <Cardumen onLista={onLista} />
+        <Cardumen onLista={onLista} escala={escala} />
       </Suspense>
     </Canvas>
   );

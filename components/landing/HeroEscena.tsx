@@ -2,12 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import EscenaEstatica from "@/components/landing/EscenaEstatica";
 
 // three.js entra en un chunk aparte y solo en el cliente.
 const EscenaPecera = dynamic(() => import("@/components/landing/EscenaPecera"), { ssr: false });
 
-/** Si el 3D falla (sin contexto WebGL, no carga el SVG), queda la escena quieta. */
+/** Si el 3D falla (sin contexto WebGL, no carga el SVG), la capa desaparece y queda el video. */
 class SinRomper extends Component<{ children: ReactNode }, { roto: boolean }> {
   state = { roto: false };
   static getDerivedStateFromError() {
@@ -30,11 +29,19 @@ function soportaWebGL(): boolean {
 }
 
 /**
- * Primero se ve la escena quieta (HTML puro, no espera a nada). Cuando el
- * navegador queda libre se carga el 3D y aparece encima con un fundido. Sin
- * WebGL o con "reducir movimiento", el 3D no se carga nunca.
+ * Cardumen 3D encima del video del hero. Se carga cuando el navegador queda
+ * libre, solo desde `desdeAncho` px (en celular alcanza con el video), nunca
+ * sin WebGL ni con "reducir movimiento", y deja de dibujar fuera de pantalla.
  */
-export default function HeroEscena({ className = "" }: { className?: string }) {
+export default function HeroEscena({
+  className = "",
+  desdeAncho = 768,
+  escala = 1,
+}: {
+  className?: string;
+  desdeAncho?: number;
+  escala?: number;
+}) {
   const caja = useRef<HTMLDivElement>(null);
   const [con3d, setCon3d] = useState(false);
   const [lista, setLista] = useState(false);
@@ -47,7 +54,7 @@ export default function HeroEscena({ className = "" }: { className?: string }) {
       if (reducir.matches) setCon3d(false);
     };
     reducir.addEventListener("change", alCambiar);
-    if (reducir.matches || !soportaWebGL()) {
+    if (reducir.matches || window.innerWidth < desdeAncho || !soportaWebGL()) {
       return () => reducir.removeEventListener("change", alCambiar);
     }
 
@@ -62,7 +69,7 @@ export default function HeroEscena({ className = "" }: { className?: string }) {
       if (ocioso) window.cancelIdleCallback(id);
       else window.clearTimeout(id);
     };
-  }, []);
+  }, [desdeAncho]);
 
   useEffect(() => {
     const el = caja.current;
@@ -78,25 +85,19 @@ export default function HeroEscena({ className = "" }: { className?: string }) {
   }, []);
 
   const alEstarLista = useCallback(() => setLista(true), []);
-  const mostrar3d = con3d && lista;
 
   return (
-    <div ref={caja} className={`relative ${className}`} aria-hidden>
-      <EscenaEstatica
-        className={`absolute inset-0 transition-opacity duration-700 ease-pecera ${
-          mostrar3d ? "opacity-0" : "opacity-100"
-        }`}
-      />
+    <div
+      ref={caja}
+      aria-hidden
+      className={`pointer-events-none transition-opacity duration-700 ease-pecera ${
+        con3d && lista ? "opacity-100" : "opacity-0"
+      } ${className}`}
+    >
       {con3d && (
-        <div
-          className={`absolute inset-0 transition-opacity duration-700 ease-pecera ${
-            mostrar3d ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <SinRomper>
-            <EscenaPecera activa={enPantalla && pestanaVisible} onLista={alEstarLista} />
-          </SinRomper>
-        </div>
+        <SinRomper>
+          <EscenaPecera activa={enPantalla && pestanaVisible} onLista={alEstarLista} escala={escala} />
+        </SinRomper>
       )}
     </div>
   );
