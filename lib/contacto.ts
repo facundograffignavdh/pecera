@@ -4,6 +4,11 @@ export type Canal = {
   clave: "whatsapp" | "email" | "linkedin" | "instagram" | "web";
   label: string;
   href: string;
+  /**
+   * Se abre en pestaña nueva. mailto: no: en el celular abre la app de correo y
+   * deja atrás una pestaña vacía.
+   */
+  externo: boolean;
 };
 
 const SALUDO = "Hola! Te vi en Pecera";
@@ -39,13 +44,14 @@ export function canalesDe(perfil: Perfil, saludo = SALUDO): Canal[] {
 
   if (perfil.whatsapp) {
     const href = hrefWhatsapp(perfil.whatsapp, saludo);
-    if (href) canales.push({ clave: "whatsapp", label: "WhatsApp", href });
+    if (href) canales.push({ clave: "whatsapp", label: "WhatsApp", href, externo: true });
   }
   if (perfil.email) {
     canales.push({
       clave: "email",
       label: "Email",
       href: `mailto:${perfil.email}?body=${encodeURIComponent(saludo)}`,
+      externo: false,
     });
   }
   if (perfil.linkedin) {
@@ -53,6 +59,7 @@ export function canalesDe(perfil: Perfil, saludo = SALUDO): Canal[] {
       clave: "linkedin",
       label: "LinkedIn",
       href: conProtocolo(perfil.linkedin),
+      externo: true,
     });
   }
   if (perfil.instagram) {
@@ -60,10 +67,16 @@ export function canalesDe(perfil: Perfil, saludo = SALUDO): Canal[] {
       clave: "instagram",
       label: "Instagram",
       href: hrefInstagram(perfil.instagram),
+      externo: true,
     });
   }
   if (perfil.web) {
-    canales.push({ clave: "web", label: "Sitio web", href: conProtocolo(perfil.web) });
+    canales.push({
+      clave: "web",
+      label: "Sitio web",
+      href: conProtocolo(perfil.web),
+      externo: true,
+    });
   }
 
   return canales;

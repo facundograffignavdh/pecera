@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Avatar from "@/components/Avatar";
+import BotonCopiar from "@/components/BotonCopiar";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
@@ -12,6 +13,9 @@ import { getPerfil, getSlugs } from "@/lib/datos";
 import { ROLES, TIPOS } from "@/lib/rol";
 
 export const revalidate = 60;
+
+const CLASE_CANAL =
+  "inline-flex rounded-full border border-tinta/25 px-4 py-2 text-sm text-tinta transition-colors duration-200 ease-pecera hover:border-arcilla hover:text-arcilla";
 // Un perfil aprobado después del build se genera en la primera visita.
 export const dynamicParams = true;
 
@@ -86,15 +90,18 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
             </h2>
             <ul className="mt-3 flex flex-wrap gap-2">
               {canales.map((canal) => (
-                <li key={canal.clave}>
+                <li key={canal.clave} className="flex gap-2">
                   <a
                     href={canal.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex rounded-full border border-tinta/25 px-4 py-2 text-sm text-tinta transition-colors duration-200 ease-pecera hover:border-arcilla hover:text-arcilla"
+                    {...(canal.externo && { target: "_blank", rel: "noopener noreferrer" })}
+                    className={CLASE_CANAL}
                   >
                     {canal.label}
                   </a>
+                  {/* Para quien no tiene app de correo: el mailto no hace nada. */}
+                  {canal.clave === "email" && perfil.email && (
+                    <BotonCopiar texto={perfil.email} etiqueta="Copiar email" className={CLASE_CANAL} />
+                  )}
                 </li>
               ))}
             </ul>

@@ -99,8 +99,7 @@ export default function PopupPique({ item, onCerrado }: Props) {
           {canal ? (
             <a
               href={canal.href}
-              target="_blank"
-              rel="noopener noreferrer"
+              {...(canal.externo && { target: "_blank", rel: "noopener noreferrer" })}
               onClick={cerrar}
               className={clasesBoton}
             >
