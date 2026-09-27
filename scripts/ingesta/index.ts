@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chequeoRotacion, chequeoWhisper } from "./chequeo.ts";
 import {
+  ASIGNAR,
   BORRAR_DESPUES_MS,
   FACTOR_INICIAL,
   MAX_INTENTOS,
@@ -18,34 +19,53 @@ import {
 import {
   anotarParaBorrar,
   clavesActuales,
-  guardarPerfilYPitch,
+  guardarEnvio,
+  guardarPitch,
   guardarSubtitulos,
+  leerCuentas,
+  leerEmails,
+  leerEnvios,
   leerIngestas,
   leerParaBorrar,
+  moverPitch,
   pendientesDeSubtitulos,
   pitchParaSubtitular,
   quitarDeBorrar,
   registrar,
+  perfilPorId,
+  perfilPorSlug,
   registrarErrorSubtitulos,
+  type Envio,
   type Ingesta,
   type ParaSubtitular,
 } from "./db.ts";
-import { leerFila, type Entrada, type Lectura } from "./formulario.ts";
+import {
+  faltantes,
+  leerFila,
+  resolver,
+  type Entrada,
+  type Lectura,
+  type Perfil,
+  type Regla,
+  type Resolucion,
+} from "./formulario.ts";
 import { bajarDeDrive, leerHoja } from "./google.ts";
 import { bajar, borrar, pesoEnR2, subir } from "./r2.ts";
 import { subtitular } from "./subtitulos.ts";
-import { avatar, comprimir, duracion, hash8, poster } from "./video.ts";
+import { comprimir, duracion, hash8, poster } from "./video.ts";
 
 /**
  * Ingesta: Form → Drive → ffmpeg → R2 + Supabase. Se procesa fila por fila y
- * una fila con error no frena a las demás.
+ * una fila con error no frena a las demás. Una respuesta del Form es un pitch
+ * que va al perfil de una cuenta existente (reglas en `resolver`); si no hay a
+ * cuál, queda en espera y se reintenta en cada corrida. No crea perfiles.
  *
  * Fase 1: publicar los videos nuevos. Fase 2: con lo que quede del presupuesto
  * de la corrida, transcribir los pitches publicados sin subtítulos. La fase 2
  * nunca afecta la publicación: lo que no entra queda para la próxima corrida.
  *
- * El repo es público: el log y el resumen solo muestran origen_id, slug, estado
- * y números. Nunca nombres, emails, teléfonos ni links.
+ * El repo es público: el log y el resumen solo muestran origen_id, slug, estado,
+ * regla y números. Nunca nombres, emails, descripciones ni links.
  */
 
 const inicio = Date.now();
@@ -63,6 +83,10 @@ const resumen = {
   agotadas: 0,
   yaHechas: 0,
   quedanParaDespues: 0,
+  enEspera: 0,
+  rechazados: 0,
+  aMano: 0,
+  porRegla: {} as Partial<Record<Regla, number>>,
   subidos: 0,
   viejasBorradas: 0,
   subtitulados: 0,
@@ -79,15 +103,17 @@ async function peso(ruta: string) {
 }
 
 /**
- * Procesa una entrada válida. `subidos` se va actualizando para que, si algo
- * falla a mitad de camino, se registre lo que ya quedó en R2. `usados` incluye
- * la versión actual de esta fila: sigue en R2 hasta que se borre.
+ * Procesa una entrada válida y la publica en `perfil`. `subidos` se va
+ * actualizando para que, si algo falla a mitad de camino, se registre lo que ya
+ * quedó en R2. `usados` incluye la versión actual de esta fila: sigue en R2
+ * hasta que se borre. Devuelve los bytes de las claves viejas anotadas.
  */
 async function procesar(
   entrada: Entrada,
+  perfil: Perfil,
   usados: number,
   subidos: { bytes: number }
-): Promise<{ slug: string; anotados: number }> {
+): Promise<number> {
   const dir = await mkdtemp(join(tmpdir(), "ingesta-"));
   try {
     const original = join(dir, "original");
@@ -104,27 +130,10 @@ async function procesar(
     }
     await poster(video, imagen);
 
-    // La foto es opcional: si no se puede procesar, el perfil va sin avatar.
-    let archivoAvatar: string | null = null;
-    if (entrada.fotoId) {
-      const foto = join(dir, "foto");
-      const destino = join(dir, "avatar.jpg");
-      try {
-        await bajarDeDrive(entrada.fotoId, foto, "foto");
-        await avatar(foto, destino);
-        archivoAvatar = destino;
-      } catch (e) {
-        log(entrada.origenId, "aviso", `sin avatar: ${(e as Error).message}`);
-      }
-    }
-
     // Clave nueva por contenido: R2 sirve con `immutable`, sobrescribir no alcanza.
     const archivos = [
       { clave: `${entrada.origenId}-${await hash8(video)}.mp4`, ruta: video, tipo: "video/mp4" },
       { clave: `${entrada.origenId}-${await hash8(imagen)}.jpg`, ruta: imagen, tipo: "image/jpeg" },
-      ...(archivoAvatar && entrada.fotoId
-        ? [{ clave: `${entrada.fotoId}-${await hash8(archivoAvatar)}.jpg`, ruta: archivoAvatar, tipo: "image/jpeg" }]
-        : []),
     ];
     const nuevas = archivos.map((a) => a.clave);
     const pesos = await Promise.all(archivos.map((a) => peso(a.ruta)));
@@ -138,7 +147,6 @@ async function procesar(
 
     const actuales = await clavesActuales(entrada.origenId);
     const videoNuevo = !actuales.includes(archivos[0].clave);
-    let slug: string;
     subidos.bytes = 0;
     try {
       // Si alguna clave nueva estaba anotada para borrar, vuelve a estar en uso.
@@ -147,11 +155,7 @@ async function procesar(
         await subir(a.clave, a.ruta, a.tipo);
         subidos.bytes += pesos[i];
       }
-      slug = await guardarPerfilYPitch(
-        entrada,
-        { video: archivos[0].clave, poster: archivos[1].clave, avatar: archivos[2]?.clave ?? null },
-        videoNuevo
-      );
+      await guardarPitch(perfil.id, entrada, { video: archivos[0].clave, poster: archivos[1].clave }, videoNuevo);
     } catch (e) {
       // Nada apunta todavía a las claves nuevas: se borran ya. Las que coinciden
       // con las actuales (mismo contenido) están en uso y no se tocan.
@@ -178,7 +182,7 @@ async function procesar(
     } catch (e) {
       log(entrada.origenId, "aviso", `no se anotaron las claves viejas: ${(e as Error).message}`);
     }
-    return { slug, anotados };
+    return anotados;
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -188,7 +192,15 @@ async function escribirResumen(usados: number, fatal: string | null) {
   const lineas = [
     `OK: ${resumen.ok}`,
     `Errores: ${resumen.errores}`,
-    `Salteadas (sin consentimiento o sin video): ${resumen.salteadas}`,
+    `Salteadas (sin video): ${resumen.salteadas}`,
+    `En espera (sin perfil al que asignar): ${resumen.enEspera}`,
+    `Rechazados (email bloqueado): ${resumen.rechazados}`,
+    `Asignados a mano: ${resumen.aMano}`,
+    `Por regla: ${
+      Object.entries(resumen.porRegla)
+        .map(([regla, n]) => `${regla} ${n}`)
+        .join(" · ") || "—"
+    }`,
     `Ya procesadas antes: ${resumen.yaHechas}`,
     `Agotadas (${MAX_INTENTOS} errores, no se reintentan): ${resumen.agotadas}`,
     `Quedan para la próxima corrida: ${resumen.quedanParaDespues}`,
@@ -348,7 +360,9 @@ async function main() {
 
   const pendientesDeBorrar = SECO ? 0 : await borrarVencidas();
 
-  const filas = await leerHoja();
+  const { encabezado, filas } = await leerHoja();
+  const faltan = faltantes(encabezado);
+  if (faltan.length > 0) throw new Error(`Faltan columnas en la hoja: ${faltan.join(", ")}`);
   console.log(`Hoja leída: ${filas.length} filas.`);
 
   // Una lectura por video; si el mismo video aparece dos veces, cuenta una.
@@ -363,46 +377,79 @@ async function main() {
     if (!porVideo.has(id)) porVideo.set(id, lectura);
   }
 
-  if (SECO) {
-    console.log("Modo seco: no se baja, no se sube y no se escribe nada.");
-    for (const [id, l] of porVideo) {
-      if (l.tipo === "invalida") log(id, "inválida", l.error);
-      else {
-        const { perfil, slugBase, fotoId, orden } = l.entrada;
-        log(id, "válida", `slug ${slugBase} · ${perfil.tipo}/${perfil.rol} · foto ${fotoId ? "sí" : "no"} · orden ${orden}`);
-      }
-    }
-    console.log(`\nVálidas o inválidas: ${porVideo.size} · Salteadas: ${resumen.salteadas}`);
-    if (SOLO_SUBTITULOS) {
-      console.log(`Se reharían solo los subtítulos de ${REPROCESAR} (en modo seco no se consulta Supabase).`);
-    } else if (REPROCESAR) {
-      console.log(
-        porVideo.has(REPROCESAR)
-          ? `Se reprocesaría ${REPROCESAR} aunque esté ok.`
-          : `reprocesar: ${REPROCESAR} no está en la hoja (o no tiene consentimiento).`
-      );
-      if (!porVideo.has(REPROCESAR)) process.exitCode = 1;
-    }
-    return;
-  }
+  // En modo seco también se lee Supabase (solo lectura) para mostrar qué regla
+  // aplicaría a cada fila.
+  const [ingestas, envios, bloqueados, equipo] = await Promise.all([
+    leerIngestas(),
+    leerEnvios(),
+    leerEmails("emails_bloqueados"),
+    leerEmails("equipo_ingesta"),
+  ]);
 
-  const ingestas = await leerIngestas();
+  // Una sola consulta con los emails de lo que todavía no está publicado.
+  const emails = new Set<string>();
+  for (const [id, l] of porVideo) {
+    if (l.tipo !== "valida" || ingestas.get(id)?.estado === "ok") continue;
+    emails.add(l.entrada.emailEscrito).add(l.entrada.emailVerificado);
+  }
+  if (ASIGNAR && "email" in ASIGNAR) emails.add(ASIGNAR.email);
+  const cuentas = await leerCuentas([...emails]);
+
   // Lo vigente de cada fila más las claves viejas que todavía no se borraron.
   let usados = [...ingestas.values()].reduce((suma, i) => suma + i.bytes, pendientesDeBorrar);
   let fatal: string | null = null;
 
   if (REPROCESAR && !SOLO_SUBTITULOS && !porVideo.has(REPROCESAR)) {
-    fatal = `reprocesar: ${REPROCESAR} no está en la hoja (o no tiene consentimiento)`;
+    fatal = `reprocesar: ${REPROCESAR} no está en la hoja (o no tiene video)`;
   }
+
+  // Input `asignar`: el equipo decide a qué perfil va. Pisa las reglas y el bloqueo.
+  let aMano: Perfil | null = null;
+  if (ASIGNAR && !fatal) {
+    const lectura = porVideo.get(ASIGNAR.origenId);
+    if (lectura?.tipo !== "valida") {
+      fatal = `asignar: ${ASIGNAR.origenId} no está en la hoja o es inválida`;
+    } else {
+      if ("slug" in ASIGNAR) aMano = await perfilPorSlug(ASIGNAR.slug);
+      else {
+        const c = cuentas.get(ASIGNAR.email);
+        aMano = c?.perfilId && c.slug ? { id: c.perfilId, slug: c.slug } : null;
+      }
+      if (!aMano) fatal = "asignar: el destino no es un perfil existente";
+    }
+  }
+
+  if (SECO) console.log("Modo seco: no se baja, no se sube y no se escribe nada.");
 
   for (const [id, lectura] of fatal ? [] : porVideo) {
     const previa: Ingesta | undefined = ingestas.get(id);
+    let envio: Envio | undefined = envios.get(id);
     const forzar = id === REPROCESAR && !SOLO_SUBTITULOS;
+    const esAMano = aMano !== null && id === ASIGNAR?.origenId;
+
+    const anotar = async (entrada: Entrada, nuevo: Omit<Envio, "origen_id">) => {
+      if (SECO) return;
+      await guardarEnvio(entrada, nuevo, envio);
+      envio = { origen_id: id, ...nuevo };
+    };
+
     if (previa?.estado === "ok" && !forzar) {
-      resumen.yaHechas++;
+      if (esAMano && lectura.tipo === "valida") {
+        if (!SECO) {
+          if (!(await moverPitch(id, aMano!.id))) {
+            fatal = `asignar: ${id} figura ok pero no tiene pitch`;
+            break;
+          }
+          await anotar(lectura.entrada, { estado: "ok", regla: "a_mano", perfil_id: aMano!.id });
+        }
+        resumen.aMano++;
+        log(id, "reasignada", `a_mano · /p/${aMano!.slug}`);
+      } else {
+        resumen.yaHechas++;
+      }
       continue;
     }
-    if (previa && previa.intentos >= MAX_INTENTOS && !forzar) {
+    if (previa && previa.intentos >= MAX_INTENTOS && !forzar && !esAMano) {
       resumen.agotadas++;
       continue;
     }
@@ -415,23 +462,58 @@ async function main() {
     const bytesPrevios = previa?.bytes ?? 0;
 
     if (lectura.tipo === "invalida") {
-      await registrar(id, { estado: "error", error: lectura.error, bytes: bytesPrevios }, intentos);
-      resumen.errores++;
-      log(id, "error", `${lectura.error} (intento ${intentos + 1})`);
+      if (SECO) log(id, "inválida", lectura.error);
+      else {
+        await registrar(id, { estado: "error", error: lectura.error, bytes: bytesPrevios }, intentos);
+        resumen.errores++;
+        log(id, "error", `${lectura.error} (intento ${intentos + 1})`);
+      }
       continue;
     }
+    const { entrada } = lectura;
+
+    // A quién va. Lo ya asignado en una corrida anterior (y que falló al
+    // procesar) conserva su perfil, salvo que ahora esté bloqueado.
+    let r: Resolucion = esAMano
+      ? { estado: "asignado", regla: "a_mano", perfil: aMano! }
+      : resolver(entrada, cuentas, equipo, bloqueados);
+    if (r.estado !== "rechazado" && !esAMano && envio?.perfil_id) {
+      const fijo = await perfilPorId(envio.perfil_id);
+      if (fijo) r = { estado: "asignado", regla: envio.regla ?? r.regla, perfil: fijo };
+    }
+    resumen.porRegla[r.regla] = (resumen.porRegla[r.regla] ?? 0) + 1;
+    if (esAMano) resumen.aMano++;
+
+    // Espera y rechazo se repiten en cada corrida: al log solo van cuando cambian
+    // (el resumen los cuenta siempre).
+    if (r.estado !== "asignado") {
+      const cambio = SECO || envio?.estado !== r.estado || envio.regla !== r.regla;
+      await anotar(entrada, { estado: r.estado, regla: r.regla, perfil_id: null });
+      if (r.estado === "rechazado") resumen.rechazados++;
+      else resumen.enEspera++;
+      if (cambio) log(id, r.estado === "rechazado" ? "rechazado" : "en espera", r.regla);
+      continue;
+    }
+    if (SECO) {
+      log(id, forzar ? "se reprocesaría" : "se publicaría", `${r.regla} · /p/${r.perfil.slug} · orden ${entrada.orden}`);
+      continue;
+    }
+
+    const asignado = { regla: r.regla, perfil_id: r.perfil.id };
+    await anotar(entrada, { estado: "recibido", ...asignado });
 
     // Los bytes previos de la fila pasan a r2_borrar (`anotados`) o se descartan si
     // la subida falló y se limpió lo nuevo.
     const usadosPorOtras = usados - bytesPrevios;
     const subidos = { bytes: 0 };
     try {
-      const { slug, anotados } = await procesar(lectura.entrada, usados, subidos);
+      const anotados = await procesar(entrada, r.perfil, usados, subidos);
       await registrar(id, { estado: "ok", bytes: subidos.bytes }, intentos);
+      await anotar(entrada, { estado: "ok", ...asignado });
       usados = usadosPorOtras + subidos.bytes + anotados;
       resumen.ok++;
       resumen.subidos += subidos.bytes;
-      log(id, forzar ? "reprocesada" : "ok", `/p/${slug} · ${mb(subidos.bytes)}`);
+      log(id, forzar ? "reprocesada" : "ok", `${r.regla} · /p/${r.perfil.slug} · ${mb(subidos.bytes)}`);
     } catch (e) {
       if (e instanceof TopeSuperado) {
         fatal = e.message;
@@ -441,11 +523,19 @@ async function main() {
       const mensaje = (e as Error).message;
       const bytes = Math.max(bytesPrevios, subidos.bytes);
       await registrar(id, { estado: "error", error: mensaje, bytes }, intentos);
+      await anotar(entrada, { estado: "error", ...asignado });
       usados = usadosPorOtras + bytes;
       resumen.errores++;
       resumen.subidos += subidos.bytes;
       log(id, "error", `${mensaje} (intento ${intentos + 1})`);
     }
+  }
+
+  if (SECO) {
+    if (SOLO_SUBTITULOS) console.log(`Se reharían solo los subtítulos de ${REPROCESAR}.`);
+    await escribirResumen(usados, fatal);
+    if (fatal) process.exitCode = 1;
+    return;
   }
 
   // Fase 2. Un error acá no deshace nada de lo publicado.

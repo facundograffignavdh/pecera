@@ -138,6 +138,11 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
                       </span>
                     )}
                   </Link>
+                  {pitch.descripcion && (
+                    <p className="mt-2 line-clamp-3 text-sm leading-snug text-tinta/80">
+                      {pitch.descripcion}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>

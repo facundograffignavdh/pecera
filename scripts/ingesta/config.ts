@@ -1,5 +1,7 @@
 /** Configuración de la ingesta: variables de entorno y topes. */
 
+import { existsSync, readFileSync } from "node:fs";
+
 function requerida(nombre: string): string {
   const valor = process.env[nombre]?.trim();
   if (!valor) throw new Error(`Falta la variable de entorno ${nombre}.`);
@@ -14,6 +16,37 @@ export const REPROCESAR = process.env.INGESTA_REPROCESAR?.trim() || null;
 if (REPROCESAR && !/^[A-Za-z0-9_-]{10,}$/.test(REPROCESAR)) {
   throw new Error("INGESTA_REPROCESAR no parece un ID de Drive.");
 }
+
+export const REGEX_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+export const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Input `asignar` del workflow: "<origen_id> <email o slug>". Se lee del JSON del
+ * evento y no del `env:` del step, porque GitHub imprime ese env en el log
+ * público y un email quedaría expuesto. En local, `INGESTA_ASIGNAR`.
+ */
+export type Asignar = { origenId: string; email: string } | { origenId: string; slug: string };
+
+function leerAsignar(): Asignar | null {
+  let valor = process.env.INGESTA_ASIGNAR ?? "";
+  const evento = process.env.GITHUB_EVENT_PATH;
+  if (!valor && evento && existsSync(evento)) {
+    const json = JSON.parse(readFileSync(evento, "utf8")) as { inputs?: { asignar?: string } };
+    valor = json.inputs?.asignar ?? "";
+  }
+  const partes = valor.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return null;
+  // El mensaje nunca repite el valor: podría ser un email.
+  const [origenId, destino] = partes;
+  if (partes.length !== 2 || !/^[A-Za-z0-9_-]{10,}$/.test(origenId)) {
+    throw new Error("asignar tiene que ser '<origen_id> <email o slug>'.");
+  }
+  if (REGEX_EMAIL.test(destino)) return { origenId, email: destino.toLowerCase() };
+  if (REGEX_SLUG.test(destino)) return { origenId, slug: destino };
+  throw new Error("asignar: el destino no parece un email ni un slug.");
+}
+
+export const ASIGNAR = leerAsignar();
 
 /** Con `reprocesar`: rehacer solo los subtítulos de ese pitch, sin tocar el video. */
 export const SOLO_SUBTITULOS =
@@ -41,7 +74,10 @@ export const env = {
 /** Las claves viejas se borran de R2 una hora después: el ISR puede seguir sirviéndolas. */
 export const BORRAR_DESPUES_MS = 60 * 60 * 1000;
 
-export const PESTANA = "Form Responses 1";
+export const PESTANA = "Respuestas de formulario 1";
+
+/** Largo máximo de `pitches.descripcion` (el check de la base dice lo mismo). */
+export const DESCRIPCION_MAX = 150;
 
 export const DURACION_MAX_S = 90;
 export const VIDEO_MAX_BYTES = 40 * 1024 * 1024;

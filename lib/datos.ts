@@ -14,7 +14,7 @@ import type { ItemFeed, Perfil, Pitch } from "@/types/pecera";
 
 const COLUMNAS_PERFIL =
   "id, slug, nombre, tipo, rol, descripcion, avatar_url, whatsapp, email, linkedin, instagram, web, publicado";
-const COLUMNAS_PITCH = "id, perfil_id, video_url, poster_url, orden, publicado";
+const COLUMNAS_PITCH = "id, perfil_id, video_url, poster_url, orden, publicado, descripcion";
 // El perfil no dibuja subtítulos: solo el feed los pide.
 const COLUMNAS_PITCH_FEED = `${COLUMNAS_PITCH}, subtitulos`;
 

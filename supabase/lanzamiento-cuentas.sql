@@ -19,3 +19,11 @@ where usuario_id is not null
 
 -- 3) Desde ahora, los perfiles nuevos se publican solos.
 update public.ajustes set autopublicar = true;
+
+-- 4) Envíos del Form nuevo que quedaron en espera: resolverlos con el input
+--    `asignar` del workflow ("<origen_id> <slug>") o esperar a que la persona cree
+--    su perfil.
+select origen_id, regla, fecha
+from public.envios
+where estado = 'en_espera'
+order by fecha;

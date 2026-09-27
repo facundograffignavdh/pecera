@@ -35,6 +35,8 @@ export type Pitch = {
   poster_url: string | null;
   orden: number;
   publicado: boolean;
+  /** Del Form de pitches. Si falta, el feed muestra la del perfil. */
+  descripcion: string | null;
   /** Solo lo trae el feed. `null` o `[]`: no hay subtítulos para mostrar. */
   subtitulos?: Subtitulo[] | null;
 };

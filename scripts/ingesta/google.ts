@@ -11,8 +11,12 @@ import { env, PESTANA } from "./config.ts";
 
 const cabeceras = () => ({ Authorization: `Bearer ${env.googleToken}` });
 
-/** Filas de la pestaña del Form como objetos { columna: valor }. */
-export async function leerHoja(): Promise<Record<string, string>[]> {
+/**
+ * Filas de la pestaña del Form como objetos { columna: valor }. Los nombres de
+ * columna van sin espacios en los extremos: un espacio de más en un título no
+ * rompe nada.
+ */
+export async function leerHoja(): Promise<{ encabezado: string[]; filas: Record<string, string>[] }> {
   const rango = encodeURIComponent(`'${PESTANA}'`);
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${env.sheetId}/values/${rango}?valueRenderOption=FORMATTED_VALUE`;
   const res = await fetch(url, { headers: cabeceras() });
@@ -23,9 +27,12 @@ export async function leerHoja(): Promise<Record<string, string>[]> {
   const columnas = encabezado.map((c) => c.trim());
 
   // Sheets omite las celdas vacías del final de cada fila.
-  return filas.map((fila) =>
-    Object.fromEntries(columnas.map((col, i) => [col, (fila[i] ?? "").trim()]))
-  );
+  return {
+    encabezado: columnas,
+    filas: filas.map((fila) =>
+      Object.fromEntries(columnas.map((col, i) => [col, (fila[i] ?? "").trim()]))
+    ),
+  };
 }
 
 /** Baja un archivo de Drive a disco, en streaming. `que` solo va al mensaje de error. */

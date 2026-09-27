@@ -21,9 +21,19 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - Videos y posters de prueba en `public/`; los posters se generaron con ffmpeg.
 - Ingesta automática: `.github/workflows/ingesta.yml` (cron cada 10 min + manual,
   con modo seco) corre `scripts/ingesta/` (Node 24 corriendo TS directo, sin
-  build). Lee el Google Form, comprime con ffmpeg, sube a R2 y crea perfil + pitch
-  publicados. La tabla `ingestas` lleva el estado por video (`origen_id` = ID de
-  Drive). El input `reprocesar` (un origen_id) lo vuelve a procesar aunque esté ok.
+  build). En v2 lee el Form de pitches (`vars.GOOGLE_SHEET_ID_V2`, pestaña
+  "Respuestas de formulario 1", marca temporal D/M/YYYY): una respuesta = un pitch,
+  que va al perfil de una cuenta existente; no crea perfiles. Comprime con ffmpeg,
+  sube video + poster a R2 y publica el pitch con su descripción. La tabla
+  `ingestas` lleva el estado por video (`origen_id` = ID de Drive). El input
+  `reprocesar` (un origen_id) lo vuelve a procesar aunque esté ok.
+- Asignación (`resolver` en `scripts/ingesta/formulario.ts`, regla guardada en
+  `envios.regla`): bloqueado → rechazado; escrito = verificado → ese perfil; del
+  equipo (`equipo_ingesta`) → perfil del email escrito o espera; si no, escrito que
+  no es cuenta → perfil del verificado; escrito que es otra cuenta → espera. Lo en
+  espera se reevalúa en cada corrida. Input `asignar` ("<origen_id> <slug o email>",
+  leído del JSON del evento, nunca del `env:` del step) lo resuelve a mano. En modo
+  seco también lee Supabase (solo lectura) para mostrar la regla.
 - ffmpeg en el workflow: build estático de BtbN con versión y sha256 fijos (9.0,
   como el local), nunca el de apt. La rotación se aplica a mano (`-noautorotate` +
   transpose/flip en `video.ts`) y cada corrida arranca con un chequeo sintético
@@ -42,6 +52,9 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   prueba el filtro y el modelo; si falla, publica igual sin subtítulos y el job
   queda en rojo. En el filtro las rutas van relativas y con "/" (los ":" de `C:\`
   rompen la sintaxis).
+- `/subir` redirige al Form con el email de la sesión precargado (`urlFormularioPitch`
+  en `lib/cuenta.ts`). En /cuenta, `components/MisPitches.tsx` muestra lo de la
+  función `mis_pitches()` (pitches publicados + envíos pendientes por email o perfil).
 - App: `components/Subtitulos.tsx` dibuja los bloques arriba del nombre del reel,
   a la izquierda de la columna; CC recordado con `lib/subtitulos.ts` (localStorage).
 - Columna de acciones del reel (estilo TikTok, termina arriba del nombre; el
@@ -79,7 +92,11 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - Todo se trabaja en `v2-cuentas`; `main` es producción y la feria depende de ella.
 - La base de Supabase es COMPARTIDA con producción: migraciones solo aditivas
   (crear tablas o columnas), nunca borrar ni renombrar.
-- La ingesta automática corre desde `main`: no tocar `scripts/ingesta`.
+- El cron de la ingesta corre desde `main` (formulario viejo, `vars.GOOGLE_SHEET_ID`).
+  La ingesta de esta rama (formulario nuevo) solo se prueba a mano:
+  `gh workflow run ingesta.yml --ref v2-cuentas [-f seco=true]`. Comparten
+  `concurrency: ingesta`, así que nunca corren a la vez. Escribe en la base y R2 de
+  producción: probar con perfiles no publicados.
 
 ## Lanzamiento de v2-cuentas (el día que se une a main)
 1. Correr `supabase/lanzamiento-cuentas.sql` en el SQL editor: revisar el listado,
@@ -88,6 +105,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
    `R2_ENDPOINT`, `R2_BUCKET`) también en el entorno Production de Vercel.
 3. Publicar la app de Google (modo producción), con las páginas de privacidad y
    condiciones ya publicadas.
+4. Antes del merge, cerrar el Form viejo y esperar una última corrida de main. Desde
+   el merge, el cron lee el Form nuevo (`GOOGLE_SHEET_ID_V2`); el viejo ya no se lee.
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind
@@ -108,7 +127,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 ## Rutas
 - `/` → feed de reels
 - `/p/[slug]` → perfil del participante
-- `/cuenta` → Mi perfil (login, crear/editar); `/cuenta/foto` (POST) sube la foto
+- `/cuenta` → Mi perfil (login, crear/editar, Mis pitches); `/cuenta/foto` (POST) sube la foto
+- `/subir` → al Form de pitches con el email de la sesión (sin sesión, a /cuenta)
 - `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
 
 ## Datos
@@ -123,10 +143,16 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - Esos son los valores que se guardan; las etiquetas visibles ("Inversor ángel",
   "Coach / mentor", etc.) salen de `lib/rol.ts`.
 - `pitches`: perfil_id, video_url, poster_url, orden, publicado, origen_id,
+  descripcion (máx. 150; el feed usa la del perfil si falta; /p/slug la muestra por pitch),
   subtitulos (jsonb `[{desde, hasta, texto}]` en segundos; null = falta, [] = sin voz;
   se corrige editando la celda)
 - `ingestas`: origen_id, estado (ok | error), error, intentos, bytes,
   subtitulos_intentos, subtitulos_error (solo service key)
+- `envios` (solo service key): origen_id, email_verificado, email_escrito, fecha,
+  estado (recibido | en_espera | ok | error | rechazado), regla, perfil_id. Los emails
+  viven solo acá. `emails_bloqueados` y `equipo_ingesta` (email en minúsculas): solo
+  service key / SQL editor. `ingesta_cuentas(emails)` solo service_role;
+  `mis_pitches()` para authenticated (sin emails ni origen_id).
 - `piques`: pitch_id, dispositivo (uuid anónimo), created_at; PK pitch + dispositivo.
   anon no la lee: usa las funciones security definer `dar_pique`, `quitar_pique`
   (validan pitch publicado; límite 30 acciones/min por dispositivo en

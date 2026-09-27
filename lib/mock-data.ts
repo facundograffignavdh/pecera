@@ -63,6 +63,7 @@ const pitches: Pitch[] = [
     video_url: "/videos/pitch_1.mp4",
     poster_url: "/posters/pitch_1.jpg",
     orden: 1,
+    descripcion: null,
     publicado: true,
   },
   {
@@ -71,6 +72,7 @@ const pitches: Pitch[] = [
     video_url: "/videos/pitch_2.mp4",
     poster_url: "/posters/pitch_2.jpg",
     orden: 2,
+    descripcion: null,
     publicado: true,
   },
   {
@@ -79,6 +81,7 @@ const pitches: Pitch[] = [
     video_url: "/videos/pitch_3.mp4",
     poster_url: "/posters/pitch_3.jpg",
     orden: 3,
+    descripcion: null,
     publicado: true,
   },
 ];

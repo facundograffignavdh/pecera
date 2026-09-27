@@ -4,6 +4,7 @@ import BotonCopiar from "@/components/BotonCopiar";
 import BotonSalir from "@/components/BotonSalir";
 import Encabezado from "@/components/Encabezado";
 import FormPerfil, { type PerfilPropio } from "@/components/FormPerfil";
+import MisPitches, { type MiPitch } from "@/components/MisPitches";
 import PieLegal from "@/components/PieLegal";
 import RecordarCuenta from "@/components/RecordarCuenta";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
@@ -41,6 +42,14 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
       .overrideTypes<PerfilPropio | null, { merge: false }>();
     if (errorLectura) throw new Error(`Supabase (cuenta): ${errorLectura.message}`);
     perfil = data && { ...data, avatar_url: data.avatar_url && urlMedia(data.avatar_url) };
+  }
+
+  // "Mis pitches" es un extra: si falla, se edita el perfil igual.
+  let misPitches: MiPitch[] = [];
+  if (user) {
+    const { data, error: errorPitches } = await supabase.rpc("mis_pitches");
+    if (errorPitches) console.error(`Supabase (mis_pitches): ${errorPitches.message}`);
+    else misPitches = (data ?? []) as MiPitch[];
   }
 
   // Dato chico y público para la píldora y el "Editar perfil" de las páginas
@@ -104,6 +113,13 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             ) : (
               perfil && <Estado perfil={perfil} />
             )}
+
+            <MisPitches
+              pitches={misPitches}
+              email={user.email ?? ""}
+              conPerfil={!!perfil}
+              claseBoton={BOTON_PRIMARIO}
+            />
 
             <FormPerfil key={perfil?.id ?? "nuevo"} perfil={perfil} />
 

@@ -19,6 +19,18 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").re
   ""
 );
 
+const FORMULARIO_PITCH =
+  "https://docs.google.com/forms/d/e/1FAIpQLScJjGCBLksepeDEdBZhfVVNNYVK-iFgqVwI-cf7QaJ_QBMNFg/viewform";
+
+/**
+ * Form de pitches con el email de la cuenta ya escrito y esa cuenta de Google
+ * elegida (`authuser`), así el email verificado coincide con el escrito.
+ */
+export function urlFormularioPitch(email: string): string {
+  const e = encodeURIComponent(email);
+  return `${FORMULARIO_PITCH}?usp=pp_url&entry.481163043=${e}&authuser=${e}`;
+}
+
 /** URL pública del perfil: la que va en la tarjeta NFC. */
 export function urlPerfil(slug: string): string {
   return `${siteUrl}/p/${slug}`;
@@ -36,8 +48,7 @@ export const OPCIONES_ROL = Object.entries(ROLES).map(
 
 /**
  * Nombre → slug: sin tildes, minúsculas, guiones. Nunca "test-" (lo borra la
- * limpieza). Misma regla que `slugBase` de la ingesta, que no se toca desde esta
- * rama: unificarlas cuando se toque la ingesta.
+ * limpieza).
  */
 export function slugDesdeNombre(nombre: string): string {
   const slug = nombre

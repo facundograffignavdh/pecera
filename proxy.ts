@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Refresca la sesión de Supabase. Solo corre en /cuenta y /auth: las páginas
+ * Refresca la sesión de Supabase. Solo corre en /cuenta, /auth y /subir: las páginas
  * públicas no pasan por acá y siguen estáticas.
  */
 export async function proxy(request: NextRequest) {
@@ -35,5 +35,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cuenta/:path*", "/auth/:path*"],
+  matcher: ["/cuenta/:path*", "/auth/:path*", "/subir"],
 };

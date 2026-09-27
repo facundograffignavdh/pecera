@@ -2,9 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 /**
- * Cliente con la sesión del usuario (cookies). Solo para /cuenta y /auth: el feed
- * y los perfiles públicos usan `lib/supabase.ts` y no leen cookies, así siguen
- * estáticos. Uno nuevo por request.
+ * Cliente con la sesión del usuario (cookies). Solo para /cuenta, /auth y /subir:
+ * el feed y los perfiles públicos usan `lib/supabase.ts` y no leen cookies, así
+ * siguen estáticos. Uno nuevo por request.
  */
 export async function supabaseConSesion() {
   const almacen = await cookies();
