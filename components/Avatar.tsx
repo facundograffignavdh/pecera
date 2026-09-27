@@ -3,7 +3,7 @@ import { iniciales, ROLES } from "@/lib/rol";
 import type { Perfil } from "@/types/pecera";
 
 type Props = {
-  perfil: Perfil;
+  perfil: Pick<Perfil, "nombre" | "rol" | "avatar_url">;
   /** Lado del círculo en px. */
   size?: number;
 };

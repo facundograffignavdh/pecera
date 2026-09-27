@@ -4,8 +4,9 @@ import { supabase } from "@/lib/supabase";
 import type { ItemFeed, Perfil, Pitch } from "@/types/pecera";
 
 /**
- * Única puerta a los datos. Los filtros por `publicado` repiten lo que ya hace
- * la RLS, para que quede explícito qué se muestra.
+ * Única puerta a los datos públicos. Los filtros por `publicado` (equipo) y
+ * `oculto` (la persona) repiten lo que ya hace la RLS, para que quede explícito
+ * qué se muestra. /cuenta usa su propio cliente con sesión.
  *
  * Ante un error se lanza en vez de devolver vacío: si falla una revalidación,
  * Next sigue sirviendo la última página buena.
@@ -42,6 +43,7 @@ export async function getFeed(): Promise<ItemFeed[]> {
       .select(`${COLUMNAS_PITCH_FEED}, perfil:perfiles!inner(${COLUMNAS_PERFIL})`)
       .eq("publicado", true)
       .eq("perfil.publicado", true)
+      .eq("perfil.oculto", false)
       .order("orden")
       .order("id")
       .overrideTypes<Array<Pitch & { perfil: Perfil }>, { merge: false }>(),
@@ -84,6 +86,7 @@ export const getPerfil = cache(
       .select(`${COLUMNAS_PERFIL}, pitches(${COLUMNAS_PITCH})`)
       .eq("slug", slug)
       .eq("publicado", true)
+      .eq("oculto", false)
       .eq("pitches.publicado", true)
       .order("orden", { referencedTable: "pitches" })
       .maybeSingle()
@@ -103,6 +106,7 @@ export async function getSlugs(): Promise<string[]> {
     .from("perfiles")
     .select("slug")
     .eq("publicado", true)
+    .eq("oculto", false)
     .overrideTypes<Array<{ slug: string }>, { merge: false }>();
 
   if (error) fallo("getSlugs", error);

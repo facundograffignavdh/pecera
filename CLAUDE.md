@@ -59,7 +59,31 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - La base guarda claves de R2 (`<id>.mp4`); `lib/media.ts` (`urlMedia`) arma la URL
   con `NEXT_PUBLIC_MEDIA_URL` y `lib/datos.ts` ya la aplica.
 - La service key de Supabase vive solo en los secrets del workflow, jamás en la app.
+- Cuentas (rama v2-cuentas): login con Google (Supabase Auth, PKCE) y "Mi perfil"
+  en `/cuenta`. `@supabase/ssr` solo en `/cuenta` y `/auth` (`lib/supabase-servidor.ts`
+  y `proxy.ts`, cuyo matcher cubre solo esas dos rutas). Las páginas públicas nunca
+  leen cookies: `components/AccesoCuenta.tsx` decide "Entrar"/"Mi perfil" mirando la
+  cookie en el navegador. Reglas del form en `lib/cuenta.ts` (cliente y servidor);
+  el trigger `perfiles_guardian` las repite en la base y bloquea slug, publicado,
+  usuario_id, origen_id y consentimiento_at. La foto se achica a 512 px en el celular
+  y `app/cuenta/foto/route.ts` la sube a R2 (`lib/r2.ts`, `<userId>-<hash8>.jpg`);
+  la vieja la anota el trigger en `r2_borrar`. Esas fotos no cuentan para el tope
+  de 8 GB de la ingesta (pendiente para cuando se toque la ingesta).
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
+
+## Rama v2-cuentas (reglas)
+- Todo se trabaja en `v2-cuentas`; `main` es producción y la feria depende de ella.
+- La base de Supabase es COMPARTIDA con producción: migraciones solo aditivas
+  (crear tablas o columnas), nunca borrar ni renombrar.
+- La ingesta automática corre desde `main`: no tocar `scripts/ingesta`.
+
+## Lanzamiento de v2-cuentas (el día que se une a main)
+1. Correr `supabase/lanzamiento-cuentas.sql` en el SQL editor: revisar el listado,
+   publicar los perfiles reales creados mientras tanto y prender `autopublicar`.
+2. Cargar las variables de R2 (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
+   `R2_ENDPOINT`, `R2_BUCKET`) también en el entorno Production de Vercel.
+3. Publicar la app de Google (modo producción), con las páginas de privacidad y
+   condiciones ya publicadas.
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind
@@ -80,11 +104,18 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 ## Rutas
 - `/` → feed de reels
 - `/p/[slug]` → perfil del participante
+- `/cuenta` → Mi perfil (login, crear/editar); `/cuenta/foto` (POST) sube la foto
+- `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,
   angel, fondo, coach), rol (emprendedor | inversor | aliado), descripcion,
-  avatar_url, whatsapp, email, linkedin, instagram, web, publicado, origen_id
+  avatar_url, whatsapp, email, linkedin, instagram, web, publicado, origen_id,
+  usuario_id (auth.users, null = sin dueño), oculto (lo maneja la persona),
+  consentimiento_at. Visible = `publicado and not oculto`. El email de la cuenta
+  nunca va a perfiles.
+- `ajustes`: una fila; `autopublicar` decide si los perfiles de /cuenta nacen
+  publicados (solo service key / SQL editor)
 - Esos son los valores que se guardan; las etiquetas visibles ("Inversor ángel",
   "Coach / mentor", etc.) salen de `lib/rol.ts`.
 - `pitches`: perfil_id, video_url, poster_url, orden, publicado, origen_id,
