@@ -62,8 +62,12 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - Cuentas (rama v2-cuentas): login con Google (Supabase Auth, PKCE) y "Mi perfil"
   en `/cuenta`. `@supabase/ssr` solo en `/cuenta` y `/auth` (`lib/supabase-servidor.ts`
   y `proxy.ts`, cuyo matcher cubre solo esas dos rutas). Las páginas públicas nunca
-  leen cookies: `components/AccesoCuenta.tsx` decide "Entrar"/"Mi perfil" mirando la
-  cookie en el navegador. Reglas del form en `lib/cuenta.ts` (cliente y servidor);
+  leen cookies: `lib/cuenta-local.ts` (`useCuentaLocal`) combina la cookie de sesión
+  (parseada por nombre, con partes `.0`/`.1`; nada de regex en template literals) y
+  un dato chico y público del perfil en localStorage (`pecera:cuenta`: slug, nombre,
+  rol, foto, visible) que escribe `RecordarCuenta` en /cuenta y borra `BotonSalir`.
+  Con eso `AccesoCuenta` muestra "Entrar" o la foto (va a /p/slug si es visible) y
+  `EditarPerfil` aparece solo en el perfil propio. Es solo interfaz. Reglas del form en `lib/cuenta.ts` (cliente y servidor);
   el trigger `perfiles_guardian` las repite en la base y bloquea slug, publicado,
   usuario_id, origen_id y consentimiento_at. La foto se achica a 512 px en el celular
   y `app/cuenta/foto/route.ts` la sube a R2 (`lib/r2.ts`, `<userId>-<hash8>.jpg`);

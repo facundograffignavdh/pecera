@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Avatar from "@/components/Avatar";
 import BotonCopiar from "@/components/BotonCopiar";
+import EditarPerfil from "@/components/EditarPerfil";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
@@ -80,6 +81,8 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
             </div>
           </div>
         </header>
+
+        <EditarPerfil slug={perfil.slug} />
 
         <p className="mt-5 leading-relaxed text-tinta/90">{perfil.descripcion}</p>
 

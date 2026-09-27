@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import BotonCopiar from "@/components/BotonCopiar";
+import BotonSalir from "@/components/BotonSalir";
 import Encabezado from "@/components/Encabezado";
 import FormPerfil, { type PerfilPropio } from "@/components/FormPerfil";
 import PieLegal from "@/components/PieLegal";
+import RecordarCuenta from "@/components/RecordarCuenta";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
-import { entrar, salir } from "@/app/cuenta/acciones";
+import { entrar } from "@/app/cuenta/acciones";
+import { urlPerfil } from "@/lib/cuenta";
+import type { CuentaLocal } from "@/lib/cuenta-local";
 import { urlMedia } from "@/lib/media";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 
@@ -20,7 +25,7 @@ const BOTON_PRIMARIO =
   "inline-flex min-h-12 items-center justify-center rounded-full bg-tinta px-6 font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla";
 
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
-  const { error } = await searchParams;
+  const { error, creado } = await searchParams;
   const supabase = await supabaseConSesion();
   const {
     data: { user },
@@ -38,9 +43,24 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     perfil = data && { ...data, avatar_url: data.avatar_url && urlMedia(data.avatar_url) };
   }
 
+  // Dato chico y público para la píldora y el "Editar perfil" de las páginas
+  // estáticas. Nada de email ni ids.
+  const cuentaLocal: CuentaLocal | null = user
+    ? {
+        perfil: perfil && {
+          slug: perfil.slug,
+          nombre: perfil.nombre,
+          rol: perfil.rol,
+          avatar: perfil.avatar_url,
+          visible: perfil.publicado && !perfil.oculto,
+        },
+      }
+    : null;
+
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="cuenta" />
+      <RecordarCuenta cuenta={cuentaLocal} />
       <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
         <EnlaceVolver href="/" />
 
@@ -64,8 +84,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               <button type="submit" className={BOTON_PRIMARIO}>
                 Entrar con Google
               </button>
-              <p className="text-center text-sm text-tinta/70">
-                Te va a aparecer una pantalla de Google para confirmar tu cuenta.
+              <p className="text-center text-sm leading-relaxed text-tinta/70">
+                Google te va a pedir que confirmes tu cuenta. Vas a ver una dirección de
+                Supabase: es el servicio que usa Pecera para las cuentas.
               </p>
             </form>
           </section>
@@ -78,24 +99,46 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               <p className="break-all text-sm text-tinta/70">Entraste como {user.email}</p>
             </div>
 
-            {perfil && <Estado perfil={perfil} />}
+            {perfil && creado === "1" ? (
+              <Creado perfil={perfil} />
+            ) : (
+              perfil && <Estado perfil={perfil} />
+            )}
 
             <FormPerfil key={perfil?.id ?? "nuevo"} perfil={perfil} />
 
-            <form action={salir} className="border-t border-tinta/15 pt-6">
-              <button
-                type="submit"
-                className="min-h-11 w-full rounded-full border border-tinta/55 px-5 text-sm font-medium text-tinta transition-colors duration-200 ease-pecera hover:border-arcilla hover:text-arcilla focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
-              >
-                Cerrar sesión
-              </button>
-            </form>
+            <BotonSalir />
           </section>
         )}
 
         <PieLegal tono="claro" className="mt-10 pb-8" />
       </div>
     </main>
+  );
+}
+
+/** La primera vez: el perfil está creado, su dirección para copiar y su estado. */
+function Creado({ perfil }: { perfil: PerfilPropio }) {
+  const url = urlPerfil(perfil.slug);
+  return (
+    <section
+      aria-labelledby="creado-titulo"
+      className="flex flex-col gap-3 rounded-2xl border border-tinta/15 bg-tinta/5 px-4 py-4 text-tinta"
+    >
+      <h2 id="creado-titulo" className="font-display text-xl font-semibold leading-tight">
+        ¡Listo, tu perfil está creado!
+      </h2>
+      <div className="flex flex-col gap-1">
+        <p className="text-sm text-tinta/70">Tu dirección en Pecera</p>
+        <p className="break-all font-semibold">{url}</p>
+      </div>
+      <BotonCopiar
+        texto={url}
+        etiqueta="Copiar dirección"
+        className="inline-flex min-h-11 items-center justify-center self-start rounded-full bg-tinta px-5 text-sm font-medium text-marfil focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+      />
+      <Estado perfil={perfil} />
+    </section>
   );
 }
 

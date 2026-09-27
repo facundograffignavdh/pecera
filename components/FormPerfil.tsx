@@ -173,7 +173,9 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
           setFoto(null);
         }
       }
-      router.refresh();
+      // Al crear, la página muestra la confirmación con la dirección para copiar.
+      if (resultado.guardado.creado) router.replace("/cuenta?creado=1");
+      else router.refresh();
       return resultado;
     },
     { errores: {} }
