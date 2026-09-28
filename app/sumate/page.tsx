@@ -11,6 +11,7 @@ import Movimiento from "@/components/landing/Movimiento";
 import PasosPorRol from "@/components/landing/PasosPorRol";
 import Rotador from "@/components/landing/Rotador";
 import TarjetaOferta, { type Oferta } from "@/components/landing/TarjetaOferta";
+import VideoDemo from "@/components/landing/VideoDemo";
 import VideoFondo from "@/components/landing/VideoFondo";
 import { FEED_DESDE_LANDING } from "@/lib/landing";
 
@@ -460,6 +461,18 @@ export default function SumatePage() {
           <path d="M0 40 C 240 70 480 8 720 32 C 960 56 1200 18 1440 42 L 1440 70 L 0 70 Z" fill="#F5F4EC" />
         </svg>
       </section>
+
+      {/* ===== DEMO ===== */}
+      <Seccion
+        id="demo"
+        etiqueta="Video demo"
+        titulo="Así se ve la Pecera en 30 segundos."
+        bajada="Grabado sobre la app real: el feed, un pique y el perfil de contacto de un proyecto."
+      >
+        <div className="mx-auto mt-10 max-w-3xl" data-revelar>
+          <VideoDemo src="/landing/pecera-demo.mp4" poster="/landing/pecera-demo-poster.webp" />
+        </div>
+      </Seccion>
 
       {/* ===== LA PECERA ===== */}
       <Seccion id="la-pecera" etiqueta="La Pecera" titulo="Shark Tank, en tu bolsillo.">
