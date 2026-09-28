@@ -83,7 +83,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `EditarPerfil` aparece solo en el perfil propio. Es solo interfaz. Reglas del form en `lib/cuenta.ts` (cliente y servidor);
   el trigger `perfiles_guardian` las repite en la base y bloquea slug, publicado,
   usuario_id, origen_id y consentimiento_at. La foto se achica a 512 px en el celular
-  y `app/cuenta/foto/route.ts` la sube a R2 (`lib/r2.ts`, `<userId>-<hash8>.jpg`);
+  y viaja con el form: `guardarPerfil` la sube con `lib/foto.ts` (`lib/r2.ts`,
+  `<userId>-<hash8>.jpg`); si falla, el perfil se guarda igual y se avisa;
   la vieja la anota el trigger en `r2_borrar`. Esas fotos no cuentan para el tope
   de 8 GB de la ingesta (pendiente para cuando se toque la ingesta).
 - Legales: `/privacidad` y `/terminos` (estáticas, `components/PaginaLegal.tsx`),
@@ -135,7 +136,11 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 ## Rutas
 - `/` → feed de reels
 - `/p/[slug]` → perfil del participante
-- `/cuenta` → Mi perfil (login, crear/editar, Mis pitches); `/cuenta/foto` (POST) sube la foto
+- `/cuenta` → Mi perfil (login, crear/editar, Mis pitches). Al crear, la action
+  redirige a `/cuenta?creado=1` (`&foto=error` si la foto falló); si la cuenta ya
+  tenía perfil (doble envío), a `/cuenta`. `guardarPerfil` nunca tira: toda falla
+  vuelve como mensaje (22023 del trigger → campo). A los 20 s sin respuesta el form
+  ofrece recargar; `app/cuenta/error.tsx` atrapa el resto.
 - `/subir` → al Form de pitches con el email de la sesión (sin sesión, a /cuenta)
 - `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
 

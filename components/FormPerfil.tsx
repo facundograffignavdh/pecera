@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { type ReactNode, useActionState, useState } from "react";
+import { unstable_rethrow } from "next/navigation";
+import { type ReactNode, useActionState, useEffect, useState } from "react";
 import { type EstadoGuardar, guardarPerfil } from "@/app/cuenta/acciones";
 import Avatar from "@/components/Avatar";
 import {
@@ -24,6 +24,8 @@ type Valores = Record<Exclude<CampoPerfil, "slug" | "consentimiento">, string>;
 
 const LADO_FOTO = 512;
 const MAX_FOTO = 512 * 1024;
+/** Sin respuesta en este tiempo, se ofrece recargar. */
+const ESPERA_MAXIMA_MS = 20_000;
 
 /**
  * Achica la foto en el celular: cuadrada de 512 px, recortada al centro, en JPG.
@@ -58,21 +60,6 @@ async function achicarFoto(archivo: File): Promise<Blob> {
     if (blob && blob.size <= MAX_FOTO) return blob;
   }
   throw new Error("foto muy pesada");
-}
-
-async function subirFoto(foto: Blob): Promise<string | null> {
-  try {
-    const res = await fetch("/cuenta/foto", {
-      method: "POST",
-      headers: { "Content-Type": "image/jpeg" },
-      body: foto,
-    });
-    if (res.ok) return null;
-    const { error } = (await res.json().catch(() => ({}))) as { error?: string };
-    return error ?? "No pudimos guardar la foto.";
-  } catch {
-    return "No pudimos guardar la foto. Revisá tu conexión.";
-  }
 }
 
 const CLASE_INPUT =
@@ -127,7 +114,6 @@ function describir(id: string, error?: string, ayuda = false) {
 }
 
 export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) {
-  const router = useRouter();
   const creando = perfil === null;
 
   const [valores, setValores] = useState<Valores>({
@@ -147,11 +133,13 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
   const [oculto, setOculto] = useState(perfil?.oculto ?? false);
   const [foto, setFoto] = useState<{ blob: Blob; url: string } | null>(null);
   const [errorFoto, setErrorFoto] = useState<string | null>(null);
+  const [tardando, setTardando] = useState(false);
 
   const slugVisible = creando ? (slugTocado ? slug : slugDesdeNombre(valores.nombre)) : perfil.slug;
 
   const [estado, accion, guardando] = useActionState(
     async (previo: EstadoGuardar, formData: FormData): Promise<EstadoGuardar> => {
+      setTardando(false);
       // Mismas reglas que el servidor, para avisar al toque.
       const { errores } = validarPerfil(valores);
       if (creando) {
@@ -161,26 +149,43 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
       }
       if (Object.keys(errores).length) return { errores };
 
-      const resultado = await guardarPerfil(previo, formData);
-      if (!resultado.guardado) return resultado;
-
+      // La foto viaja con el resto: al crear, la action la sube antes de redirigir.
       if (foto) {
-        const error = await subirFoto(foto.blob);
-        if (error) {
-          setErrorFoto(error);
+        setErrorFoto(null);
+        formData.set("foto", foto.blob, "foto.jpg");
+      }
+      let resultado: EstadoGuardar;
+      try {
+        resultado = await guardarPerfil(previo, formData);
+      } catch (e) {
+        // Al crear, la action redirige y eso llega acá como error: lo maneja Next.
+        unstable_rethrow(e);
+        return {
+          errores: {},
+          general: "No pudimos guardar. Revisá tu conexión y probá de nuevo.",
+        };
+      }
+      if (resultado.guardado && foto) {
+        if (resultado.errorFoto) {
+          setErrorFoto(resultado.errorFoto);
         } else {
           URL.revokeObjectURL(foto.url);
           setFoto(null);
         }
       }
-      // Al crear, la página muestra la confirmación con la dirección para copiar.
-      if (resultado.guardado.creado) router.replace("/cuenta?creado=1");
-      else router.refresh();
       return resultado;
     },
     { errores: {} }
   );
   const errores = estado.errores;
+
+  // Límite de seguridad: si el guardado no vuelve, que nadie quede mirando
+  // "Guardando…" para siempre.
+  useEffect(() => {
+    if (!guardando) return;
+    const espera = setTimeout(() => setTardando(true), ESPERA_MAXIMA_MS);
+    return () => clearTimeout(espera);
+  }, [guardando]);
 
   function cambiar(campo: keyof Valores) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -512,9 +517,25 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
         >
           {guardando ? "Guardando…" : creando ? "Crear mi perfil" : "Guardar cambios"}
         </button>
-        <p role="status" className="min-h-5 text-center text-sm text-tinta">
-          {!guardando && estado.guardado && !errorFoto ? "Listo, guardado." : ""}
-        </p>
+        {guardando && tardando ? (
+          <div role="alert" className="flex flex-col items-center gap-2 text-center">
+            <p className="text-sm text-tinta">
+              Está tardando más de lo normal. Recargá la página: si tu perfil se guardó, lo vas
+              a ver.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="min-h-11 rounded-full border border-tinta/55 px-5 text-sm font-medium text-tinta transition-colors duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:border-arcilla hover:text-arcilla"
+            >
+              Recargar la página
+            </button>
+          </div>
+        ) : (
+          <p role="status" className="min-h-5 text-center text-sm text-tinta">
+            {!guardando && estado.guardado && !errorFoto ? "Listo, guardado." : ""}
+          </p>
+        )}
       </div>
     </form>
   );

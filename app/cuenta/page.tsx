@@ -26,7 +26,7 @@ const BOTON_PRIMARIO =
   "inline-flex min-h-12 items-center justify-center rounded-full bg-tinta px-6 font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla";
 
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
-  const { error, creado } = await searchParams;
+  const { error, creado, foto } = await searchParams;
   const supabase = await supabaseConSesion();
   const {
     data: { user },
@@ -109,7 +109,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             </div>
 
             {perfil && creado === "1" ? (
-              <Creado perfil={perfil} />
+              <Creado perfil={perfil} fotoFallo={foto === "error"} />
             ) : (
               perfil && <Estado perfil={perfil} />
             )}
@@ -134,7 +134,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 }
 
 /** La primera vez: el perfil está creado, su dirección para copiar y su estado. */
-function Creado({ perfil }: { perfil: PerfilPropio }) {
+function Creado({ perfil, fotoFallo }: { perfil: PerfilPropio; fotoFallo: boolean }) {
   const url = urlPerfil(perfil.slug);
   return (
     <section
@@ -153,6 +153,11 @@ function Creado({ perfil }: { perfil: PerfilPropio }) {
         etiqueta="Copiar dirección"
         className="inline-flex min-h-11 items-center justify-center self-start rounded-full bg-tinta px-5 text-sm font-medium text-marfil focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
       />
+      {fotoFallo && (
+        <p className="text-sm font-medium">
+          No pudimos guardar tu foto. Volvé a subirla desde el formulario de abajo.
+        </p>
+      )}
       <Estado perfil={perfil} />
     </section>
   );
