@@ -4,12 +4,15 @@ import type { CSSProperties, ReactNode } from "react";
 import Encabezado from "@/components/Encabezado";
 import { IconoCorazon, IconoSubtitulos } from "@/components/Iconos";
 import PieLegal from "@/components/PieLegal";
+import BotonForm from "@/components/landing/BotonForm";
+import FormularioSumate from "@/components/landing/FormularioSumate";
 import MaquetaReel, { type EjemploPitch } from "@/components/landing/MaquetaReel";
 import Movimiento from "@/components/landing/Movimiento";
 import PasosPorRol from "@/components/landing/PasosPorRol";
 import Rotador from "@/components/landing/Rotador";
+import TarjetaOferta, { type Oferta } from "@/components/landing/TarjetaOferta";
 import VideoFondo from "@/components/landing/VideoFondo";
-import { FEED_DESDE_LANDING, FORM_URL } from "@/lib/landing";
+import { FEED_DESDE_LANDING } from "@/lib/landing";
 
 const TITULO = "Subí tu pitch — Pecera";
 const DESCRIPCION =
@@ -90,9 +93,10 @@ const FUNCIONES = [
   },
 ];
 
-const OFERTAS = [
+const OFERTAS: Oferta[] = [
   {
     titulo: "Innovadores",
+    rol: "emprendedor",
     color: "text-arcilla",
     borde: "border-t-pecera",
     foco: "rgb(217 90 34 / 0.09)",
@@ -108,6 +112,7 @@ const OFERTAS = [
   },
   {
     titulo: "Inversores",
+    rol: "inversor",
     color: "text-inversor",
     borde: "border-t-inversor",
     foco: "rgb(12 106 168 / 0.09)",
@@ -123,6 +128,7 @@ const OFERTAS = [
   },
   {
     titulo: "Aliados",
+    rol: "aliado",
     color: "text-aliado",
     borde: "border-t-aliado",
     foco: "rgb(31 122 82 / 0.09)",
@@ -173,10 +179,8 @@ const ROLES_PASOS = [
   },
 ];
 
-// Espeja las preguntas y validaciones del Google Form: si el Form cambia, esto también.
+// Espeja los pasos de FormularioSumate: si el form cambia, esto también.
 const NECESITAS: { titulo: string; detalle: string; opcional?: boolean }[] = [
-  { titulo: "El video del pitch", detalle: "Hasta 90 segundos. Si dura más, se corta." },
-  { titulo: "Una foto o el logo", detalle: "Es la imagen de tu perfil." },
   { titulo: "Nombre del proyecto o persona", detalle: "Como querés aparecer en el feed." },
   { titulo: "Una descripción en una línea", detalle: "Máximo 150 caracteres." },
   {
@@ -189,6 +193,10 @@ const NECESITAS: { titulo: string; detalle: string; opcional?: boolean }[] = [
     opcional: true,
   },
   { titulo: "Email, LinkedIn, Instagram o web", detalle: "Los que quieras mostrar en tu perfil.", opcional: true },
+  {
+    titulo: "El video del pitch",
+    detalle: "Todavía no se sube acá: cuando enviás el formulario te contactamos para coordinarlo.",
+  },
 ];
 
 const CONSEJOS = [
@@ -254,12 +262,8 @@ const PREGUNTAS = [
   },
   {
     pregunta: "¿Cuánto tarda en aparecer?",
-    respuesta: "Entre 10 y 15 minutos después de enviar el formulario.",
-  },
-  {
-    pregunta: "¿Por qué el formulario me pide iniciar sesión con Google?",
     respuesta:
-      "Porque tiene carga de archivos y Google lo exige para eso. Si se traba dentro de Instagram o WhatsApp, abrí el link en el navegador del celular.",
+      "El formulario te toma dos minutos. Después te contactamos para coordinar el video, y una vez que lo mandás, en 10 a 15 minutos ya está publicado.",
   },
   {
     pregunta: "¿Qué es un pique?",
@@ -280,39 +284,6 @@ function Pez({ className = "" }: { className?: string }) {
     <svg viewBox="0 0 32 20" aria-hidden className={`h-4 w-[26px] shrink-0 ${className}`}>
       <path d={PEZ} fill="currentColor" />
     </svg>
-  );
-}
-
-function Flecha({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
-      <path
-        d="M4 10h11m0 0-4.5-4.5M15 10l-4.5 4.5"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-const NUEVA_PESTANA = <span className="sr-only">(se abre en una pestaña nueva)</span>;
-
-/** CTA principal. Pestaña nueva: el Form con archivos pide login de Google y falla en iframes. */
-function BotonForm({ children = "Subí tu pitch", className = "" }: { children?: ReactNode; className?: string }) {
-  return (
-    <a
-      href={FORM_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      data-magnetic
-      className={`brillo group inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-arcilla px-8 text-[19px] font-bold text-marfil shadow-[0_1px_2px_rgb(28_27_22/0.15),0_8px_20px_rgb(217_90_34/0.28)] transition-shadow duration-200 ease-pecera hover:shadow-[0_1px_2px_rgb(28_27_22/0.15),0_12px_28px_rgb(217_90_34/0.4)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta ${className}`}
-    >
-      {children}
-      <Flecha className="h-5 w-5 transition-transform duration-200 ease-pecera group-hover:translate-x-1" />
-      {NUEVA_PESTANA}
-    </a>
   );
 }
 
@@ -412,6 +383,7 @@ export default function SumatePage() {
       />
       <Encabezado variante="perfil" />
       <Movimiento scroller={ID_SCROLL} />
+      <FormularioSumate />
 
       {/* ===== HERO: acuario de fondo, cardumen 3D, velo y burbujas ===== */}
       <section
@@ -474,7 +446,7 @@ export default function SumatePage() {
               </Link>
             </div>
             <p className="entrada mt-5 text-sm font-medium text-tinta/75" style={{ animationDelay: "430ms" }}>
-              Gratis · Pitch de 90 segundos · En el feed en 10–15 minutos
+              Gratis · Te toma 2 minutos · Coordinamos tu video después
             </p>
           </div>
         </div>
@@ -609,30 +581,7 @@ export default function SumatePage() {
         <ul className="mt-12 grid gap-6 lg:grid-cols-3">
           {OFERTAS.map((o, i) => (
             <li key={o.titulo} data-revelar style={{ transitionDelay: `${i * 90}ms` }}>
-              <a
-                href={FORM_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-tilt
-                style={{ "--foco": o.foco } as CSSProperties}
-                className={`group flex h-full flex-col rounded-3xl border border-t-[3px] border-tinta/10 bg-[#FBFAF4] p-8 shadow-[0_1px_2px_rgb(28_27_22/0.06),0_10px_30px_rgb(28_27_22/0.06)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta ${o.borde}`}
-              >
-                <h3 className={`font-display text-3xl font-semibold ${o.color}`}>{o.titulo}</h3>
-                <p className="mt-3 leading-relaxed text-tinta/80">{o.texto}</p>
-                <ul className="mb-8 mt-6 grid gap-3.5">
-                  {o.puntos.map((p) => (
-                    <li key={p} className="flex gap-3 leading-snug text-tinta/80">
-                      <Tilde className={o.tilde} />
-                      {p}
-                    </li>
-                  ))}
-                </ul>
-                <span className="mt-auto inline-flex items-center gap-2 font-bold text-tinta">
-                  {o.cta}
-                  <Flecha className="h-[18px] w-[18px] transition-transform duration-200 ease-pecera group-hover:translate-x-1" />
-                </span>
-                {NUEVA_PESTANA}
-              </a>
+              <TarjetaOferta o={o} />
             </li>
           ))}
         </ul>
@@ -690,7 +639,7 @@ export default function SumatePage() {
                 ))}
               </ul>
               <p className="mt-6 border-t border-marfil/15 pt-5 text-[15px] leading-relaxed text-marfil/80">
-                Al final del formulario marcás el consentimiento. Sin eso, el pitch no se publica.
+                Al final del formulario marcás el consentimiento. Sin eso no guardamos tu postulación.
               </p>
             </div>
           </div>
