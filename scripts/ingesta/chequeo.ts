@@ -129,8 +129,11 @@ export async function chequeoRotacion(): Promise<void> {
  * El ffmpeg de los subtítulos (en el runner, otro binario que el que comprime)
  * tiene que traer el filtro whisper y poder cargar el modelo. Se prueba con 2 s
  * de silencio. Si falla, la ingesta publica igual y saltea los subtítulos.
+ * Devuelve los segundos que tardó: cargar el modelo más una pasada de whisper
+ * (que procesa ventanas de 30 s aunque el audio sea más corto). Es el costo fijo
+ * real de cada transcripción, con el mismo binario, modelo y caché que la fase 2.
  */
-export async function chequeoWhisper(): Promise<void> {
+export async function chequeoWhisper(): Promise<number> {
   const version = (await correr(env.ffmpegWhisper, ["-version"])).split("\n")[0];
   console.log(`Chequeo de whisper con ${version}`);
 
@@ -139,15 +142,20 @@ export async function chequeoWhisper(): Promise<void> {
 
   const dir = await mkdtemp(join(tmpdir(), "chequeo-whisper-"));
   try {
+    const inicio = Date.now();
     await correr(
       env.ffmpegWhisper,
       [
-        "-y", "-f", "lavfi", "-i", "anullsrc=r=16000:cl=mono", "-t", "2",
+        // `-t` de entrada: como opción de salida, ffmpeg cierra sin vaciar la cola
+        // del filtro y whisper nunca transcribe (el chequeo pasaba sin probar nada).
+        "-y", "-f", "lavfi", "-t", "2", "-i", "anullsrc=r=16000:cl=mono",
         "-af", filtroWhisper(dir, "chequeo.srt"), "-f", "null", "-",
       ],
       { cwd: dir, timeoutMs: 3 * 60 * 1000 }
     );
-    console.log("  modelo: ok");
+    const fijo = (Date.now() - inicio) / 1000;
+    console.log(`  modelo: ok (costo fijo: ${fijo.toFixed(1)} s, carga + una pasada)`);
+    return fijo;
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

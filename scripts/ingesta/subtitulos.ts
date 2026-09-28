@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { env, LINEA_MAX, LINEAS_POR_BLOQUE, TIMEOUT_FACTOR } from "./config.ts";
+import { env, LINEA_MAX, LINEAS_POR_BLOQUE, TIMEOUT_POR_SEGUNDO, tiempoWhisperMs } from "./config.ts";
 import { correr, duracion } from "./video.ts";
 
 /**
@@ -11,9 +11,6 @@ import { correr, duracion } from "./video.ts";
  */
 
 export type Bloque = { desde: number; hasta: number; texto: string };
-
-/** Carga del modelo (574 MB) y arranque, aparte del tiempo por segundo de audio. */
-const MARGEN_CARGA_MS = 60 * 1000;
 
 /**
  * Ruta del modelo relativa a `dir` y con "/": en un filtro de ffmpeg los ":" de
@@ -37,14 +34,14 @@ export function filtroWhisper(dir: string, destino: string): string {
 
 /**
  * Transcribe el audio de `video` y devuelve el SRT crudo. Corre con `cwd: dir`
- * para que el filtro use rutas relativas. Se corta si tarda más de
- * `TIMEOUT_FACTOR` veces la duración del audio.
+ * para que el filtro use rutas relativas. Se corta pasado el costo fijo más
+ * `TIMEOUT_POR_SEGUNDO` por segundo de audio.
  */
 export async function transcribir(video: string, dir: string, segundos: number): Promise<string> {
   await correr(
     env.ffmpegWhisper,
     ["-y", "-i", resolve(video), "-vn", "-af", filtroWhisper(dir, "subs.srt"), "-f", "null", "-"],
-    { cwd: dir, timeoutMs: segundos * TIMEOUT_FACTOR * 1000 + MARGEN_CARGA_MS }
+    { cwd: dir, timeoutMs: tiempoWhisperMs(segundos, TIMEOUT_POR_SEGUNDO) }
   );
   // Sin voz, el filtro puede no escribir nada.
   return readFile(join(dir, "subs.srt"), "utf8").catch(() => "");

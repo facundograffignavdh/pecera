@@ -143,6 +143,7 @@ jobs:
           INGESTA_REPROCESAR: ${{ inputs.reprocesar }}
           INGESTA_SOLO_SUBTITULOS: ${{ inputs.solo_subtitulos && '1' || '' }}
           INGESTA_PRESUPUESTO_MIN: ${{ vars.INGESTA_PRESUPUESTO_MIN }}
+          INGESTA_WHISPER_FIJO_S: ${{ vars.INGESTA_WHISPER_FIJO_S }}
           FFMPEG_WHISPER: ${{ runner.temp }}/ffmpeg-whisper/bin/ffmpeg
           WHISPER_MODELO: ${{ runner.temp }}/whisper/modelo.bin
           GOOGLE_TOKEN: ${{ steps.auth.outputs.access_token }}

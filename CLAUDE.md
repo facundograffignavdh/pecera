@@ -44,8 +44,12 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   subtítulos con el filtro `whisper` de ffmpeg y `ggml-large-v3-turbo-q5_0.bin`
   (revisión fija de Hugging Face, sha256 verificado, en caché). Nunca afecta la
   publicación: lo que no entra queda para la próxima; 3 errores y no se reintenta.
-  El factor de estimación arranca en 3,5x y se ajusta a lo medido; el timeout es 8x
-  el audio. `reprocesar` + `solo_subtitulos` rehace solo los subtítulos.
+  Timeout y estimación usan la misma cuenta (`tiempoWhisperMs`): costo fijo
+  (`INGESTA_WHISPER_FIJO_S`, variable de GitHub, 60 s por defecto) + segundos por
+  segundo de audio (timeout 4; estimación arranca en 1 y pasa al peor medido, sin el
+  fijo). El chequeo cronometra el costo fijo (carga + una pasada; con `-t` de
+  entrada, si no whisper no transcribe) y el log lo separa de la
+  transcripción. `reprocesar` + `solo_subtitulos` rehace solo los subtítulos.
 - whisper usa un **segundo ffmpeg**: BtbN 8.1.1 (2026-05-31), fijo por sha256 y
   fuera del PATH (`FFMPEG_WHISPER`). BtbN deshabilitó whisper el 2026-06-19 y
   ningún build 9.0 lo trae. Comprimir sigue siendo del 9.0.1. El chequeo previo

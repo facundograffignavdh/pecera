@@ -13,6 +13,7 @@ import {
   SECO,
   SOLO_SUBTITULOS,
   TIEMPO_MAX_MS,
+  tiempoWhisperMs,
   TOTAL_MAX_BYTES,
   VIDEO_MAX_BYTES,
 } from "./config.ts";
@@ -95,6 +96,8 @@ const resumen = {
   subtitulosParaDespues: 0,
   segundosAudio: 0,
   segundosTranscripcion: 0,
+  /** Segundos del chequeo de whisper (carga + una pasada): el costo fijo real de cada transcripción. */
+  costoFijo: 0,
   subtitulosDesactivados: null as string | null,
 };
 
@@ -215,6 +218,7 @@ async function escribirResumen(usados: number, fatal: string | null) {
           `Subtítulos agotados (${MAX_INTENTOS_SUBTITULOS} errores, no se reintentan): ${resumen.agotadosSubtitulos}`,
           `Subtítulos para la próxima corrida: ${resumen.subtitulosParaDespues}`,
           `Transcripción: ${resumen.segundosAudio.toFixed(0)} s de audio en ${resumen.segundosTranscripcion.toFixed(0)} s`,
+          `Costo fijo por transcripción (carga + una pasada): ${resumen.costoFijo.toFixed(1)} s`,
         ]),
     ...(fatal ? [`CORTADA: ${fatal}`] : []),
   ];
@@ -270,7 +274,7 @@ async function subtitularUno(
     await bajar(pitch.video_url, video);
     const audio = await duracion(video);
 
-    const estimado = audio * factor * 1000 + 30 * 1000;
+    const estimado = tiempoWhisperMs(audio, factor);
     if (!forzar && Date.now() - inicio + estimado > PRESUPUESTO_CORRIDA_MS) return "sin tiempo";
 
     // El texto transcripto nunca va al log: solo números.
@@ -279,11 +283,15 @@ async function subtitularUno(
     resumen.subtitulados++;
     resumen.segundosAudio += audio;
     resumen.segundosTranscripcion += transcripcion;
-    const medido = transcripcion / audio;
+    // El total incluye el costo fijo; el factor mide solo lo que depende del audio.
+    const soloAudio = Math.max(0, transcripcion - resumen.costoFijo);
+    const medido = Math.max(0.05, soloAudio / audio);
     log(
       id,
       forzar ? "subtítulos rehechos" : "subtítulos",
-      `${audio.toFixed(1)} s de audio en ${transcripcion.toFixed(1)} s (${medido.toFixed(2)}x) · ${bloques.length} bloques`
+      `${audio.toFixed(1)} s de audio en ${transcripcion.toFixed(1)} s ` +
+        `(fijo ~${resumen.costoFijo.toFixed(1)} s + transcripción ~${soloAudio.toFixed(1)} s, ` +
+        `${medido.toFixed(2)} s/s) · ${bloques.length} bloques`
     );
     return { factor: medido };
   } catch (e) {
@@ -304,7 +312,8 @@ async function subtitularUno(
 /**
  * Fase 2: subtítulos de los pitches publicados que no los tienen, con el tiempo
  * que quede del presupuesto. `factor` (segundos de transcripción por segundo de
- * audio) arranca conservador y pasa a ser el peor medido en la corrida.
+ * audio, sin el costo fijo) arranca conservador y pasa a ser el peor medido
+ * en la corrida.
  * Devuelve un error fatal (solo si el pitch pedido a mano no existe) o null.
  */
 async function fase2(): Promise<string | null> {
@@ -352,7 +361,7 @@ async function main() {
 
   // Si el whisper no anda, se publica igual y se saltea la fase 2.
   try {
-    await chequeoWhisper();
+    resumen.costoFijo = await chequeoWhisper();
   } catch (e) {
     resumen.subtitulosDesactivados = (e as Error).message.slice(0, 200);
     console.log(`Aviso: subtítulos desactivados en esta corrida (${resumen.subtitulosDesactivados})`);

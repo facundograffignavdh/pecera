@@ -101,10 +101,30 @@ if (!Number.isFinite(presupuestoMin) || presupuestoMin <= 0) {
 export const PRESUPUESTO_CORRIDA_MS = presupuestoMin * 60 * 1000;
 
 export const MAX_INTENTOS_SUBTITULOS = 3;
-/** Segundos de transcripción por segundo de audio que se suponen antes de medir. */
-export const FACTOR_INICIAL = 3.5;
-/** Una transcripción que tarda más de esto por segundo de audio se da por colgada. */
-export const TIMEOUT_FACTOR = 8;
+
+/**
+ * Costo fijo de cada transcripción: cargar el modelo (574 MB) y arrancar, igual
+ * para cualquier duración. En el runner una corrida entera de 65-80 s de audio
+ * tardó 14-16 s, así que el fijo real es menor; 60 s deja margen amplio. Variable
+ * de GitHub `INGESTA_WHISPER_FIJO_S`.
+ */
+const whisperFijoS = Number(process.env.INGESTA_WHISPER_FIJO_S?.trim() || 60);
+if (!Number.isFinite(whisperFijoS) || whisperFijoS <= 0) {
+  throw new Error("INGESTA_WHISPER_FIJO_S tiene que ser un número de segundos positivo.");
+}
+export const WHISPER_FIJO_S = whisperFijoS;
+/** Segundos de transcripción por segundo de audio (sin el fijo) que se suponen antes de medir. */
+export const FACTOR_INICIAL = 1;
+/** Pasado el fijo, una transcripción que tarda más de esto por segundo de audio se da por colgada. */
+export const TIMEOUT_POR_SEGUNDO = 4;
+
+/**
+ * Tiempo de una transcripción: fijo + `porSegundo` por segundo de audio. Es la
+ * misma cuenta para el timeout y para ver si entra en el presupuesto.
+ */
+export function tiempoWhisperMs(audio: number, porSegundo: number): number {
+  return (WHISPER_FIJO_S + porSegundo * audio) * 1000;
+}
 /** Bloques de subtítulos: hasta 2 líneas de 32 caracteres, legibles en vertical. */
 export const LINEA_MAX = 32;
 export const LINEAS_POR_BLOQUE = 2;
