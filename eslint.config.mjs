@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Kit del video demo: se carga tal cual en el navegador vía <x-import>,
+    // no pasa por el build de Next — no es código de la app.
+    "public/demo-video/**",
   ]),
 ]);
 

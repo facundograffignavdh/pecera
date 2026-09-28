@@ -11,7 +11,6 @@ import Movimiento from "@/components/landing/Movimiento";
 import PasosPorRol from "@/components/landing/PasosPorRol";
 import Rotador from "@/components/landing/Rotador";
 import TarjetaOferta, { type Oferta } from "@/components/landing/TarjetaOferta";
-import VideoDemo from "@/components/landing/VideoDemo";
 import VideoFondo from "@/components/landing/VideoFondo";
 import { FEED_DESDE_LANDING } from "@/lib/landing";
 
@@ -467,10 +466,19 @@ export default function SumatePage() {
         id="demo"
         etiqueta="Video demo"
         titulo="Así se ve la Pecera en 30 segundos."
-        bajada="Grabado sobre la app real: el feed, un pique y el perfil de contacto de un proyecto."
+        bajada="El feed, un pique y el perfil de contacto de un proyecto, recreados desde la app real."
       >
-        <div className="mx-auto mt-10 max-w-3xl" data-revelar>
-          <VideoDemo src="/landing/pecera-demo.mp4" poster="/landing/pecera-demo-poster.webp" />
+        <div
+          className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-3xl bg-tinta shadow-[0_1px_2px_rgb(28_27_22/0.12),0_20px_48px_rgb(28_27_22/0.18)]"
+          data-revelar
+        >
+          <iframe
+            src="/demo-video/index.html"
+            title="Video demo de Pecera"
+            loading="lazy"
+            className="aspect-video w-full"
+            style={{ border: 0 }}
+          />
         </div>
       </Seccion>
 
