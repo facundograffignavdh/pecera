@@ -460,6 +460,28 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
             />
             {CONSENTIMIENTO}
           </label>
+          {/* Pestaña nueva: el formulario no guarda borrador y se perdería lo cargado. */}
+          <p className="pl-8 text-sm text-tinta/80">
+            Leé la{" "}
+            <a
+              href="/privacidad"
+              target="_blank"
+              rel="noopener"
+              className="font-medium text-tinta underline underline-offset-4 hover:text-arcilla"
+            >
+              política de privacidad
+            </a>{" "}
+            y las{" "}
+            <a
+              href="/terminos"
+              target="_blank"
+              rel="noopener"
+              className="font-medium text-tinta underline underline-offset-4 hover:text-arcilla"
+            >
+              condiciones
+            </a>
+            .
+          </p>
           {errores.consentimiento && <MensajeError>{errores.consentimiento}</MensajeError>}
         </div>
       ) : (

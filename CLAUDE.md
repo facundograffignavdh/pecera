@@ -86,6 +86,14 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   y `app/cuenta/foto/route.ts` la sube a R2 (`lib/r2.ts`, `<userId>-<hash8>.jpg`);
   la vieja la anota el trigger en `r2_borrar`. Esas fotos no cuentan para el tope
   de 8 GB de la ingesta (pendiente para cuando se toque la ingesta).
+- Legales: `/privacidad` y `/terminos` (estáticas, `components/PaginaLegal.tsx`),
+  con links en `PieLegal` y junto a la casilla de consentimiento (pestaña nueva).
+  Contacto en `CONTACTO_PRIVACIDAD`. **Son un BORRADOR para revisión legal.**
+  Pendientes para el abogado: inscripción de la base en el Registro Nacional de
+  Bases de Datos, transferencia internacional a proveedores fuera del país (art. 12
+  de la Ley 25.326) y cuánto guardar los originales de Drive (hoy la ingesta no los
+  borra). Si cambia qué datos se guardan o un proveedor, actualizar /privacidad y
+  su fecha.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
