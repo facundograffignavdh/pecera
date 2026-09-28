@@ -48,13 +48,6 @@ const INDUSTRIAS = [
   "Blockchain",
 ];
 
-const ESTADISTICAS: { valor: number; prefijo?: string; sufijo?: string; unidad?: string; texto: string }[] = [
-  { valor: 150, prefijo: "+", texto: "startups ya nadan en la pecera, de toda Latinoamérica." },
-  { valor: 115, prefijo: "+", texto: "actores del ecosistema mapeados: fondos, ángeles y aceleradoras." },
-  { valor: 90, unidad: "seg.", texto: "por pitch. Deal flow escaneable, sin decks de 40 slides." },
-  { valor: 0, sufijo: "%", texto: "de equity o comisión para Pecera. La negociación es entre ustedes." },
-];
-
 const EJEMPLOS: EjemploPitch[] = [
   {
     poster: "/posters/pitch_1.jpg",
@@ -529,23 +522,6 @@ export default function SumatePage() {
             </div>
           ))}
         </div>
-
-        <ul aria-label="Pecera en números" className="mt-16 grid gap-8 border-t border-tinta/15 pt-10 sm:grid-cols-2 lg:grid-cols-4">
-          {ESTADISTICAS.map((e, i) => {
-            const final = `${e.prefijo ?? ""}${e.valor}${e.sufijo ?? ""}`;
-            return (
-              <li key={e.texto} data-revelar style={{ transitionDelay: `${i * 70}ms` }} className="max-w-72">
-                <p className="font-display text-5xl font-bold tabular-nums leading-none">
-                  <span data-contar={e.valor} data-prefijo={e.prefijo} data-sufijo={e.sufijo}>
-                    {final}
-                  </span>
-                  {e.unidad && <span className="text-3xl">&nbsp;{e.unidad}</span>}
-                </p>
-                <p className="mt-2 leading-snug text-tinta/75">{e.texto}</p>
-              </li>
-            );
-          })}
-        </ul>
       </Seccion>
 
       {/* ===== CARDUMEN DE INDUSTRIAS ===== */}
