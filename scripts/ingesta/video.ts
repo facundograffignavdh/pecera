@@ -6,6 +6,20 @@ import { pipeline } from "node:stream/promises";
 import { AVATAR_LADO, DURACION_MAX_S, POSTER_MAX_BYTES } from "./config.ts";
 
 /**
+ * Un comando cortado por timeout. `salida` es el stdout hasta el corte: puede
+ * traer texto transcripto, así que nunca va al log.
+ */
+export class Vencido extends Error {
+  segundos: number;
+  salida: string;
+  constructor(cmd: string, segundos: number, salida: string) {
+    super(`${cmd} tardó más de ${Math.round(segundos)} s`);
+    this.segundos = segundos;
+    this.salida = salida;
+  }
+}
+
+/**
  * ffmpeg/ffprobe. Con `-loglevel error` la salida de error trae solo el error y
  * no la metadata del archivo (GPS, modelo del celular), que no debe ir al log.
  */
@@ -13,10 +27,16 @@ import { AVATAR_LADO, DURACION_MAX_S, POSTER_MAX_BYTES } from "./config.ts";
 export function correr(
   cmd: string,
   args: string[],
-  opciones: { cwd?: string; timeoutMs?: number } = {}
+  opciones: { cwd?: string; timeoutMs?: number; env?: Record<string, string>; ffmpeg?: boolean } = {}
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(cmd, ["-hide_banner", "-loglevel", "error", ...args], { cwd: opciones.cwd });
+    // `ffmpeg: false` para whisper.cpp, que no entiende `-hide_banner -loglevel error`.
+    const previos = opciones.ffmpeg === false ? [] : ["-hide_banner", "-loglevel", "error"];
+    const proc = spawn(cmd, [...previos, ...args], {
+      cwd: opciones.cwd,
+      env: opciones.env ? { ...process.env, ...opciones.env } : undefined,
+    });
+    const inicio = Date.now();
     let salida = "";
     let errores = "";
     let vencido = false;
@@ -31,7 +51,7 @@ export function correr(
     proc.on("error", reject);
     proc.on("close", (codigo) => {
       clearTimeout(reloj);
-      if (vencido) return reject(new Error(`${cmd} tardó más de ${Math.round(opciones.timeoutMs! / 1000)} s`));
+      if (vencido) return reject(new Vencido(cmd, (Date.now() - inicio) / 1000, salida));
       if (codigo === 0) return resolve(salida);
       const ultima = errores.trim().split("\n").pop()?.slice(0, 200) ?? "";
       reject(new Error(`${cmd} salió con ${codigo}: ${ultima}`));

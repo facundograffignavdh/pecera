@@ -52,7 +52,7 @@ import {
 } from "./formulario.ts";
 import { bajarDeDrive, leerHoja } from "./google.ts";
 import { bajar, borrar, pesoEnR2, subir } from "./r2.ts";
-import { subtitular } from "./subtitulos.ts";
+import { describirMedicion, subtitular, TranscripcionVencida } from "./subtitulos.ts";
 import { comprimir, duracion, hash8, poster } from "./video.ts";
 
 /**
@@ -266,7 +266,7 @@ async function subtitularUno(
   intentos: number,
   factor: number,
   forzar: boolean
-): Promise<{ factor: number } | "sin tiempo" | "error"> {
+): Promise<{ factor: number | null } | "sin tiempo" | "error"> {
   const id = pitch.origen_id;
   const dir = await mkdtemp(join(tmpdir(), "fase2-"));
   try {
@@ -278,26 +278,33 @@ async function subtitularUno(
     if (!forzar && Date.now() - inicio + estimado > PRESUPUESTO_CORRIDA_MS) return "sin tiempo";
 
     // El texto transcripto nunca va al log: solo números.
-    const { bloques, transcripcion } = await subtitular(video, audio);
+    const { bloques, transcripcion, medicion } = await subtitular(video, audio);
     await guardarSubtitulos(id, bloques);
     resumen.subtitulados++;
     resumen.segundosAudio += audio;
     resumen.segundosTranscripcion += transcripcion;
-    // El total incluye el costo fijo; el factor mide solo lo que depende del audio.
+    // El total incluye el costo fijo; el factor mide lo demás por segundo de voz
+    // (lo que no es voz no se transcribe). Estimar con el audio entero lo cubre.
     const soloAudio = Math.max(0, transcripcion - resumen.costoFijo);
-    const medido = Math.max(0.05, soloAudio / audio);
+    const medido = medicion.voz > 0 ? Math.max(0.05, soloAudio / medicion.voz) : null;
     log(
       id,
       forzar ? "subtítulos rehechos" : "subtítulos",
       `${audio.toFixed(1)} s de audio en ${transcripcion.toFixed(1)} s ` +
         `(fijo ~${resumen.costoFijo.toFixed(1)} s + transcripción ~${soloAudio.toFixed(1)} s, ` +
-        `${medido.toFixed(2)} s/s) · ${bloques.length} bloques`
+        `${medido === null ? "sin voz" : `${medido.toFixed(2)} s por s de voz`}) · ` +
+        `${bloques.length} bloques · ${describirMedicion(medicion, audio)}`
     );
     return { factor: medido };
   } catch (e) {
     // El detalle va a la tabla privada; al log público solo el intento.
     resumen.erroresSubtitulos++;
-    log(id, "error subtítulos", `intento ${intentos + 1}`);
+    // Del timeout sí van los números: segundos y bloques que llevaba.
+    const vencida =
+      e instanceof TranscripcionVencida
+        ? `, timeout a los ${Math.round(e.segundos)} s con ${e.bloques} bloques`
+        : "";
+    log(id, "error subtítulos", `intento ${intentos + 1}${vencida}`);
     try {
       await registrarErrorSubtitulos(id, (e as Error).message, intentos);
     } catch {
@@ -312,8 +319,8 @@ async function subtitularUno(
 /**
  * Fase 2: subtítulos de los pitches publicados que no los tienen, con el tiempo
  * que quede del presupuesto. `factor` (segundos de transcripción por segundo de
- * audio, sin el costo fijo) arranca conservador y pasa a ser el peor medido
- * en la corrida.
+ * voz, sin el costo fijo) arranca conservador y pasa a ser el peor medido en la
+ * corrida. Se estima con la duración entera, que siempre es mayor o igual a la voz.
  * Devuelve un error fatal (solo si el pitch pedido a mano no existe) o null.
  */
 async function fase2(): Promise<string | null> {
@@ -323,7 +330,8 @@ async function fase2(): Promise<string | null> {
   let factor = FACTOR_INICIAL;
   let medidos = 0;
   const medir = (r: Awaited<ReturnType<typeof subtitularUno>>) => {
-    if (typeof r !== "object") return;
+    // Un pitch sin voz no corre whisper: no dice nada del factor.
+    if (typeof r !== "object" || r.factor === null) return;
     factor = medidos === 0 ? r.factor : Math.max(factor, r.factor);
     medidos++;
   };
