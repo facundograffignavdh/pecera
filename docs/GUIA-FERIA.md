@@ -1,6 +1,6 @@
 # Pecera para la Feria 21 — guía de cambios y de uso
 
-Rama `v2-feria-lista` (sale de `v2-cuentas`). Esta guía es para el equipo: qué cambió, cómo
+Rama `v2-feria-lista` (sale de `v2-cuentas`, al día con `main` después del PR #2). Esta guía es para el equipo: qué cambió, cómo
 ponerlo en marcha y cómo operar la feria. La auditoría con los pendientes está en
 [`AUDITORIA.md`](./AUDITORIA.md).
 
@@ -28,7 +28,9 @@ funciona igual: guarda lo básico del perfil, avisa y las páginas nuevas muestr
 
 ## 2. Puesta en marcha (en este orden)
 
-1. **Revisar y mergear** el PR a `v2-cuentas`. Correr `npm run build` localmente si hace falta.
+1. **Revisar y mergear** el PR a `main`. Correr `npm run build` localmente si hace falta. La
+   app aguanta el orden inverso (deploy antes que migración), pero lo ideal es: migración →
+   merge → deploy.
 2. **Probar la migración sin tocar la base** (opcional, 1 minuto): ver
    `supabase/pruebas/feria_lista.mjs`. Tiene que dar `45 ok · 0 fallas`.
 3. **Correr la migración** en el SQL editor de Supabase: pegar el contenido completo de
@@ -45,8 +47,9 @@ funciona igual: guarda lo básico del perfil, avisa y las páginas nuevas muestr
    perfil espera tu OK.
 7. **Confirmar las fechas** de los Días 1 a 3 en `lib/eventos.ts` (hoy dicen "Fecha a confirmar";
    el Demo Day del 5/10 sale del Drive). Commit + deploy.
-8. Completar el **lanzamiento de v2-cuentas** (sección de `CLAUDE.md`): variables de R2 en
-   Production de Vercel, app de Google en modo producción, cerrar el Form viejo.
+8. **Verificar que el lanzamiento de v2-cuentas quedó completo** (PR #2, mergeado el 29/9;
+   checklist en `CLAUDE.md`): `lanzamiento-cuentas.sql` corrido, variables de R2 en Production
+   de Vercel, app de Google en modo producción y el Form viejo cerrado.
 
 > ⚠️ **Crítico para la feria:** si la app de Google OAuth sigue en modo *Testing*, solo pueden
 > entrar los usuarios de prueba cargados (máx. 100). Pasarla a *In production* antes del Día 1.
@@ -89,7 +92,6 @@ entra con Google (un voto por cuenta, lo puede cambiar mientras la votación est
 - **Perfiles** / **Pitches**: publicar o despublicar con un toque (filtros por estado).
 - **Envíos**: videos del Form que no se publicaron, con el email escrito y verificado, la regla
   y el comando `gh workflow run ingesta.yml -f asignar="…"` listo para copiar (cambiar `SLUG`).
-  Mientras la rama no esté en `main`, agregar `--ref v2-cuentas`.
 - **Empresas**: ocultar una empresa (spam, nombre ofensivo).
 - **Feria 21**: abrir/cerrar la votación, mostrar resultados, ranking en vivo, anotar o sacar
   participantes.

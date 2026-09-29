@@ -1,6 +1,6 @@
 # Auditoría CEO + CTO — Pecera rumbo a la Feria 21
 
-Fecha: 29/09/2026 · Rama auditada: `v2-feria-lista` (sobre `v2-cuentas`) · Fuentes: los dos
+Fecha: 29/09/2026 · Rama auditada: `v2-feria-lista` (sobre `main`, con v2-cuentas ya lanzada) · Fuentes: los dos
 repos (`pecera` y `pecera-app`), el Drive de Pecera (guía estratégica VC LatAm, pitch deck,
 manual de marca, planilla de pitches v2) y QA local en celular (390 px) contra la base de
 producción en modo solo lectura.
@@ -75,11 +75,11 @@ URLs de documentos solo `https` y con `rel="nofollow noopener"`, ISR en todo lo 
 
 | # | Pendiente | Cómo hacerlo | Quién | Esfuerzo |
 | --- | --- | --- | --- | --- |
-| 1 | **Correr la migración** `20261001120000_feria_lista.sql` | SQL editor de Supabase, después del merge. Antes, `supabase/pruebas/feria_lista.mjs` (45 ok). | CTO | 10 min |
+| 1 | **Correr la migración** `20261001120000_feria_lista.sql` | SQL editor de Supabase, antes o justo después del merge. Antes, `supabase/pruebas/feria_lista.mjs` (45 ok). | CTO | 10 min |
 | 2 | **Cargar admins** | `insert into public.admins (email) values ('…');` por cada persona del equipo. | CTO | 2 min |
 | 3 | **App de Google OAuth en producción** | Google Cloud → OAuth consent screen → *Publish app*. En *Testing* solo entran 100 usuarios de prueba: el público no podría votar. | CEO/CTO | 15 min (+ verificación de Google si pide scopes sensibles; los nuestros no) |
 | 4 | **Dominio final y Redirect URLs** | Decidir el dominio **antes de grabar las tarjetas NFC** (la URL `/p/slug` queda impresa). Configurarlo en Vercel, en `NEXT_PUBLIC_SITE_URL` y en Supabase → Auth → *Site URL* y *Redirect URLs* (`/auth/callback`). | CEO | 30 min |
-| 5 | **Lanzamiento de v2-cuentas** | Pasos de `CLAUDE.md`: `lanzamiento-cuentas.sql`, variables de R2 en Production de Vercel, cerrar el Form viejo, merge a `main`. | CTO | 1 h |
+| 5 | **Verificar el lanzamiento de v2-cuentas** (PR #2 ya en `main`) | Checklist de `CLAUDE.md`: `lanzamiento-cuentas.sql` corrido, variables de R2 en Production de Vercel, Form viejo cerrado. Probar un alta real con foto en producción. | CTO | 20 min |
 | 6 | **Fechas del programa** | Confirmar Día 1, 2 y 3 en `lib/eventos.ts` (hoy "Fecha a confirmar"). | CEO | 5 min |
 
 ### P1 — antes del Demo Day (5/10) o durante la feria
