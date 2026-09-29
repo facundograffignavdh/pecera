@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Kit del video demo: se carga tal cual en el navegador vía <x-import>,
     // no pasa por el build de Next — no es código de la app.
     "public/demo-video/**",
+    // Pruebas de migraciones: script suelto que corre con PGlite fuera de la app.
+    "supabase/pruebas/**",
   ]),
 ]);
 
