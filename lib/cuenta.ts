@@ -44,9 +44,14 @@ export function urlFormularioPitch(email: string): string {
   return `${FORMULARIO_PITCH}?usp=pp_url&entry.481163043=${e}&authuser=${e}`;
 }
 
+/** URL pública de una ruta interna ("/docs" → "https://…/docs"). */
+export function urlSitio(ruta: string): string {
+  return `${siteUrl}${ruta}`;
+}
+
 /** URL pública del perfil: la que va en la tarjeta NFC. */
 export function urlPerfil(slug: string): string {
-  return `${siteUrl}/p/${slug}`;
+  return urlSitio(`/p/${slug}`);
 }
 
 /** Opciones del select, con las etiquetas del Form ("Fondo de inversión"). */

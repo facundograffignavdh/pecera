@@ -564,3 +564,10 @@ html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
     animation: none;
   }
 }
+
+/* Docs: el concepto o documento al que apunta el link compartido se marca. */
+.concepto:target,
+.documento:target {
+  border-color: var(--color-arcilla);
+  box-shadow: 0 0 0 3px rgb(217 90 34 / 0.18);
+}

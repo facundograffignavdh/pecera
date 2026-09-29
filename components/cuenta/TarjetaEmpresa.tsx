@@ -12,7 +12,7 @@ import {
 import BotonCopiar from "@/components/BotonCopiar";
 import { ChipsMultiple, ChipsUnico, SelectorEtapa } from "@/components/Chips";
 import { Aviso, BOTON_PRIMARIO, BOTON_SECUNDARIO, INPUT, Tarjeta } from "@/components/cuenta/ui";
-import { slugDesdeNombre, urlPerfil } from "@/lib/cuenta";
+import { slugDesdeNombre, urlSitio } from "@/lib/cuenta";
 import type { Resultado } from "@/lib/errores-base";
 import {
   CARGOS,
@@ -47,8 +47,8 @@ const INICIAL: Resultado = { ok: false };
 /** "A1B2C3D4" → "A1B2-C3D4": se dicta y se copia más fácil. */
 const formatoCodigo = (c: string) => `${c.slice(0, 4)}-${c.slice(4)}`;
 
-/** Dirección pública de la empresa (misma base que la del perfil). */
-const urlEmpresa = (slug: string) => urlPerfil(slug).replace("/p/", "/e/");
+/** Dirección pública de la empresa. */
+const urlEmpresa = (slug: string) => urlSitio(`/e/${slug}`);
 
 export default function TarjetaEmpresa({ empresa }: { empresa: MiEmpresa | null }) {
   return (
@@ -250,7 +250,7 @@ function ConEmpresa({ empresa }: { empresa: MiEmpresa }) {
   const [estadoEditar, accionEditar, guardando] = useActionState(editarEmpresa, INICIAL);
 
   const invitacion = codigo
-    ? `Sumate a ${empresa.nombre} en Pecera: entrá a ${urlPerfil("").replace(/\/p\/$/, "/cuenta")}, en "Tu empresa" tocá "Tengo un código" y poné ${formatoCodigo(codigo)}`
+    ? `Sumate a ${empresa.nombre} en Pecera: entrá a ${urlSitio("/cuenta")}, en "Tu empresa" tocá "Tengo un código" y poné ${formatoCodigo(codigo)}`
     : "";
 
   return (
