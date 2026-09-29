@@ -58,7 +58,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
   // Empresa, transparencia y evento: extras de feria_lista. Si la base todavía no
   // los tiene (o fallan), la cuenta se edita igual.
-  const extras = user && perfil ? await leerExtras(supabase) : null;
+  const [extras, esAdmin] = await Promise.all([
+    user && perfil ? leerExtras(supabase) : null,
+    user ? esDelEquipo(supabase) : false,
+  ]);
 
   // "Mis pitches" es un extra: si falla, se edita el perfil igual.
   let misPitches: MiPitch[] = [];
@@ -161,6 +164,16 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               </>
             )}
 
+            {esAdmin && (
+              <Link
+                href="/admin"
+                className="flex min-h-12 items-center justify-between rounded-2xl bg-tinta px-4 text-marfil"
+              >
+                <span className="font-medium">Panel del equipo</span>
+                <span aria-hidden>&rarr;</span>
+              </Link>
+            )}
+
             <BotonSalir />
           </section>
         )}
@@ -201,6 +214,13 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
     datos: (datos.data as DatoEmpresa[] | null) ?? [],
     participa: !!filaEvento?.participa,
   };
+}
+
+/** El link al panel solo se muestra al equipo; el panel igual lo vuelve a chequear. */
+async function esDelEquipo(supabase: Awaited<ReturnType<typeof supabaseConSesion>>): Promise<boolean> {
+  const { data, error } = await supabase.rpc("es_admin");
+  if (error && !faltaMigracion(error)) console.error(`Supabase (es_admin): ${error.message}`);
+  return data === true;
 }
 
 /** La primera vez: el perfil está creado, su dirección para copiar y su estado. */
