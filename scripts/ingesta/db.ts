@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "./config.ts";
-import type { Entrada } from "./formulario.ts";
+import type { Cuenta, Entrada, Perfil, Regla } from "./formulario.ts";
 import type { Bloque } from "./subtitulos.ts";
 
 /**
@@ -68,70 +68,30 @@ export async function registrar(
   if (error) fallo("registrar", error);
 }
 
-/** base, base-2, base-3… el primero que no esté usado. */
-async function slugLibre(base: string): Promise<string> {
-  const { data, error } = await db()
-    .from("perfiles")
-    .select("slug")
-    .like("slug", `${base}%`)
-    .overrideTypes<{ slug: string }[], { merge: false }>();
-  if (error) fallo("slugLibre", error);
-
-  const usados = new Set(data.map((p) => p.slug));
-  if (!usados.has(base)) return base;
-  for (let n = 2; ; n++) if (!usados.has(`${base}-${n}`)) return `${base}-${n}`;
-}
-
-export type Claves = { video: string; poster: string; avatar: string | null };
+export type Claves = { video: string; poster: string };
 
 /**
- * Crea (o actualiza, si es un reintento) el perfil y su pitch, publicados.
- * El perfil se busca por `origen_id` para no duplicarlo; el slug se conserva.
+ * Crea (o actualiza, si es un reintento) el pitch publicado en el perfil dado.
  * Las claves que reemplaza las anota `procesar()` para borrarlas más tarde.
  * Si el video cambió, sus subtítulos ya no sirven: se borran y se reinician los
  * intentos. Con el mismo video se conservan, aunque estén corregidos a mano.
- * Devuelve el slug.
  */
-export async function guardarPerfilYPitch(
+export async function guardarPitch(
+  perfilId: string,
   entrada: Entrada,
   claves: Claves,
   videoNuevo: boolean
-): Promise<string> {
-  const datos = { ...entrada.perfil, avatar_url: claves.avatar, publicado: true };
-
-  const { data: existente, error: errorBuscar } = await db()
-    .from("perfiles")
-    .select("id, slug")
-    .eq("origen_id", entrada.origenId)
-    .maybeSingle()
-    .overrideTypes<{ id: string; slug: string } | null, { merge: false }>();
-  if (errorBuscar) fallo("buscarPerfil", errorBuscar);
-
-  let perfil = existente;
-  if (perfil) {
-    const { error } = await db().from("perfiles").update(datos).eq("id", perfil.id);
-    if (error) fallo("actualizarPerfil", error);
-  } else {
-    const slug = await slugLibre(entrada.slugBase);
-    const { data, error } = await db()
-      .from("perfiles")
-      .insert({ ...datos, slug, origen_id: entrada.origenId })
-      .select("id, slug")
-      .single()
-      .overrideTypes<{ id: string; slug: string }, { merge: false }>();
-    if (error) fallo("crearPerfil", error);
-    perfil = data;
-  }
-
+): Promise<void> {
   const { error: errorPitch } = await db()
     .from("pitches")
     .upsert(
       {
-        perfil_id: perfil.id,
+        perfil_id: perfilId,
         origen_id: entrada.origenId,
         video_url: claves.video,
         poster_url: claves.poster,
         orden: entrada.orden,
+        descripcion: entrada.descripcion,
         publicado: true,
         ...(videoNuevo ? { subtitulos: null } : {}),
       },
@@ -146,34 +106,131 @@ export async function guardarPerfilYPitch(
       .eq("origen_id", entrada.origenId);
     if (error) fallo("reiniciarSubtitulos", error);
   }
-
-  return perfil.slug;
 }
 
-/**
- * Claves de R2 que usa hoy la fila (video, poster y avatar). Las rutas `/...`
- * del seed no son de R2 y quedan afuera.
- */
+/** Pasa un pitch ya publicado a otro perfil (input `asignar`). Devuelve si existía. */
+export async function moverPitch(origenId: string, perfilId: string): Promise<boolean> {
+  const { data, error } = await db()
+    .from("pitches")
+    .update({ perfil_id: perfilId })
+    .eq("origen_id", origenId)
+    .select("id")
+    .overrideTypes<{ id: string }[], { merge: false }>();
+  if (error) fallo("moverPitch", error);
+  return data.length > 0;
+}
+
+/** Claves de R2 que usa hoy el pitch (video y poster). Las rutas `/...` del seed quedan afuera. */
 export async function clavesActuales(origenId: string): Promise<string[]> {
-  const [pitch, perfil] = await Promise.all([
-    db()
-      .from("pitches")
-      .select("video_url, poster_url")
-      .eq("origen_id", origenId)
-      .maybeSingle()
-      .overrideTypes<{ video_url: string | null; poster_url: string | null } | null, { merge: false }>(),
-    db()
-      .from("perfiles")
-      .select("avatar_url")
-      .eq("origen_id", origenId)
-      .maybeSingle()
-      .overrideTypes<{ avatar_url: string | null } | null, { merge: false }>(),
-  ]);
-  if (pitch.error) fallo("clavesPitch", pitch.error);
-  if (perfil.error) fallo("clavesPerfil", perfil.error);
-  return [pitch.data?.video_url, pitch.data?.poster_url, perfil.data?.avatar_url].filter(
+  const { data, error } = await db()
+    .from("pitches")
+    .select("video_url, poster_url")
+    .eq("origen_id", origenId)
+    .maybeSingle()
+    .overrideTypes<{ video_url: string | null; poster_url: string | null } | null, { merge: false }>();
+  if (error) fallo("clavesPitch", error);
+  return [data?.video_url, data?.poster_url].filter(
     (c): c is string => !!c && !c.startsWith("/")
   );
+}
+
+export type EstadoEnvio = "recibido" | "en_espera" | "ok" | "error" | "rechazado";
+
+export type Envio = {
+  origen_id: string;
+  estado: EstadoEnvio;
+  regla: Regla | null;
+  perfil_id: string | null;
+};
+
+/** Todos los envíos registrados, sin los emails (no hacen falta: salen de la hoja). */
+export async function leerEnvios(): Promise<Map<string, Envio>> {
+  const todos = new Map<string, Envio>();
+  const pagina = 1000;
+  for (let desde = 0; ; desde += pagina) {
+    const { data, error } = await db()
+      .from("envios")
+      .select("origen_id, estado, regla, perfil_id")
+      .order("origen_id")
+      .range(desde, desde + pagina - 1)
+      .overrideTypes<Envio[], { merge: false }>();
+    if (error) fallo("leerEnvios", error);
+    for (const fila of data) todos.set(fila.origen_id, fila);
+    if (data.length < pagina) return todos;
+  }
+}
+
+/** Registra el envío. Solo escribe si cambió algo respecto de `previo`. */
+export async function guardarEnvio(
+  entrada: Entrada,
+  nuevo: Omit<Envio, "origen_id">,
+  previo: Envio | undefined
+): Promise<void> {
+  if (
+    previo &&
+    previo.estado === nuevo.estado &&
+    previo.regla === nuevo.regla &&
+    previo.perfil_id === nuevo.perfil_id
+  ) {
+    return;
+  }
+  const { error } = await db()
+    .from("envios")
+    .upsert(
+      {
+        origen_id: entrada.origenId,
+        email_verificado: entrada.emailVerificado,
+        email_escrito: entrada.emailEscrito,
+        fecha: entrada.fecha,
+        ...nuevo,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "origen_id" }
+    );
+  if (error) fallo("guardarEnvio", error);
+}
+
+/** Emails de una tabla privada de una sola columna (bloqueados o equipo). */
+export async function leerEmails(tabla: "emails_bloqueados" | "equipo_ingesta"): Promise<Set<string>> {
+  const { data, error } = await db()
+    .from(tabla)
+    .select("email")
+    .overrideTypes<{ email: string }[], { merge: false }>();
+  if (error) fallo(`leer ${tabla}`, error);
+  return new Set(data.map((f) => f.email));
+}
+
+/** Cuáles de estos emails son cuentas y su perfil, si tienen. Una sola consulta. */
+export async function leerCuentas(emails: string[]): Promise<Map<string, Cuenta>> {
+  const cuentas = new Map<string, Cuenta>();
+  if (emails.length === 0) return cuentas;
+  const { data, error } = await db().rpc("ingesta_cuentas", { p_emails: emails });
+  if (error) fallo("ingesta_cuentas", error);
+  const filas = (data ?? []) as { email: string; perfil_id: string | null; slug: string | null }[];
+  for (const f of filas) cuentas.set(f.email, { perfilId: f.perfil_id, slug: f.slug });
+  return cuentas;
+}
+
+export async function perfilPorSlug(slug: string): Promise<Perfil | null> {
+  const { data, error } = await db()
+    .from("perfiles")
+    .select("id, slug")
+    .eq("slug", slug)
+    .maybeSingle()
+    .overrideTypes<Perfil | null, { merge: false }>();
+  if (error) fallo("perfilPorSlug", error);
+  return data;
+}
+
+export async function perfilPorId(id: string): Promise<Perfil | null> {
+  const { data, error } = await db()
+    .from("perfiles")
+    .select("id, slug")
+    .eq("id", id)
+    .maybeSingle()
+    .overrideTypes<Perfil | null, { merge: false }>();
+  if (error) fallo("perfilPorId", error);
+  return data;
 }
 
 export type ParaBorrar = { clave: string; bytes: number; borrar_despues: string };

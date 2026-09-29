@@ -1,4 +1,4 @@
-# Ingesta: Google Form → ffmpeg → R2 + Supabase. Ver scripts/ingesta/.
+# Ingesta: Google Form de pitches → ffmpeg → R2 + Supabase. Ver scripts/ingesta/.
 # El repo es público: el script no loguea datos personales, solo origen_id,
 # slug, estado y números.
 name: Ingesta
@@ -20,6 +20,12 @@ on:
         description: "Con reprocesar: rehacer solo los subtítulos de ese pitch, sin tocar el video"
         type: boolean
         default: false
+      # El script lo lee del JSON del evento, no de `env:`: el env del step se
+      # imprime en el log público. Mejor slug que email.
+      asignar:
+        description: "Asignar a mano un envío en espera: '<origen_id> <slug o email>'"
+        type: string
+        required: false
 
 # Nunca dos a la vez: la siguiente espera a que termine la anterior.
 concurrency:
@@ -33,11 +39,14 @@ permissions:
 env:
   FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-08-31-13-27/ffmpeg-n9.0.1-11-ge47273f4d9-linux64-gpl-9.0.tar.xz
   FFMPEG_SHA256: 182c1b509720e939bb47bfb47dc29cc0c298640401128e3dce8627d10707eb5a
-  # Segundo ffmpeg, solo para los subtítulos: BtbN deshabilitó whisper el
-  # 2026-06-19 y ningún build 9.0 lo trae. Este 8.1.1 (2026-05-31) es el último
-  # con --enable-whisper. Comprimir sigue siendo cosa del 9.0.1 de arriba.
-  FFMPEG_WHISPER_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-05-31-13-22/ffmpeg-n8.1.1-9-g58d4114d36-linux64-gpl-8.1.tar.xz
-  FFMPEG_WHISPER_SHA256: 0d14781b885c491f5c3b799cbe7d3a26ba8a7eb01935483185e31ea7d79c8cd3
+  # whisper.cpp para los subtítulos: build oficial b5130 (= v1.9.4). El filtro
+  # whisper de ffmpeg no deja configurar la decodificación ni descartar lo que no
+  # es voz. Trae sus .so al lado del binario (la ingesta pone LD_LIBRARY_PATH).
+  WHISPER_CPP_URL: https://github.com/ggml-org/whisper.cpp/releases/download/b5130/whisper-bin-ubuntu-x64.tar.gz
+  WHISPER_CPP_SHA256: 53e7fd8b5764edad916b8848dd0af6abb1ff1d3b86c899e79c78652412536c32
+  # Detector de voz Silero en una revisión fija de Hugging Face.
+  WHISPER_VAD_URL: https://huggingface.co/ggml-org/whisper-vad/resolve/9ffd54a1e1ee413ddf265af9913beaf518d1639b/ggml-silero-v6.2.0.bin
+  WHISPER_VAD_SHA256: 2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987
   # Modelo de Whisper en una revisión fija de Hugging Face.
   WHISPER_MODELO_URL: https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q5_0.bin
   WHISPER_MODELO_SHA256: 394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2
@@ -84,22 +93,22 @@ jobs:
           echo "$RUNNER_TEMP/ffmpeg/bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/ffmpeg/bin/ffmpeg" -hide_banner -version | head -1
 
-      # No va al PATH: taparía al 9.0.1. La ingesta lo usa por FFMPEG_WHISPER.
-      - name: Caché de ffmpeg con whisper
-        id: cache-ffmpeg-whisper
+      # No va al PATH: la ingesta lo usa por WHISPER_CPP.
+      - name: Caché de whisper.cpp
+        id: cache-whisper-cpp
         uses: actions/cache@v6
         with:
-          path: ${{ runner.temp }}/ffmpeg-whisper
-          key: ffmpeg-whisper-${{ env.FFMPEG_WHISPER_SHA256 }}
+          path: ${{ runner.temp }}/whisper-cpp
+          key: whisper-cpp-${{ env.WHISPER_CPP_SHA256 }}
 
-      - name: Instalar ffmpeg con whisper
-        if: steps.cache-ffmpeg-whisper.outputs.cache-hit != 'true'
+      - name: Instalar whisper.cpp
+        if: steps.cache-whisper-cpp.outputs.cache-hit != 'true'
         run: |
-          curl -fsSL -o "$RUNNER_TEMP/ffmpeg-whisper.tar.xz" "$FFMPEG_WHISPER_URL"
-          echo "$FFMPEG_WHISPER_SHA256  $RUNNER_TEMP/ffmpeg-whisper.tar.xz" | sha256sum -c -
-          mkdir -p "$RUNNER_TEMP/ffmpeg-whisper"
-          tar -xJf "$RUNNER_TEMP/ffmpeg-whisper.tar.xz" -C "$RUNNER_TEMP/ffmpeg-whisper" --strip-components=1
-          rm "$RUNNER_TEMP/ffmpeg-whisper.tar.xz"
+          curl -fsSL -o "$RUNNER_TEMP/whisper-cpp.tar.gz" "$WHISPER_CPP_URL"
+          echo "$WHISPER_CPP_SHA256  $RUNNER_TEMP/whisper-cpp.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/whisper-cpp"
+          tar -xzf "$RUNNER_TEMP/whisper-cpp.tar.gz" -C "$RUNNER_TEMP/whisper-cpp" --strip-components=1
+          rm "$RUNNER_TEMP/whisper-cpp.tar.gz"
 
       - name: Caché del modelo de Whisper
         id: cache-whisper
@@ -114,9 +123,17 @@ jobs:
           mkdir -p "$RUNNER_TEMP/whisper"
           curl -fsSL -o "$RUNNER_TEMP/whisper/modelo.bin" "$WHISPER_MODELO_URL"
 
-      # También cuando viene de la caché (son unos segundos).
-      - name: Verificar el modelo de Whisper
-        run: echo "$WHISPER_MODELO_SHA256  $RUNNER_TEMP/whisper/modelo.bin" | sha256sum -c -
+      # Pesa 885 KB: se baja siempre, sin caché.
+      - name: Bajar el detector de voz
+        run: |
+          mkdir -p "$RUNNER_TEMP/vad"
+          curl -fsSL -o "$RUNNER_TEMP/vad/vad.bin" "$WHISPER_VAD_URL"
+
+      # También cuando vienen de la caché (son unos segundos).
+      - name: Verificar los modelos de Whisper
+        run: |
+          echo "$WHISPER_MODELO_SHA256  $RUNNER_TEMP/whisper/modelo.bin" | sha256sum -c -
+          echo "$WHISPER_VAD_SHA256  $RUNNER_TEMP/vad/vad.bin" | sha256sum -c -
 
       - id: auth
         uses: google-github-actions/auth@v3
@@ -137,10 +154,15 @@ jobs:
           INGESTA_REPROCESAR: ${{ inputs.reprocesar }}
           INGESTA_SOLO_SUBTITULOS: ${{ inputs.solo_subtitulos && '1' || '' }}
           INGESTA_PRESUPUESTO_MIN: ${{ vars.INGESTA_PRESUPUESTO_MIN }}
-          FFMPEG_WHISPER: ${{ runner.temp }}/ffmpeg-whisper/bin/ffmpeg
+          INGESTA_WHISPER_FIJO_S: ${{ vars.INGESTA_WHISPER_FIJO_S }}
+          INGESTA_CONFIANZA_MIN: ${{ vars.INGESTA_CONFIANZA_MIN }}
+          INGESTA_COBERTURA_MIN: ${{ vars.INGESTA_COBERTURA_MIN }}
+          WHISPER_CPP: ${{ runner.temp }}/whisper-cpp
           WHISPER_MODELO: ${{ runner.temp }}/whisper/modelo.bin
+          WHISPER_VAD: ${{ runner.temp }}/vad/vad.bin
           GOOGLE_TOKEN: ${{ steps.auth.outputs.access_token }}
-          GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID }}
+          # Formulario nuevo de pitches. main sigue con GOOGLE_SHEET_ID hasta el lanzamiento.
+          GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID_V2 }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}

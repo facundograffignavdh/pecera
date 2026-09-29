@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Avatar from "@/components/Avatar";
 import BotonCopiar from "@/components/BotonCopiar";
+import EditarPerfil from "@/components/EditarPerfil";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
@@ -81,6 +82,8 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
           </div>
         </header>
 
+        <EditarPerfil slug={perfil.slug} />
+
         <p className="mt-5 leading-relaxed text-tinta/90">{perfil.descripcion}</p>
 
         {canales.length > 0 && (
@@ -135,6 +138,11 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
                       </span>
                     )}
                   </Link>
+                  {pitch.descripcion && (
+                    <p className="mt-2 line-clamp-3 text-sm leading-snug text-tinta/80">
+                      {pitch.descripcion}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>

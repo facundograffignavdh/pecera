@@ -2,8 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { env } from "./config.ts";
-import { filtroWhisper } from "./subtitulos.ts";
+import { detectarVoz, extraerAudio, transcribir } from "./subtitulos.ts";
 import { comprimir, correr, orientacion } from "./video.ts";
 
 /**
@@ -126,28 +125,29 @@ export async function chequeoRotacion(): Promise<void> {
 }
 
 /**
- * El ffmpeg de los subtítulos (en el runner, otro binario que el que comprime)
- * tiene que traer el filtro whisper y poder cargar el modelo. Se prueba con 2 s
- * de silencio. Si falla, la ingesta publica igual y saltea los subtítulos.
+ * whisper.cpp tiene que andar con el modelo y el detector de voz. Se prueba con
+ * 2 s de silencio: el detector no tiene que encontrar voz, y whisper-cli (sin
+ * detector) tiene que cargar el modelo y hacer una pasada. Si falla, la ingesta
+ * publica igual y saltea los subtítulos.
+ * Devuelve los segundos de esa pasada: cargar el modelo más una ventana de 30 s
+ * (whisper procesa así aunque el audio sea más corto). Es el costo fijo real de
+ * cada transcripción, con el mismo binario, modelo y caché que la fase 2.
  */
-export async function chequeoWhisper(): Promise<void> {
-  const version = (await correr(env.ffmpegWhisper, ["-version"])).split("\n")[0];
-  console.log(`Chequeo de whisper con ${version}`);
-
-  const filtros = await correr(env.ffmpegWhisper, ["-filters"]);
-  if (!/^\s*\S+\s+whisper\s/m.test(filtros)) throw new Error("este ffmpeg no tiene el filtro whisper");
-
+export async function chequeoWhisper(): Promise<number> {
+  console.log("Chequeo de whisper.cpp");
   const dir = await mkdtemp(join(tmpdir(), "chequeo-whisper-"));
   try {
-    await correr(
-      env.ffmpegWhisper,
-      [
-        "-y", "-f", "lavfi", "-i", "anullsrc=r=16000:cl=mono", "-t", "2",
-        "-af", filtroWhisper(dir, "chequeo.srt"), "-f", "null", "-",
-      ],
-      { cwd: dir, timeoutMs: 3 * 60 * 1000 }
-    );
-    console.log("  modelo: ok");
+    const wav = join(dir, "silencio.wav");
+    await extraerAudio(["-f", "lavfi", "-t", "2", "-i", "anullsrc=r=16000:cl=mono"], wav);
+    const voz = await detectarVoz(wav, 2);
+    if (voz > 0) throw new Error(`el detector de voz encontró ${voz.toFixed(1)} s de voz en silencio`);
+    console.log("  detector de voz: ok");
+
+    const inicio = Date.now();
+    await transcribir(wav, dir, 2, { vad: false });
+    const fijo = (Date.now() - inicio) / 1000;
+    console.log(`  modelo: ok (costo fijo: ${fijo.toFixed(1)} s, carga + una pasada)`);
+    return fijo;
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -161,7 +161,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       throw new Error(`Chequeo de rotación FALLÓ: ${e.message}`);
     });
     if (!process.env.WHISPER_MODELO) {
-      console.log("Chequeo de whisper salteado: falta WHISPER_MODELO.");
+      console.log("Chequeo de whisper salteado: falta WHISPER_MODELO (y WHISPER_CPP, WHISPER_VAD).");
       return;
     }
     await chequeoWhisper().catch((e: Error) => {

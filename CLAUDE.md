@@ -21,9 +21,19 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - Videos y posters de prueba en `public/`; los posters se generaron con ffmpeg.
 - Ingesta automática: `.github/workflows/ingesta.yml` (cron cada 10 min + manual,
   con modo seco) corre `scripts/ingesta/` (Node 24 corriendo TS directo, sin
-  build). Lee el Google Form, comprime con ffmpeg, sube a R2 y crea perfil + pitch
-  publicados. La tabla `ingestas` lleva el estado por video (`origen_id` = ID de
-  Drive). El input `reprocesar` (un origen_id) lo vuelve a procesar aunque esté ok.
+  build). En v2 lee el Form de pitches (`vars.GOOGLE_SHEET_ID_V2`, pestaña
+  "Respuestas de formulario 1", marca temporal D/M/YYYY): una respuesta = un pitch,
+  que va al perfil de una cuenta existente; no crea perfiles. Comprime con ffmpeg,
+  sube video + poster a R2 y publica el pitch con su descripción. La tabla
+  `ingestas` lleva el estado por video (`origen_id` = ID de Drive). El input
+  `reprocesar` (un origen_id) lo vuelve a procesar aunque esté ok.
+- Asignación (`resolver` en `scripts/ingesta/formulario.ts`, regla guardada en
+  `envios.regla`): bloqueado → rechazado; escrito = verificado → ese perfil; del
+  equipo (`equipo_ingesta`) → perfil del email escrito o espera; si no, escrito que
+  no es cuenta → perfil del verificado; escrito que es otra cuenta → espera. Lo en
+  espera se reevalúa en cada corrida. Input `asignar` ("<origen_id> <slug o email>",
+  leído del JSON del evento, nunca del `env:` del step) lo resuelve a mano. En modo
+  seco también lee Supabase (solo lectura) para mostrar la regla.
 - ffmpeg en el workflow: build estático de BtbN con versión y sha256 fijos (9.0,
   como el local), nunca el de apt. La rotación se aplica a mano (`-noautorotate` +
   transpose/flip en `video.ts`) y cada corrida arranca con un chequeo sintético
@@ -31,17 +41,32 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - Subtítulos (`scripts/ingesta/subtitulos.ts`): fase 2 de la corrida. Después de
   publicar, con lo que quede de `INGESTA_PRESUPUESTO_MIN` (variable de GitHub, 9 min
   por defecto, contando toda la corrida) se transcriben los pitches publicados sin
-  subtítulos con el filtro `whisper` de ffmpeg y `ggml-large-v3-turbo-q5_0.bin`
-  (revisión fija de Hugging Face, sha256 verificado, en caché). Nunca afecta la
-  publicación: lo que no entra queda para la próxima; 3 errores y no se reintenta.
-  El factor de estimación arranca en 3,5x y se ajusta a lo medido; el timeout es 8x
-  el audio. `reprocesar` + `solo_subtitulos` rehace solo los subtítulos.
-- whisper usa un **segundo ffmpeg**: BtbN 8.1.1 (2026-05-31), fijo por sha256 y
-  fuera del PATH (`FFMPEG_WHISPER`). BtbN deshabilitó whisper el 2026-06-19 y
-  ningún build 9.0 lo trae. Comprimir sigue siendo del 9.0.1. El chequeo previo
-  prueba el filtro y el modelo; si falla, publica igual sin subtítulos y el job
-  queda en rojo. En el filtro las rutas van relativas y con "/" (los ":" de `C:\`
-  rompen la sintaxis).
+  subtítulos con whisper.cpp y `ggml-large-v3-turbo-q5_0.bin` (revisión fija de
+  Hugging Face, sha256 verificado, en caché). Nunca afecta la publicación: lo que
+  no entra queda para la próxima; 3 errores y no se reintenta.
+  Timeout y estimación usan la misma cuenta (`tiempoWhisperMs`): costo fijo
+  (`INGESTA_WHISPER_FIJO_S`, variable de GitHub, 90 s por defecto) + segundos por
+  segundo de audio (timeout 10; estimación arranca en 3 y pasa al peor medido por
+  segundo de voz, sin el fijo). El chequeo cronometra el costo fijo (carga + una pasada) y el log lo
+  separa de la transcripción. Si vence, el log dice a los cuántos segundos y con
+  cuántos bloques. `reprocesar` + `solo_subtitulos` rehace solo los subtítulos.
+- **Nada de texto inventado**: mejor `[]` que frases que la persona no dijo. El
+  detector de voz Silero (`whisper-vad-speech-segments`) mide la voz; sin voz no se
+  transcribe. whisper-cli corre con VAD, greedy, `-nf` (sin reintentos con
+  temperatura) y `-mc 0` (sin contexto): así no entra en bucles. Se descartan los
+  segmentos con confianza media < `INGESTA_CONFIANZA_MIN` (0,75) y, si lo que queda
+  cubre menos de `INGESTA_COBERTURA_MIN` (0,5) de la voz, se guarda `[]`. El log
+  por pitch muestra voz, cobertura, confianza y descartados (solo números). Medido:
+  voz clara 0,88-1,00; voz poco clara con música 0,46-0,54.
+- whisper.cpp: build oficial b5130 (= v1.9.4) para Linux x64, fijo por sha256 y en
+  caché (`WHISPER_CPP` = su carpeta; trae sus .so, se corre con `LD_LIBRARY_PATH`).
+  Silero `ggml-silero-v6.2.0.bin` en revisión fija (`WHISPER_VAD`). El audio lo
+  extrae a WAV de 16 kHz el mismo ffmpeg 9.0.1 que comprime. El chequeo previo
+  prueba detector y modelo; si falla, publica igual sin subtítulos y el job queda
+  en rojo. Ya no se usa el filtro `whisper` de ffmpeg (ni el segundo ffmpeg 8.1.1).
+- `/subir` redirige al Form con el email de la sesión precargado (`urlFormularioPitch`
+  en `lib/cuenta.ts`). En /cuenta, `components/MisPitches.tsx` muestra lo de la
+  función `mis_pitches()` (pitches publicados + envíos pendientes por email o perfil).
 - App: `components/Subtitulos.tsx` dibuja los bloques arriba del nombre del reel,
   a la izquierda de la columna; CC recordado con `lib/subtitulos.ts` (localStorage).
 - Columna de acciones del reel (estilo TikTok, termina arriba del nombre; el
@@ -59,7 +84,50 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - La base guarda claves de R2 (`<id>.mp4`); `lib/media.ts` (`urlMedia`) arma la URL
   con `NEXT_PUBLIC_MEDIA_URL` y `lib/datos.ts` ya la aplica.
 - La service key de Supabase vive solo en los secrets del workflow, jamás en la app.
+- Cuentas (rama v2-cuentas): login con Google (Supabase Auth, PKCE) y "Mi perfil"
+  en `/cuenta`. `@supabase/ssr` solo en `/cuenta` y `/auth` (`lib/supabase-servidor.ts`
+  y `proxy.ts`, cuyo matcher cubre solo esas dos rutas). Las páginas públicas nunca
+  leen cookies: `lib/cuenta-local.ts` (`useCuentaLocal`) combina la cookie de sesión
+  (parseada por nombre, con partes `.0`/`.1`; nada de regex en template literals) y
+  un dato chico y público del perfil en localStorage (`pecera:cuenta`: slug, nombre,
+  rol, foto, visible) que escribe `RecordarCuenta` en /cuenta y borra `BotonSalir`.
+  Con eso `AccesoCuenta` muestra "Entrar" o la foto (va a /p/slug si es visible) y
+  `EditarPerfil` aparece solo en el perfil propio. Es solo interfaz. Reglas del form en `lib/cuenta.ts` (cliente y servidor);
+  el trigger `perfiles_guardian` las repite en la base y bloquea slug, publicado,
+  usuario_id, origen_id y consentimiento_at. La foto se achica a 512 px en el celular
+  y viaja con el form: `guardarPerfil` la sube con `lib/foto.ts` (`lib/r2.ts`,
+  `<userId>-<hash8>.jpg`); si falla, el perfil se guarda igual y se avisa;
+  la vieja la anota el trigger en `r2_borrar`. Esas fotos no cuentan para el tope
+  de 8 GB de la ingesta (pendiente para cuando se toque la ingesta).
+- Legales: `/privacidad` y `/terminos` (estáticas, `components/PaginaLegal.tsx`),
+  con links en `PieLegal` y junto a la casilla de consentimiento (pestaña nueva).
+  Contacto en `CONTACTO_PRIVACIDAD`. **Son un BORRADOR para revisión legal.**
+  Pendientes para el abogado: inscripción de la base en el Registro Nacional de
+  Bases de Datos, transferencia internacional a proveedores fuera del país (art. 12
+  de la Ley 25.326) y cuánto guardar los originales de Drive (hoy la ingesta no los
+  borra). Si cambia qué datos se guardan o un proveedor, actualizar /privacidad y
+  su fecha.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
+
+## Rama v2-cuentas (reglas)
+- Todo se trabaja en `v2-cuentas`; `main` es producción y la feria depende de ella.
+- La base de Supabase es COMPARTIDA con producción: migraciones solo aditivas
+  (crear tablas o columnas), nunca borrar ni renombrar.
+- El cron de la ingesta corre desde `main` (formulario viejo, `vars.GOOGLE_SHEET_ID`).
+  La ingesta de esta rama (formulario nuevo) solo se prueba a mano:
+  `gh workflow run ingesta.yml --ref v2-cuentas [-f seco=true]`. Comparten
+  `concurrency: ingesta`, así que nunca corren a la vez. Escribe en la base y R2 de
+  producción: probar con perfiles no publicados.
+
+## Lanzamiento de v2-cuentas (el día que se une a main)
+1. Correr `supabase/lanzamiento-cuentas.sql` en el SQL editor: revisar el listado,
+   publicar los perfiles reales creados mientras tanto y prender `autopublicar`.
+2. Cargar las variables de R2 (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
+   `R2_ENDPOINT`, `R2_BUCKET`) también en el entorno Production de Vercel.
+3. Publicar la app de Google (modo producción), con las páginas de privacidad y
+   condiciones ya publicadas.
+4. Antes del merge, cerrar el Form viejo y esperar una última corrida de main. Desde
+   el merge, el cron lee el Form nuevo (`GOOGLE_SHEET_ID_V2`); el viejo ya no se lee.
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind
@@ -73,25 +141,44 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `npm run ingesta:chequeo` → chequeo de rotación de la ingesta con el ffmpeg local
   (y de whisper si está `WHISPER_MODELO`)
 - `npm run ingesta:subtitulos -- <video>` → transcribe local e imprime los bloques
-  (con `WHISPER_MODELO`; el modelo está en `../pecera-originales/`)
+  y los números. En `../pecera-originales/`: `WHISPER_CPP=whisper-cpp` (build de
+  Windows x64 b5130), `WHISPER_MODELO` y `WHISPER_VAD=ggml-silero-v6.2.0.bin`
 - `npm run ingesta:tipos` → chequeo de tipos del script de ingesta (tiene su propio
   tsconfig; el de la app excluye `scripts/`)
 
 ## Rutas
 - `/` → feed de reels
 - `/p/[slug]` → perfil del participante
+- `/cuenta` → Mi perfil (login, crear/editar, Mis pitches). Al crear, la action
+  redirige a `/cuenta?creado=1` (`&foto=error` si la foto falló); si la cuenta ya
+  tenía perfil (doble envío), a `/cuenta`. `guardarPerfil` nunca tira: toda falla
+  vuelve como mensaje (22023 del trigger → campo). A los 20 s sin respuesta el form
+  ofrece recargar; `app/cuenta/error.tsx` atrapa el resto.
+- `/subir` → al Form de pitches con el email de la sesión (sin sesión, a /cuenta)
+- `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,
   angel, fondo, coach), rol (emprendedor | inversor | aliado), descripcion,
-  avatar_url, whatsapp, email, linkedin, instagram, web, publicado, origen_id
+  avatar_url, whatsapp, email, linkedin, instagram, web, publicado, origen_id,
+  usuario_id (auth.users, null = sin dueño), oculto (lo maneja la persona),
+  consentimiento_at. Visible = `publicado and not oculto`. El email de la cuenta
+  nunca va a perfiles.
+- `ajustes`: una fila; `autopublicar` decide si los perfiles de /cuenta nacen
+  publicados (solo service key / SQL editor)
 - Esos son los valores que se guardan; las etiquetas visibles ("Inversor ángel",
   "Coach / mentor", etc.) salen de `lib/rol.ts`.
 - `pitches`: perfil_id, video_url, poster_url, orden, publicado, origen_id,
+  descripcion (máx. 150; el feed usa la del perfil si falta; /p/slug la muestra por pitch),
   subtitulos (jsonb `[{desde, hasta, texto}]` en segundos; null = falta, [] = sin voz;
   se corrige editando la celda)
 - `ingestas`: origen_id, estado (ok | error), error, intentos, bytes,
   subtitulos_intentos, subtitulos_error (solo service key)
+- `envios` (solo service key): origen_id, email_verificado, email_escrito, fecha,
+  estado (recibido | en_espera | ok | error | rechazado), regla, perfil_id. Los emails
+  viven solo acá. `emails_bloqueados` y `equipo_ingesta` (email en minúsculas): solo
+  service key / SQL editor. `ingesta_cuentas(emails)` solo service_role;
+  `mis_pitches()` para authenticated (sin emails ni origen_id).
 - `piques`: pitch_id, dispositivo (uuid anónimo), created_at; PK pitch + dispositivo.
   anon no la lee: usa las funciones security definer `dar_pique`, `quitar_pique`
   (validan pitch publicado; límite 30 acciones/min por dispositivo en

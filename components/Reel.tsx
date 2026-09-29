@@ -296,7 +296,7 @@ export default function Reel({
           </div>
 
           <p className="mt-3 max-w-prose text-sm leading-relaxed text-marfil/90">
-            {perfil.descripcion}
+            {pitch.descripcion || perfil.descripcion}
           </p>
 
           <Link

@@ -1,5 +1,7 @@
 /** Configuración de la ingesta: variables de entorno y topes. */
 
+import { existsSync, readFileSync } from "node:fs";
+
 function requerida(nombre: string): string {
   const valor = process.env[nombre]?.trim();
   if (!valor) throw new Error(`Falta la variable de entorno ${nombre}.`);
@@ -14,6 +16,37 @@ export const REPROCESAR = process.env.INGESTA_REPROCESAR?.trim() || null;
 if (REPROCESAR && !/^[A-Za-z0-9_-]{10,}$/.test(REPROCESAR)) {
   throw new Error("INGESTA_REPROCESAR no parece un ID de Drive.");
 }
+
+export const REGEX_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+export const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Input `asignar` del workflow: "<origen_id> <email o slug>". Se lee del JSON del
+ * evento y no del `env:` del step, porque GitHub imprime ese env en el log
+ * público y un email quedaría expuesto. En local, `INGESTA_ASIGNAR`.
+ */
+export type Asignar = { origenId: string; email: string } | { origenId: string; slug: string };
+
+function leerAsignar(): Asignar | null {
+  let valor = process.env.INGESTA_ASIGNAR ?? "";
+  const evento = process.env.GITHUB_EVENT_PATH;
+  if (!valor && evento && existsSync(evento)) {
+    const json = JSON.parse(readFileSync(evento, "utf8")) as { inputs?: { asignar?: string } };
+    valor = json.inputs?.asignar ?? "";
+  }
+  const partes = valor.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return null;
+  // El mensaje nunca repite el valor: podría ser un email.
+  const [origenId, destino] = partes;
+  if (partes.length !== 2 || !/^[A-Za-z0-9_-]{10,}$/.test(origenId)) {
+    throw new Error("asignar tiene que ser '<origen_id> <email o slug>'.");
+  }
+  if (REGEX_EMAIL.test(destino)) return { origenId, email: destino.toLowerCase() };
+  if (REGEX_SLUG.test(destino)) return { origenId, slug: destino };
+  throw new Error("asignar: el destino no parece un email ni un slug.");
+}
+
+export const ASIGNAR = leerAsignar();
 
 /** Con `reprocesar`: rehacer solo los subtítulos de ese pitch, sin tocar el video. */
 export const SOLO_SUBTITULOS =
@@ -33,15 +66,20 @@ export const env = {
   get r2Bucket() { return requerida("R2_BUCKET"); },
   get supabaseUrl() { return requerida("SUPABASE_URL"); },
   get supabaseServiceKey() { return requerida("SUPABASE_SERVICE_KEY"); },
-  /** ffmpeg con el filtro whisper. En el runner es otro binario que el que comprime. */
-  get ffmpegWhisper() { return process.env.FFMPEG_WHISPER?.trim() || "ffmpeg"; },
+  /** Carpeta del build de whisper.cpp (whisper-cli y whisper-vad-speech-segments). */
+  get whisperCpp() { return requerida("WHISPER_CPP"); },
   get whisperModelo() { return requerida("WHISPER_MODELO"); },
+  /** Modelo Silero del detector de voz (VAD). */
+  get whisperVad() { return requerida("WHISPER_VAD"); },
 };
 
 /** Las claves viejas se borran de R2 una hora después: el ISR puede seguir sirviéndolas. */
 export const BORRAR_DESPUES_MS = 60 * 60 * 1000;
 
-export const PESTANA = "Form Responses 1";
+export const PESTANA = "Respuestas de formulario 1";
+
+/** Largo máximo de `pitches.descripcion` (el check de la base dice lo mismo). */
+export const DESCRIPCION_MAX = 150;
 
 export const DURACION_MAX_S = 90;
 export const VIDEO_MAX_BYTES = 40 * 1024 * 1024;
@@ -65,10 +103,51 @@ if (!Number.isFinite(presupuestoMin) || presupuestoMin <= 0) {
 export const PRESUPUESTO_CORRIDA_MS = presupuestoMin * 60 * 1000;
 
 export const MAX_INTENTOS_SUBTITULOS = 3;
-/** Segundos de transcripción por segundo de audio que se suponen antes de medir. */
-export const FACTOR_INICIAL = 3.5;
-/** Una transcripción que tarda más de esto por segundo de audio se da por colgada. */
-export const TIMEOUT_FACTOR = 8;
+
+/** Variable de GitHub numérica, con valor por defecto y rango (min excluido si `minAbierto`). */
+function numero(nombre: string, defecto: number, min: number, max: number, minAbierto = true): number {
+  const valor = Number(process.env[nombre]?.trim() || defecto);
+  const bajo = minAbierto ? valor <= min : valor < min;
+  if (!Number.isFinite(valor) || bajo || valor > max) {
+    throw new Error(`${nombre} tiene que ser un número entre ${min} y ${max}.`);
+  }
+  return valor;
+}
+
+/**
+ * Costo fijo de cada transcripción: cargar el modelo (574 MB) y una primera
+ * pasada, igual para cualquier duración. En el runner el chequeo midió 44 s con
+ * el filtro de ffmpeg; 90 s deja margen. Variable `INGESTA_WHISPER_FIJO_S`.
+ */
+export const WHISPER_FIJO_S = numero("INGESTA_WHISPER_FIJO_S", 90, 0, 3600);
+/**
+ * Segundos de transcripción por segundo de voz (sin el fijo) que se suponen
+ * antes de medir. En el runner, con el filtro de ffmpeg, se midió hasta 2,6 s/s.
+ */
+export const FACTOR_INICIAL = 3;
+/** Pasado el fijo, una transcripción que tarda más de esto por segundo de audio se da por colgada. */
+export const TIMEOUT_POR_SEGUNDO = 10;
+
+/**
+ * Confianza media mínima (probabilidad de los tokens) para quedarse con un
+ * segmento. Medido: voz clara 0,88-1,00; un pitch con voz poco clara y música,
+ * 0,46-0,54. Variable `INGESTA_CONFIANZA_MIN`.
+ */
+export const CONFIANZA_MIN = numero("INGESTA_CONFIANZA_MIN", 0.75, 0, 1, false);
+/**
+ * Parte mínima de la voz detectada que tienen que cubrir los segmentos que
+ * quedan; si no, el pitch se guarda sin subtítulos ([]): mejor nada que frases
+ * sueltas o inventadas. Variable `INGESTA_COBERTURA_MIN` (0,5 = 50 %).
+ */
+export const COBERTURA_MIN = numero("INGESTA_COBERTURA_MIN", 0.5, 0, 1, false);
+
+/**
+ * Tiempo de una transcripción: fijo + `porSegundo` por segundo de audio. Es la
+ * misma cuenta para el timeout y para ver si entra en el presupuesto.
+ */
+export function tiempoWhisperMs(audio: number, porSegundo: number): number {
+  return (WHISPER_FIJO_S + porSegundo * audio) * 1000;
+}
 /** Bloques de subtítulos: hasta 2 líneas de 32 caracteres, legibles en vertical. */
 export const LINEA_MAX = 32;
 export const LINEAS_POR_BLOQUE = 2;

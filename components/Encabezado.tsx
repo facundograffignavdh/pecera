@@ -1,13 +1,15 @@
 import Image from "next/image";
+import AccesoCuenta from "@/components/AccesoCuenta";
 
 /**
- * Píldora de vidrio fija arriba. El contenedor deja pasar los toques
- * (mute del feed, "Volver" del perfil); solo la píldora los captura.
+ * Píldora de vidrio fija arriba, con el acceso a la cuenta a la derecha. El
+ * contenedor deja pasar los toques (mute del feed, "Volver" del perfil); solo las
+ * píldoras los capturan. En /cuenta no va el acceso: ya estás ahí.
  */
 export default function Encabezado({
   variante,
 }: {
-  variante: "feed" | "perfil";
+  variante: "feed" | "perfil" | "cuenta";
 }) {
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-20 flex justify-center pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -30,6 +32,7 @@ export default function Encabezado({
           />
         )}
       </div>
+      {variante !== "cuenta" && <AccesoCuenta compacto={variante === "perfil"} />}
     </header>
   );
 }
