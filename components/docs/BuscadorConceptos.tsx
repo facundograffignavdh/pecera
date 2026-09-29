@@ -38,7 +38,9 @@ export default function BuscadorConceptos() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="sticky top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] z-10 -mx-5 flex flex-col gap-3 bg-marfil/95 px-5 pb-3 pt-2 backdrop-blur">
+      {/* Pegada arriba de todo y con el alto del encabezado como relleno: así el
+          texto que se scrollea nunca se asoma entre las píldoras fijas. */}
+      <div className="sticky top-0 z-10 -mx-5 flex flex-col gap-3 bg-marfil/95 px-5 pb-3 pt-[calc(max(0.75rem,env(safe-area-inset-top))+3.75rem)] backdrop-blur">
         <label className="sr-only" htmlFor="buscar-concepto">
           Buscar un concepto
         </label>
@@ -90,7 +92,7 @@ export default function BuscadorConceptos() {
           <article
             key={c.slug}
             id={c.slug}
-            className="concepto scroll-mt-44 rounded-3xl border border-tinta/10 bg-tinta/[0.02] px-4 py-4"
+            className="concepto scroll-mt-48 rounded-3xl border border-tinta/10 bg-tinta/[0.02] px-4 py-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

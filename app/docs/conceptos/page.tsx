@@ -23,9 +23,7 @@ export default function ConceptosPage() {
           El idioma del ecosistema, sin humo: qué es cada cosa y un ejemplo con números. Compartí
           cualquier definición con su link.
         </p>
-        <div className="mt-6">
-          <BuscadorConceptos />
-        </div>
+        <BuscadorConceptos />
         <PieLegal tono="claro" className="mt-10 pb-8" />
       </div>
     </main>

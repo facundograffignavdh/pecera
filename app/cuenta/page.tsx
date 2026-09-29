@@ -111,8 +111,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             {rolInicial && (
               <p className="flex items-center gap-2 rounded-2xl bg-tinta/5 px-4 py-3 text-sm text-tinta">
                 <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${ROLES[rolInicial].bg}`} />
-                Vas a entrar como <strong className="font-semibold">{ROLES[rolInicial].label}</strong>.
-                Lo podés cambiar después.
+                <span>
+                  Vas a entrar como <strong className="font-semibold">{ROLES[rolInicial].label}</strong>. Lo
+                  podés cambiar después.
+                </span>
               </p>
             )}
             <form action={entrar} className="mt-2 flex flex-col gap-2">
