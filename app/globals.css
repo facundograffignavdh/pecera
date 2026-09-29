@@ -8,6 +8,25 @@
   --color-inversor: #0c6aa8;
   --color-aliado: #1f7a52;
 
+  /* Tonos de etiquetas (cargos, especialidades): fondo suave + texto fuerte, AA
+     sobre marfil y sobre video. Se usan solo desde lib/etiquetas.ts. */
+  --color-t-arcilla: #8a3310;
+  --color-t-arcilla-suave: #f6dccb;
+  --color-t-azul: #0b4f7c;
+  --color-t-azul-suave: #d6e6f4;
+  --color-t-verde: #16603f;
+  --color-t-verde-suave: #d8eedf;
+  --color-t-ocre: #6b4f06;
+  --color-t-ocre-suave: #f3e6c4;
+  --color-t-ciruela: #8a2358;
+  --color-t-ciruela-suave: #f1d9e6;
+  --color-t-violeta: #4b3690;
+  --color-t-violeta-suave: #e4ddf3;
+  --color-t-petroleo: #1e5e5e;
+  --color-t-petroleo-suave: #d5eaea;
+  --color-t-tierra: #5c4424;
+  --color-t-tierra-suave: #ede3d2;
+
   --font-display: var(--font-fraunces), Georgia, serif;
   --font-sans: var(--font-grotesk), system-ui, sans-serif;
 

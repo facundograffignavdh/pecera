@@ -8,25 +8,34 @@ import MisPitches, { type MiPitch } from "@/components/MisPitches";
 import PieLegal from "@/components/PieLegal";
 import RecordarCuenta from "@/components/RecordarCuenta";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
+import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
+import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
+import TarjetaTransparencia from "@/components/cuenta/TarjetaTransparencia";
 import { entrar } from "@/app/cuenta/acciones";
 import { urlPerfil } from "@/lib/cuenta";
 import type { CuentaLocal } from "@/lib/cuenta-local";
+import { faltaMigracion } from "@/lib/datos";
+import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
+import { ROLES } from "@/lib/rol";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
+import type { DatoEmpresa, Rol } from "@/types/pecera";
 
 export const metadata: Metadata = {
   title: "Mi perfil — Pecera",
   robots: { index: false },
 };
 
-const COLUMNAS =
+const COLUMNAS_BASE =
   "id, slug, nombre, tipo, rol, descripcion, avatar_url, whatsapp, email, linkedin, instagram, web, publicado, oculto";
+const COLUMNAS = `${COLUMNAS_BASE}, etapa, ronda, industrias, cargo, especialidades, ticket, rondas_interes, empresa_id`;
 
 const BOTON_PRIMARIO =
   "inline-flex min-h-12 items-center justify-center rounded-full bg-tinta px-6 font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla";
 
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
-  const { error, creado, foto } = await searchParams;
+  const { error, creado, foto, rol } = await searchParams;
+  const rolInicial = typeof rol === "string" && rol in ROLES ? (rol as Rol) : undefined;
   const supabase = await supabaseConSesion();
   const {
     data: { user },
@@ -34,15 +43,22 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
   let perfil: PerfilPropio | null = null;
   if (user) {
-    const { data, error: errorLectura } = await supabase
-      .from("perfiles")
-      .select(COLUMNAS)
-      .eq("usuario_id", user.id)
-      .maybeSingle()
-      .overrideTypes<PerfilPropio | null, { merge: false }>();
+    const leer = (columnas: string) =>
+      supabase
+        .from("perfiles")
+        .select(columnas)
+        .eq("usuario_id", user.id)
+        .maybeSingle()
+        .overrideTypes<PerfilPropio | null, { merge: false }>();
+    let { data, error: errorLectura } = await leer(COLUMNAS);
+    if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_BASE));
     if (errorLectura) throw new Error(`Supabase (cuenta): ${errorLectura.message}`);
     perfil = data && { ...data, avatar_url: data.avatar_url && urlMedia(data.avatar_url) };
   }
+
+  // Empresa, transparencia y evento: extras de feria_lista. Si la base todavía no
+  // los tiene (o fallan), la cuenta se edita igual.
+  const extras = user && perfil ? await leerExtras(supabase) : null;
 
   // "Mis pitches" es un extra: si falla, se edita el perfil igual.
   let misPitches: MiPitch[] = [];
@@ -89,7 +105,19 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                 No pudimos entrar con tu cuenta de Google. Probá de nuevo.
               </p>
             )}
+            {rolInicial && (
+              <p className="flex items-center gap-2 rounded-2xl bg-tinta/5 px-4 py-3 text-sm text-tinta">
+                <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${ROLES[rolInicial].bg}`} />
+                Vas a entrar como <strong className="font-semibold">{ROLES[rolInicial].label}</strong>.
+                Lo podés cambiar después.
+              </p>
+            )}
             <form action={entrar} className="mt-2 flex flex-col gap-2">
+              <input
+                type="hidden"
+                name="next"
+                value={rolInicial ? `/cuenta?rol=${rolInicial}` : "/cuenta"}
+              />
               <button type="submit" className={BOTON_PRIMARIO}>
                 Entrar con Google
               </button>
@@ -121,7 +149,17 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               claseBoton={BOTON_PRIMARIO}
             />
 
-            <FormPerfil key={perfil?.id ?? "nuevo"} perfil={perfil} />
+            <FormPerfil key={perfil?.id ?? "nuevo"} perfil={perfil} rolInicial={rolInicial} />
+
+            {perfil && extras?.disponible && (
+              <>
+                <TarjetaEmpresa empresa={extras.empresa} />
+                {extras.empresa && (
+                  <TarjetaTransparencia datos={extras.datos} slugEmpresa={extras.empresa.slug} />
+                )}
+                <TarjetaEvento participa={extras.participa} rol={perfil.rol} />
+              </>
+            )}
 
             <BotonSalir />
           </section>
@@ -131,6 +169,38 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
       </div>
     </main>
   );
+}
+
+type Extras = {
+  disponible: boolean;
+  empresa: MiEmpresa | null;
+  datos: DatoEmpresa[];
+  participa: boolean;
+};
+
+async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>>): Promise<Extras> {
+  const [empresa, datos, evento] = await Promise.all([
+    supabase.rpc("mi_empresa"),
+    supabase.rpc("mis_datos_empresa"),
+    supabase.rpc("mi_evento", { p_evento: EVENTO_ACTUAL.slug }),
+  ]);
+  if (faltaMigracion(empresa.error)) {
+    return { disponible: false, empresa: null, datos: [], participa: false };
+  }
+  for (const [donde, r] of [
+    ["mi_empresa", empresa],
+    ["mis_datos_empresa", datos],
+    ["mi_evento", evento],
+  ] as const) {
+    if (r.error) console.error(`Supabase (${donde}): ${r.error.message}`);
+  }
+  const filaEvento = (evento.data as Array<{ participa: boolean }> | null)?.[0];
+  return {
+    disponible: true,
+    empresa: ((empresa.data as MiEmpresa[] | null) ?? [])[0] ?? null,
+    datos: (datos.data as DatoEmpresa[] | null) ?? [],
+    participa: !!filaEvento?.participa,
+  };
 }
 
 /** La primera vez: el perfil está creado, su dirección para copiar y su estado. */
