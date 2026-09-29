@@ -1,7 +1,5 @@
-"use client";
-
+import Link from "next/link";
 import type { CSSProperties } from "react";
-import { abrirFormulario } from "@/components/landing/FormularioSumate";
 import type { Rol } from "@/types/pecera";
 
 function Flecha({ className = "" }: { className?: string }) {
@@ -45,12 +43,11 @@ export type Oferta = {
   cta: string;
 };
 
-/** Tarjeta de "Todo el ecosistema": entra directo al formulario propio, con el rol ya elegido. */
+/** Tarjeta de "Todo el ecosistema": entra con Google a armar el perfil, con el rol ya elegido. */
 export default function TarjetaOferta({ o }: { o: Oferta }) {
   return (
-    <button
-      type="button"
-      onClick={() => abrirFormulario(o.rol)}
+    <Link
+      href={`/cuenta?rol=${o.rol}`}
       data-tilt
       style={{ "--foco": o.foco } as CSSProperties}
       className={`group flex h-full w-full flex-col rounded-3xl border border-t-[3px] border-tinta/10 bg-[#FBFAF4] p-8 text-left shadow-[0_1px_2px_rgb(28_27_22/0.06),0_10px_30px_rgb(28_27_22/0.06)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta ${o.borde}`}
@@ -69,6 +66,6 @@ export default function TarjetaOferta({ o }: { o: Oferta }) {
         {o.cta}
         <Flecha className="h-[18px] w-[18px] transition-transform duration-200 ease-pecera group-hover:translate-x-1" />
       </span>
-    </button>
+    </Link>
   );
 }

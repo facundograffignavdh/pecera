@@ -5,13 +5,14 @@ import Encabezado from "@/components/Encabezado";
 import { IconoCorazon, IconoSubtitulos } from "@/components/Iconos";
 import PieLegal from "@/components/PieLegal";
 import BotonForm from "@/components/landing/BotonForm";
-import FormularioSumate from "@/components/landing/FormularioSumate";
+import ElegirRol from "@/components/landing/ElegirRol";
 import MaquetaReel, { type EjemploPitch } from "@/components/landing/MaquetaReel";
 import Movimiento from "@/components/landing/Movimiento";
 import PasosPorRol from "@/components/landing/PasosPorRol";
 import Rotador from "@/components/landing/Rotador";
 import TarjetaOferta, { type Oferta } from "@/components/landing/TarjetaOferta";
 import VideoFondo from "@/components/landing/VideoFondo";
+import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { FEED_DESDE_LANDING } from "@/lib/landing";
 
 const TITULO = "Subí tu pitch — Pecera";
@@ -108,7 +109,7 @@ const OFERTAS: Oferta[] = [
       "Tu perfil con todos tus canales: WhatsApp, email, LinkedIn y web",
       "Enterate de quién se interesa: cada pique cuenta",
     ],
-    cta: "Subir mi pitch",
+    cta: "Entrar como innovador",
   },
   {
     titulo: "Inversores",
@@ -150,12 +151,12 @@ const ROLES_PASOS = [
     pasos: [
       { titulo: "Grabá tu pitch", texto: "Hasta 90 segundos, en vertical. Con el celular alcanza. Alcanza con una idea." },
       {
-        titulo: "Completá el formulario",
-        texto: "Video, foto o logo, una descripción de una línea y cómo contactarte. Te lleva unos minutos.",
+        titulo: "Entrá con Google y armá tu perfil",
+        texto: "Etapa, industria, qué ronda buscás y tu cargo. Sumá a tu equipo con un código y armen la página de la empresa.",
       },
       {
-        titulo: "Aparecés en el feed",
-        texto: "En 10 a 15 minutos tu pitch está publicado, con subtítulos automáticos y tu perfil.",
+        titulo: "Subí el video y aparecés en el feed",
+        texto: "Desde tu perfil, «Subir pitch». En 10 a 15 minutos está publicado, con subtítulos automáticos.",
       },
       { titulo: "Recibí piques y mensajes", texto: "Quien se interesa te da un pique y te escribe directo." },
       { titulo: "Lanzá y escalá", texto: "Con el respaldo de inversores y la ayuda de tus aliados." },
@@ -165,8 +166,8 @@ const ROLES_PASOS = [
     nombre: "Inversores y aliados",
     pasos: [
       {
-        titulo: "Subí tu pitch",
-        texto: "Presentate en 90 segundos: quién sos, qué buscás y cómo acompañás a los proyectos.",
+        titulo: "Entrá con Google y armá tu perfil",
+        texto: "Tu tesis (rondas, ticket e industrias) o tus especialidades como mentor o coach. Si querés, un pitch de 90 segundos.",
       },
       { titulo: "Scrolleá la Pecera", texto: "Pitches de 90 segundos de toda la región, uno atrás del otro." },
       { titulo: "Dá un pique", texto: "Marcá lo que te interesó. Un pique es interés, no compromiso." },
@@ -179,24 +180,25 @@ const ROLES_PASOS = [
   },
 ];
 
-// Espeja los pasos de FormularioSumate: si el form cambia, esto también.
+// Espeja los pasos de FormPerfil (/cuenta): si el formulario cambia, esto también.
 const NECESITAS: { titulo: string; detalle: string; opcional?: boolean }[] = [
-  { titulo: "Nombre del proyecto o persona", detalle: "Como querés aparecer en el feed." },
-  { titulo: "Una descripción en una línea", detalle: "Máximo 150 caracteres." },
+  { titulo: "Una cuenta de Google", detalle: "Entrás con ella: sin contraseñas nuevas." },
+  { titulo: "Nombre y una descripción en una línea", detalle: "Como querés aparecer en el feed. Máximo 150 caracteres." },
   {
-    titulo: "Qué sos y tu rol",
-    detalle: "Startup, emprendimiento, aceleradora, incubadora, inversor ángel, fondo o coach / mentor.",
+    titulo: "Tu rol y qué sos",
+    detalle: "Innovador (startup o emprendimiento), inversor (ángel, fondo) o aliado (aceleradora, incubadora, mentor o coach).",
   },
   {
-    titulo: "WhatsApp",
-    detalle: "10 dígitos con código de área, sin 0 ni 15. Ejemplo: 3516123456.",
+    titulo: "Las etiquetas de tu rol",
+    detalle: "Innovador: etapa, industrias, ronda y cargo. Inversor: rondas, ticket e industrias. Aliado: especialidades.",
+  },
+  { titulo: "Foto o logo", detalle: "Cuadrada queda mejor.", opcional: true },
+  {
+    titulo: "WhatsApp, email, LinkedIn, Instagram o web",
+    detalle: "Los que quieras mostrar. WhatsApp: 10 dígitos con código de área, sin 0 ni 15.",
     opcional: true,
   },
-  { titulo: "Email, LinkedIn, Instagram o web", detalle: "Los que quieras mostrar en tu perfil.", opcional: true },
-  {
-    titulo: "El video del pitch",
-    detalle: "Todavía no se sube acá: cuando enviás el formulario te contactamos para coordinarlo.",
-  },
+  { titulo: "El video del pitch", detalle: "Hasta 90 segundos, en vertical. Lo subís desde tu perfil.", opcional: true },
 ];
 
 const CONSEJOS = [
@@ -263,7 +265,17 @@ const PREGUNTAS = [
   {
     pregunta: "¿Cuánto tarda en aparecer?",
     respuesta:
-      "El formulario te toma dos minutos. Después te contactamos para coordinar el video, y una vez que lo mandás, en 10 a 15 minutos ya está publicado.",
+      "Tu perfil queda listo en dos minutos. Cuando subís el video desde tu perfil, en 10 a 15 minutos está publicado en el feed.",
+  },
+  {
+    pregunta: "¿Puedo sumar a mi equipo?",
+    respuesta:
+      "Sí. Creá la empresa desde tu perfil y pasale el código a tu equipo: cada uno entra con su cuenta, elige su cargo (CEO, CTO, CFO…) y todos sus pitches aparecen juntos en la página de la empresa.",
+  },
+  {
+    pregunta: "¿Mis métricas son públicas?",
+    respuesta:
+      "No. Lo que cargás en Transparencia (MRR, churn, CAC, pitch deck…) es privado. Cada dato se comparte por separado, solo si vos lo marcás.",
   },
   {
     pregunta: "¿Qué es un pique?",
@@ -383,7 +395,7 @@ export default function SumatePage() {
       />
       <Encabezado variante="perfil" />
       <Movimiento scroller={ID_SCROLL} />
-      <FormularioSumate />
+      <ElegirRol />
 
       {/* ===== HERO: acuario de fondo, cardumen 3D, velo y burbujas ===== */}
       <section
@@ -446,7 +458,7 @@ export default function SumatePage() {
               </Link>
             </div>
             <p className="entrada mt-5 text-sm font-medium text-tinta/75" style={{ animationDelay: "430ms" }}>
-              Gratis · Te toma 2 minutos · Coordinamos tu video después
+              Gratis · Entrás con Google · Tu perfil en 2 minutos
             </p>
           </div>
         </div>
@@ -459,6 +471,27 @@ export default function SumatePage() {
         >
           <path d="M0 40 C 240 70 480 8 720 32 C 960 56 1200 18 1440 42 L 1440 70 L 0 70 Z" fill="#F5F4EC" />
         </svg>
+      </section>
+
+      {/* ===== FERIA 21 ===== */}
+      <section aria-label={EVENTO_ACTUAL.nombre} className="px-5 pt-10">
+        <Link
+          href={`/eventos/${EVENTO_ACTUAL.slug}`}
+          data-revelar
+          className="group mx-auto flex w-full max-w-3xl flex-col gap-3 rounded-3xl bg-tinta px-6 py-6 text-marfil transition-transform duration-200 ease-pecera hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span>
+            <span className="inline-flex rounded-full bg-arcilla px-2.5 py-0.5 text-xs font-semibold">Ahora</span>
+            <span className="mt-2 block font-display text-3xl font-semibold leading-none">{EVENTO_ACTUAL.nombre}</span>
+            <span className="mt-2 block text-sm text-marfil/75">{EVENTO_ACTUAL.fechas}</span>
+          </span>
+          <span className="inline-flex items-center gap-2 font-semibold">
+            Programa y votación
+            <span aria-hidden className="transition-transform duration-200 ease-pecera group-hover:translate-x-1">
+              &rarr;
+            </span>
+          </span>
+        </Link>
       </section>
 
       {/* ===== DEMO ===== */}
@@ -615,7 +648,7 @@ export default function SumatePage() {
             ¿Listo para fondear al próximo{" "}
             <span className="destello whitespace-nowrap italic">[&nbsp;unicornio&nbsp;]</span>?
           </h2>
-          <BotonForm className="mt-10">Subí tu pitch</BotonForm>
+          <BotonForm className="mt-10">Sumate a Pecera</BotonForm>
         </div>
       </section>
 
@@ -660,7 +693,7 @@ export default function SumatePage() {
                 ))}
               </ul>
               <p className="mt-6 border-t border-marfil/15 pt-5 text-[15px] leading-relaxed text-marfil/80">
-                Al final del formulario marcás el consentimiento. Sin eso no guardamos tu postulación.
+                Al crear tu perfil marcás el consentimiento. Sin eso no guardamos tus datos.
               </p>
             </div>
           </div>
@@ -762,7 +795,7 @@ export default function SumatePage() {
             El próximo unicornio latinoamericano ya está nadando por acá.
           </h2>
           <p className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-marfil/80">
-            Que no te lo cuenten. Subí tu pitch y en unos minutos estás en el feed.
+            Que no te lo cuenten. Armá tu perfil, subí tu pitch y en unos minutos estás en el feed.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <BotonForm />
