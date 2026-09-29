@@ -41,21 +41,29 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - Subtítulos (`scripts/ingesta/subtitulos.ts`): fase 2 de la corrida. Después de
   publicar, con lo que quede de `INGESTA_PRESUPUESTO_MIN` (variable de GitHub, 9 min
   por defecto, contando toda la corrida) se transcriben los pitches publicados sin
-  subtítulos con el filtro `whisper` de ffmpeg y `ggml-large-v3-turbo-q5_0.bin`
-  (revisión fija de Hugging Face, sha256 verificado, en caché). Nunca afecta la
-  publicación: lo que no entra queda para la próxima; 3 errores y no se reintenta.
+  subtítulos con whisper.cpp y `ggml-large-v3-turbo-q5_0.bin` (revisión fija de
+  Hugging Face, sha256 verificado, en caché). Nunca afecta la publicación: lo que
+  no entra queda para la próxima; 3 errores y no se reintenta.
   Timeout y estimación usan la misma cuenta (`tiempoWhisperMs`): costo fijo
-  (`INGESTA_WHISPER_FIJO_S`, variable de GitHub, 60 s por defecto) + segundos por
-  segundo de audio (timeout 4; estimación arranca en 1 y pasa al peor medido, sin el
-  fijo). El chequeo cronometra el costo fijo (carga + una pasada; con `-t` de
-  entrada, si no whisper no transcribe) y el log lo separa de la
-  transcripción. `reprocesar` + `solo_subtitulos` rehace solo los subtítulos.
-- whisper usa un **segundo ffmpeg**: BtbN 8.1.1 (2026-05-31), fijo por sha256 y
-  fuera del PATH (`FFMPEG_WHISPER`). BtbN deshabilitó whisper el 2026-06-19 y
-  ningún build 9.0 lo trae. Comprimir sigue siendo del 9.0.1. El chequeo previo
-  prueba el filtro y el modelo; si falla, publica igual sin subtítulos y el job
-  queda en rojo. En el filtro las rutas van relativas y con "/" (los ":" de `C:\`
-  rompen la sintaxis).
+  (`INGESTA_WHISPER_FIJO_S`, variable de GitHub, 90 s por defecto) + segundos por
+  segundo de audio (timeout 10; estimación arranca en 3 y pasa al peor medido por
+  segundo de voz, sin el fijo). El chequeo cronometra el costo fijo (carga + una pasada) y el log lo
+  separa de la transcripción. Si vence, el log dice a los cuántos segundos y con
+  cuántos bloques. `reprocesar` + `solo_subtitulos` rehace solo los subtítulos.
+- **Nada de texto inventado**: mejor `[]` que frases que la persona no dijo. El
+  detector de voz Silero (`whisper-vad-speech-segments`) mide la voz; sin voz no se
+  transcribe. whisper-cli corre con VAD, greedy, `-nf` (sin reintentos con
+  temperatura) y `-mc 0` (sin contexto): así no entra en bucles. Se descartan los
+  segmentos con confianza media < `INGESTA_CONFIANZA_MIN` (0,75) y, si lo que queda
+  cubre menos de `INGESTA_COBERTURA_MIN` (0,5) de la voz, se guarda `[]`. El log
+  por pitch muestra voz, cobertura, confianza y descartados (solo números). Medido:
+  voz clara 0,88-1,00; voz poco clara con música 0,46-0,54.
+- whisper.cpp: build oficial b5130 (= v1.9.4) para Linux x64, fijo por sha256 y en
+  caché (`WHISPER_CPP` = su carpeta; trae sus .so, se corre con `LD_LIBRARY_PATH`).
+  Silero `ggml-silero-v6.2.0.bin` en revisión fija (`WHISPER_VAD`). El audio lo
+  extrae a WAV de 16 kHz el mismo ffmpeg 9.0.1 que comprime. El chequeo previo
+  prueba detector y modelo; si falla, publica igual sin subtítulos y el job queda
+  en rojo. Ya no se usa el filtro `whisper` de ffmpeg (ni el segundo ffmpeg 8.1.1).
 - `/subir` redirige al Form con el email de la sesión precargado (`urlFormularioPitch`
   en `lib/cuenta.ts`). En /cuenta, `components/MisPitches.tsx` muestra lo de la
   función `mis_pitches()` (pitches publicados + envíos pendientes por email o perfil).
@@ -133,7 +141,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `npm run ingesta:chequeo` → chequeo de rotación de la ingesta con el ffmpeg local
   (y de whisper si está `WHISPER_MODELO`)
 - `npm run ingesta:subtitulos -- <video>` → transcribe local e imprime los bloques
-  (con `WHISPER_MODELO`; el modelo está en `../pecera-originales/`)
+  y los números. En `../pecera-originales/`: `WHISPER_CPP=whisper-cpp` (build de
+  Windows x64 b5130), `WHISPER_MODELO` y `WHISPER_VAD=ggml-silero-v6.2.0.bin`
 - `npm run ingesta:tipos` → chequeo de tipos del script de ingesta (tiene su propio
   tsconfig; el de la app excluye `scripts/`)
 

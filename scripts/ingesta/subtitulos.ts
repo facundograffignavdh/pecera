@@ -1,69 +1,170 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { availableParallelism, tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { env, LINEA_MAX, LINEAS_POR_BLOQUE, TIMEOUT_POR_SEGUNDO, tiempoWhisperMs } from "./config.ts";
-import { correr, duracion } from "./video.ts";
+import {
+  COBERTURA_MIN,
+  CONFIANZA_MIN,
+  env,
+  LINEA_MAX,
+  LINEAS_POR_BLOQUE,
+  TIMEOUT_POR_SEGUNDO,
+  tiempoWhisperMs,
+} from "./config.ts";
+import { correr, duracion, Vencido } from "./video.ts";
 
 /**
- * Subtítulos con el filtro whisper de ffmpeg. Lo transcripto nunca va al log:
- * el repo es público. Solo se guarda en Supabase (`pitches.subtitulos`).
+ * Subtítulos con whisper.cpp: el detector de voz (Silero) descarta lo que no es
+ * habla, se transcribe sin reintentos con temperatura ni contexto entre bloques
+ * (cortan los bucles) y se descartan los segmentos de baja confianza. Mejor sin
+ * subtítulos que con frases que la persona no dijo.
+ *
+ * Lo transcripto nunca va al log: el repo es público. Solo se guarda en Supabase
+ * (`pitches.subtitulos`). Al log van solo números.
  */
 
 export type Bloque = { desde: number; hasta: number; texto: string };
+type Segmento = Bloque & { tokens: number; confianza: number };
+
+/** Números de una transcripción, para el log y para ajustar los umbrales. */
+export type Medicion = {
+  /** Segundos con voz según el detector. */
+  voz: number;
+  /** Parte de la voz cubierta por los segmentos que quedaron (0-1). */
+  cobertura: number;
+  /** Confianza media de todos los tokens transcriptos (0-1). */
+  confianza: number;
+  segmentos: number;
+  descartados: number;
+};
 
 /**
- * Ruta del modelo relativa a `dir` y con "/": en un filtro de ffmpeg los ":" de
- * "C:\" y las "\" rompen la sintaxis.
+ * Corre un binario de whisper.cpp. En Linux el build trae sus .so en la misma
+ * carpeta; en Windows las .dll ya se buscan junto al .exe.
  */
-function modeloRelativo(dir: string): string {
-  const ruta = relative(dir, resolve(env.whisperModelo)).replaceAll("\\", "/");
-  if (/[:,;[\]'\\=]/.test(ruta)) {
-    throw new Error("La ruta del modelo no se puede escribir en el filtro (¿otra unidad de disco?)");
-  }
-  return ruta;
+function whisperCpp(nombre: string, args: string[], timeoutMs: number): Promise<string> {
+  const dir = resolve(env.whisperCpp);
+  return correr(join(dir, nombre), args, { timeoutMs, ffmpeg: false, env: { LD_LIBRARY_PATH: dir } });
 }
 
-/** Filtro whisper que escribe `destino` (relativo a `dir`) en SRT. */
-export function filtroWhisper(dir: string, destino: string): string {
-  return (
-    `whisper=model=${modeloRelativo(dir)}:language=es:queue=10:use_gpu=0` +
-    `:destination=${destino}:format=srt`
-  );
+/** Audio mono de 16 kHz, que es lo que lee whisper.cpp. Lo saca el mismo ffmpeg que comprime. */
+export async function extraerAudio(entrada: string[], wav: string): Promise<void> {
+  await correr("ffmpeg", ["-y", ...entrada, "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", wav]);
 }
 
 /**
- * Transcribe el audio de `video` y devuelve el SRT crudo. Corre con `cwd: dir`
- * para que el filtro use rutas relativas. Se corta pasado el costo fijo más
- * `TIMEOUT_POR_SEGUNDO` por segundo de audio.
+ * Segundos con voz según Silero. La herramienta imprime los tramos en
+ * centésimas de segundo; si la salida no cuadra, se corta en vez de adivinar.
  */
-export async function transcribir(video: string, dir: string, segundos: number): Promise<string> {
-  await correr(
-    env.ffmpegWhisper,
-    ["-y", "-i", resolve(video), "-vn", "-af", filtroWhisper(dir, "subs.srt"), "-f", "null", "-"],
-    { cwd: dir, timeoutMs: tiempoWhisperMs(segundos, TIMEOUT_POR_SEGUNDO) }
+export async function detectarVoz(wav: string, audio: number): Promise<number> {
+  const salida = await whisperCpp(
+    "whisper-vad-speech-segments",
+    ["-vm", resolve(env.whisperVad), "-f", wav],
+    2 * 60 * 1000
   );
-  // Sin voz, el filtro puede no escribir nada.
-  return readFile(join(dir, "subs.srt"), "utf8").catch(() => "");
-}
-
-function segundosDe(hora: string): number {
-  const [h, m, s] = hora.replace(",", ".").split(":");
-  return Number(h) * 3600 + Number(m) * 60 + Number(s);
-}
-
-/** Frases del SRT. Acepta "," o "." antes de los milisegundos. */
-export function leerSrt(texto: string): Bloque[] {
-  const frases: Bloque[] = [];
-  for (const parte of texto.replace(/\r/g, "").split(/\n\s*\n/)) {
-    const lineas = parte.split("\n");
-    const i = lineas.findIndex((l) => l.includes("-->"));
-    if (i === -1) continue;
-    const [desde, hasta] = lineas[i].split("-->").map((t) => segundosDe(t.trim()));
-    if (!Number.isFinite(desde) || !Number.isFinite(hasta)) continue;
-    frases.push({ desde, hasta, texto: lineas.slice(i + 1).join(" ") });
+  const declarados = /^Detected (\d+) speech segments/m.exec(salida);
+  const tramos = [...salida.matchAll(/^Speech segment \d+: start = ([\d.]+), end = ([\d.]+)/gm)].map(
+    (m) => ({ desde: Number(m[1]) / 100, hasta: Number(m[2]) / 100 })
+  );
+  if (!declarados || Number(declarados[1]) !== tramos.length) {
+    throw new Error("no se pudo leer la salida del detector de voz");
   }
-  return frases;
+  if (tramos.some((t) => !(t.hasta > t.desde) || t.hasta > audio + 1)) {
+    throw new Error("el detector de voz dio tramos fuera del audio");
+  }
+  return tramos.reduce((suma, t) => suma + t.hasta - t.desde, 0);
+}
+
+/** Timeout de whisper-cli, con cuántos segmentos llevaba (solo números). */
+export class TranscripcionVencida extends Error {
+  segundos: number;
+  bloques: number;
+  constructor(segundos: number, bloques: number) {
+    super(`whisper-cli tardó más de ${Math.round(segundos)} s (${bloques} bloques generados)`);
+    this.segundos = segundos;
+    this.bloques = bloques;
+  }
+}
+
+/** whisper-cli imprime una línea así por cada segmento terminado (con el texto, que no se lee). */
+const LINEA_SEGMENTO = /^\[\d{2}:\d{2}:\d{2}\.\d{3} --> /gm;
+
+type JsonWhisper = {
+  transcription?: {
+    offsets: { from: number; to: number };
+    text: string;
+    tokens?: { text: string; p: number }[];
+  }[];
+};
+
+/** Segmentos del JSON completo de whisper-cli (`-ojf`), con su confianza. */
+export function leerJson(texto: string): Segmento[] {
+  const json = JSON.parse(texto) as JsonWhisper;
+  return (json.transcription ?? []).map((s) => {
+    // Los tokens especiales ([_BEG_], [_TT_…]) no cuentan para la confianza.
+    const p = (s.tokens ?? []).filter((t) => !t.text.startsWith("[_")).map((t) => t.p);
+    return {
+      desde: s.offsets.from / 1000,
+      hasta: s.offsets.to / 1000,
+      texto: s.text,
+      tokens: p.length,
+      confianza: p.length > 0 ? p.reduce((a, b) => a + b, 0) / p.length : 0,
+    };
+  });
+}
+
+/**
+ * Transcribe `wav`. Se corta pasado el costo fijo más `TIMEOUT_POR_SEGUNDO` por
+ * segundo de audio. `vad: false` solo para el chequeo: sobre silencio, con el
+ * detector no se transcribe nada y no se mediría el costo fijo.
+ */
+export async function transcribir(
+  wav: string,
+  dir: string,
+  audio: number,
+  { vad = true } = {}
+): Promise<Segmento[]> {
+  const base = join(dir, "subs");
+  const args = [
+    "-m", resolve(env.whisperModelo), "-f", wav, "-l", "es", "-t", String(availableParallelism()),
+    // Greedy, sin reintentos con temperatura y sin el texto anterior como contexto.
+    "-bs", "1", "-bo", "1", "-nf", "-mc", "0",
+    ...(vad ? ["--vad", "-vm", resolve(env.whisperVad)] : []),
+    "-ojf", "-of", base, "-np",
+  ];
+  try {
+    await whisperCpp("whisper-cli", args, tiempoWhisperMs(audio, TIMEOUT_POR_SEGUNDO));
+  } catch (e) {
+    if (e instanceof Vencido) {
+      throw new TranscripcionVencida(e.segundos, e.salida.match(LINEA_SEGMENTO)?.length ?? 0);
+    }
+    throw e;
+  }
+  return leerJson(await readFile(`${base}.json`, "utf8"));
+}
+
+/**
+ * Descarta los segmentos con confianza menor a `CONFIANZA_MIN`. Si lo que queda
+ * cubre menos de `COBERTURA_MIN` de la voz, no queda nada.
+ */
+export function filtrar(segmentos: Segmento[], voz: number): { frases: Bloque[]; medicion: Medicion } {
+  const tokens = segmentos.reduce((suma, s) => suma + s.tokens, 0);
+  const confianza =
+    tokens > 0 ? segmentos.reduce((suma, s) => suma + s.confianza * s.tokens, 0) / tokens : 0;
+  const quedan = segmentos.filter((s) => s.confianza >= CONFIANZA_MIN);
+  const cubierto = quedan.reduce((suma, s) => suma + Math.max(0, s.hasta - s.desde), 0);
+  const cobertura = voz > 0 ? Math.min(1, cubierto / voz) : 0;
+  return {
+    frases:
+      cobertura >= COBERTURA_MIN ? quedan.map(({ desde, hasta, texto }) => ({ desde, hasta, texto })) : [],
+    medicion: {
+      voz,
+      cobertura,
+      confianza,
+      segmentos: segmentos.length,
+      descartados: segmentos.length - quedan.length,
+    },
+  };
 }
 
 /** Marcas que no son habla y los créditos que Whisper inventa en los silencios. */
@@ -171,21 +272,34 @@ export function partir(frases: Bloque[]): Bloque[] {
   });
 }
 
-/** Video → bloques listos para guardar, con los segundos medidos. */
+/** Video → bloques listos para guardar, con los segundos y los números medidos. */
 export async function subtitular(
   video: string,
   segundos?: number
-): Promise<{ bloques: Bloque[]; audio: number; transcripcion: number }> {
+): Promise<{ bloques: Bloque[]; audio: number; transcripcion: number; medicion: Medicion }> {
   const dir = await mkdtemp(join(tmpdir(), "subtitulos-"));
   try {
     const audio = segundos ?? (await duracion(video));
+    const wav = join(dir, "audio.wav");
+    await extraerAudio(["-i", resolve(video)], wav);
     const inicio = Date.now();
-    const srt = await transcribir(video, dir, audio);
+    const voz = await detectarVoz(wav, audio);
+    // Sin voz no se transcribe: Whisper solo inventaría.
+    const segmentos = voz > 0 ? await transcribir(wav, dir, audio) : [];
     const transcripcion = (Date.now() - inicio) / 1000;
-    return { bloques: partir(normalizar(leerSrt(srt))), audio, transcripcion };
+    const { frases, medicion } = filtrar(segmentos, voz);
+    return { bloques: partir(normalizar(frases)), audio, transcripcion, medicion };
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+/** Números de una transcripción, para el log. */
+export function describirMedicion(m: Medicion, audio: number): string {
+  return (
+    `voz ${m.voz.toFixed(1)} de ${audio.toFixed(1)} s, cobertura ${Math.round(m.cobertura * 100)} %, ` +
+    `confianza media ${m.confianza.toFixed(2)}, ${m.descartados} de ${m.segmentos} segmentos descartados`
+  );
 }
 
 // `npm run ingesta:subtitulos -- <video>`: solo local, imprime los bloques para
@@ -193,15 +307,15 @@ export async function subtitular(
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const video = process.argv[2];
   if (!video) {
-    console.error("Uso: npm run ingesta:subtitulos -- <video>  (con WHISPER_MODELO)");
+    console.error("Uso: npm run ingesta:subtitulos -- <video>  (con WHISPER_CPP, WHISPER_MODELO y WHISPER_VAD)");
     process.exitCode = 1;
   } else {
     subtitular(video).then(
-      ({ bloques, audio, transcripcion }) => {
+      ({ bloques, audio, transcripcion, medicion }) => {
         console.log(JSON.stringify(bloques, null, 2));
         console.log(
-          `\n${audio.toFixed(1)} s de audio en ${transcripcion.toFixed(1)} s ` +
-            `(${(transcripcion / audio).toFixed(2)}x) · ${bloques.length} bloques`
+          `\n${audio.toFixed(1)} s de audio en ${transcripcion.toFixed(1)} s · ${bloques.length} bloques\n` +
+            describirMedicion(medicion, audio)
         );
       },
       (e: Error) => {

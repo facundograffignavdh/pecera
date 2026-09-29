@@ -66,9 +66,11 @@ export const env = {
   get r2Bucket() { return requerida("R2_BUCKET"); },
   get supabaseUrl() { return requerida("SUPABASE_URL"); },
   get supabaseServiceKey() { return requerida("SUPABASE_SERVICE_KEY"); },
-  /** ffmpeg con el filtro whisper. En el runner es otro binario que el que comprime. */
-  get ffmpegWhisper() { return process.env.FFMPEG_WHISPER?.trim() || "ffmpeg"; },
+  /** Carpeta del build de whisper.cpp (whisper-cli y whisper-vad-speech-segments). */
+  get whisperCpp() { return requerida("WHISPER_CPP"); },
   get whisperModelo() { return requerida("WHISPER_MODELO"); },
+  /** Modelo Silero del detector de voz (VAD). */
+  get whisperVad() { return requerida("WHISPER_VAD"); },
 };
 
 /** Las claves viejas se borran de R2 una hora después: el ISR puede seguir sirviéndolas. */
@@ -102,21 +104,42 @@ export const PRESUPUESTO_CORRIDA_MS = presupuestoMin * 60 * 1000;
 
 export const MAX_INTENTOS_SUBTITULOS = 3;
 
-/**
- * Costo fijo de cada transcripción: cargar el modelo (574 MB) y arrancar, igual
- * para cualquier duración. En el runner una corrida entera de 65-80 s de audio
- * tardó 14-16 s, así que el fijo real es menor; 60 s deja margen amplio. Variable
- * de GitHub `INGESTA_WHISPER_FIJO_S`.
- */
-const whisperFijoS = Number(process.env.INGESTA_WHISPER_FIJO_S?.trim() || 60);
-if (!Number.isFinite(whisperFijoS) || whisperFijoS <= 0) {
-  throw new Error("INGESTA_WHISPER_FIJO_S tiene que ser un número de segundos positivo.");
+/** Variable de GitHub numérica, con valor por defecto y rango (min excluido si `minAbierto`). */
+function numero(nombre: string, defecto: number, min: number, max: number, minAbierto = true): number {
+  const valor = Number(process.env[nombre]?.trim() || defecto);
+  const bajo = minAbierto ? valor <= min : valor < min;
+  if (!Number.isFinite(valor) || bajo || valor > max) {
+    throw new Error(`${nombre} tiene que ser un número entre ${min} y ${max}.`);
+  }
+  return valor;
 }
-export const WHISPER_FIJO_S = whisperFijoS;
-/** Segundos de transcripción por segundo de audio (sin el fijo) que se suponen antes de medir. */
-export const FACTOR_INICIAL = 1;
+
+/**
+ * Costo fijo de cada transcripción: cargar el modelo (574 MB) y una primera
+ * pasada, igual para cualquier duración. En el runner el chequeo midió 44 s con
+ * el filtro de ffmpeg; 90 s deja margen. Variable `INGESTA_WHISPER_FIJO_S`.
+ */
+export const WHISPER_FIJO_S = numero("INGESTA_WHISPER_FIJO_S", 90, 0, 3600);
+/**
+ * Segundos de transcripción por segundo de voz (sin el fijo) que se suponen
+ * antes de medir. En el runner, con el filtro de ffmpeg, se midió hasta 2,6 s/s.
+ */
+export const FACTOR_INICIAL = 3;
 /** Pasado el fijo, una transcripción que tarda más de esto por segundo de audio se da por colgada. */
-export const TIMEOUT_POR_SEGUNDO = 4;
+export const TIMEOUT_POR_SEGUNDO = 10;
+
+/**
+ * Confianza media mínima (probabilidad de los tokens) para quedarse con un
+ * segmento. Medido: voz clara 0,88-1,00; un pitch con voz poco clara y música,
+ * 0,46-0,54. Variable `INGESTA_CONFIANZA_MIN`.
+ */
+export const CONFIANZA_MIN = numero("INGESTA_CONFIANZA_MIN", 0.75, 0, 1, false);
+/**
+ * Parte mínima de la voz detectada que tienen que cubrir los segmentos que
+ * quedan; si no, el pitch se guarda sin subtítulos ([]): mejor nada que frases
+ * sueltas o inventadas. Variable `INGESTA_COBERTURA_MIN` (0,5 = 50 %).
+ */
+export const COBERTURA_MIN = numero("INGESTA_COBERTURA_MIN", 0.5, 0, 1, false);
 
 /**
  * Tiempo de una transcripción: fijo + `porSegundo` por segundo de audio. Es la
