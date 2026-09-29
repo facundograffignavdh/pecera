@@ -147,6 +147,11 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   ofrece recargar; `app/cuenta/error.tsx` atrapa el resto.
 - `/subir` → al Form de pitches con el email de la sesión (sin sesión, a /cuenta)
 - `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
+- `/sumate` → landing de captación, basada en la landing anterior (`pecera-vc`). Hero
+  con video de acuario (`public/landing/`), que se pausa fuera de pantalla y con
+  reducir movimiento. `MaquetaReel` dibuja un reel en un celular a partir de un
+  `EjemploPitch`. La capa de movimiento (reveals, contadores, tilt, imán, progreso) es
+  `components/landing/Movimiento.tsx` sobre atributos `data-*`.
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,
