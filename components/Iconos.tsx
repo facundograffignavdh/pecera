@@ -76,6 +76,15 @@ export function IconoCerrar({ className }: Props) {
   );
 }
 
+/** Menú: tres líneas, la del medio más corta. */
+export function IconoMenu({ className }: Props) {
+  return (
+    <Icono className={className}>
+      <path d="M4 7h16M4 12h11M4 17h16" />
+    </Icono>
+  );
+}
+
 /** Persona: acceso a "Entrar" / "Mi perfil". */
 export function IconoPersona({ className }: Props) {
   return (

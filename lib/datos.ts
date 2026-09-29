@@ -227,10 +227,21 @@ export type Participante = {
 export type EstadoEvento = {
   /** La base tiene la migración: se puede participar y votar. */
   disponible: boolean;
+  votacionAbierta: boolean;
+  resultadosVisibles: boolean;
   participantes: Participante[];
   totalVotos: number;
   /** Votos por perfil; vacío mientras los resultados no son visibles. */
-  resultados: Map<string, number>;
+  resultados: Record<string, number>;
+};
+
+const SIN_EVENTO: EstadoEvento = {
+  disponible: false,
+  votacionAbierta: false,
+  resultadosVisibles: false,
+  participantes: [],
+  totalVotos: 0,
+  resultados: {},
 };
 
 /**
@@ -238,17 +249,22 @@ export type EstadoEvento = {
  * el programa del evento se ve igual aunque la parte dinámica falle.
  */
 export async function getEstadoEvento(evento: string): Promise<EstadoEvento> {
-  const [participantes, total, resultados] = await Promise.all([
+  const [estado, participantes, total, resultados] = await Promise.all([
+    supabase
+      .from("eventos")
+      .select("votacion_abierta, resultados_visibles")
+      .eq("slug", evento)
+      .maybeSingle()
+      .overrideTypes<{ votacion_abierta: boolean; resultados_visibles: boolean } | null, { merge: false }>(),
     supabase.rpc("participantes_evento", { p_evento: evento }),
     supabase.rpc("total_votos_evento", { p_evento: evento }),
     supabase.rpc("resultados_evento", { p_evento: evento }),
   ]);
 
-  if (participantes.error) {
-    if (!faltaMigracion(participantes.error)) {
-      console.error(`Supabase (participantes_evento): ${participantes.error.message}`);
-    }
-    return { disponible: false, participantes: [], totalVotos: 0, resultados: new Map() };
+  const error = estado.error ?? participantes.error;
+  if (error || !estado.data) {
+    if (error && !faltaMigracion(error)) console.error(`Supabase (getEstadoEvento): ${error.message}`);
+    return SIN_EVENTO;
   }
 
   const lista = ((participantes.data ?? []) as Participante[]).map((p) => ({
@@ -260,8 +276,10 @@ export async function getEstadoEvento(evento: string): Promise<EstadoEvento> {
 
   return {
     disponible: true,
+    votacionAbierta: estado.data.votacion_abierta,
+    resultadosVisibles: estado.data.resultados_visibles,
     participantes: lista,
     totalVotos: typeof total.data === "number" ? total.data : 0,
-    resultados: new Map(filas.map((f) => [f.perfil_id, f.votos])),
+    resultados: Object.fromEntries(filas.map((f) => [f.perfil_id, Number(f.votos)])),
   };
 }

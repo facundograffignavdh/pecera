@@ -7,10 +7,12 @@ import Avatar from "@/components/Avatar";
 import BotonCopiar from "@/components/BotonCopiar";
 import EditarPerfil from "@/components/EditarPerfil";
 import Encabezado from "@/components/Encabezado";
+import { EtiquetasPerfil } from "@/components/Etiquetas";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
 import { canalesDe } from "@/lib/contacto";
 import { getPerfil, getSlugs } from "@/lib/datos";
+import { cargo } from "@/lib/etiquetas";
 import { ROLES, TIPOS } from "@/lib/rol";
 
 export const revalidate = 60;
@@ -83,6 +85,29 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
         </header>
 
         <EditarPerfil slug={perfil.slug} />
+
+        {perfil.empresa && (
+          <Link
+            href={`/e/${perfil.empresa.slug}`}
+            className="mt-5 flex min-h-12 items-center justify-between gap-3 rounded-2xl border border-tinta/15 px-4 py-2.5 text-tinta transition-colors duration-200 ease-pecera hover:border-arcilla"
+          >
+            <span className="min-w-0">
+              <span className="block text-xs text-tinta/60">
+                {cargo(perfil.cargo)?.label ?? "Equipo"} en
+              </span>
+              <span className="block truncate font-display text-lg font-semibold leading-tight">
+                {perfil.empresa.nombre}
+              </span>
+            </span>
+            <span aria-hidden className="text-tinta/60">
+              &rarr;
+            </span>
+          </Link>
+        )}
+
+        <div className="mt-5">
+          <EtiquetasPerfil perfil={perfil} conCargo={!perfil.empresa} />
+        </div>
 
         <p className="mt-5 leading-relaxed text-tinta/90">{perfil.descripcion}</p>
 

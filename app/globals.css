@@ -99,6 +99,10 @@ body {
   65% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--giro)) scale(1); }
   100% { opacity: 0; transform: translate(-50%, calc(-50% - 40px)) rotate(var(--giro)) scale(1.1); }
 }
+@keyframes pista-quieta {
+  0%, 100% { opacity: 0; }
+  10%, 88% { opacity: 1; }
+}
 @keyframes corazon-quieto {
   70% { opacity: 1; }
   100% { opacity: 0; }
@@ -106,6 +110,17 @@ body {
 .corazon-toque {
   transform: translate(-50%, -50%) rotate(var(--giro));
   animation: corazon-toque 900ms var(--ease-pecera) forwards;
+}
+
+/* Pista del doble toque: aparece un rato en el primer reel y se va sola. */
+@keyframes pista-pique {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  12%, 85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 0); }
+}
+.pista-pique {
+  transform: translateX(-50%);
+  animation: pista-pique 4200ms var(--ease-pecera) 900ms both;
 }
 
 /* Pop-up del Pique: entra con fade + 14 px, sale con fade. */
@@ -516,6 +531,10 @@ html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
   .popup-pique::backdrop {
     animation: none !important;
   }
+  /* La pista aparece y se va sin moverse. */
+  .pista-pique {
+    animation: pista-quieta 4200ms linear 900ms both !important;
+  }
   /* El corazón del doble toque aparece quieto y se desvanece. */
   .corazon-toque {
     animation: corazon-quieto 700ms linear forwards !important;
@@ -528,5 +547,20 @@ html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Menú principal: entra desde la izquierda. Sin animación con reducir movimiento. */
+.menu-principal[open] > nav {
+  animation: menu-entra 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes menu-entra {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-principal[open] > nav {
+    animation: none;
   }
 }

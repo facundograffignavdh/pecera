@@ -88,9 +88,14 @@ export function slugDesdeNombre(nombre: string): string {
   return slug.startsWith("test-") ? `p-${slug}` : slug;
 }
 
-/** A dónde volver después de entrar: solo rutas internas. */
+/**
+ * A dónde volver después de entrar: solo rutas internas. La barra invertida también
+ * se rechaza: `new URL("/\\otro.com", origen)` la lee como "//otro.com" (open redirect).
+ */
 export function destinoSeguro(valor: string | null | undefined): string {
-  return valor && valor.startsWith("/") && !valor.startsWith("//") ? valor : "/cuenta";
+  return valor && valor.startsWith("/") && !valor.startsWith("//") && !valor.includes("\\")
+    ? valor
+    : "/cuenta";
 }
 
 /** Campos de texto (un valor). */
