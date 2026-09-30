@@ -8,6 +8,9 @@ import { usePiques } from "@/lib/piques";
 import { useSubtitulosActivos } from "@/lib/subtitulos";
 import type { ItemFeed } from "@/types/pecera";
 
+/** Lo que tarda en salir el pop-up tras un doble toque: deja ver los corazones. */
+const ESPERA_POPUP_MS = 700;
+
 export default function Feed({ items }: { items: ItemFeed[] }) {
   const [indiceActivo, setIndiceActivo] = useState(0);
   const [silenciado, setSilenciado] = useState(true);
@@ -17,6 +20,15 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
   const piques = usePiques(items);
   // Reel al que se le acaba de dar pique: abre el pop-up y pausa el video.
   const [popup, setPopup] = useState<ItemFeed | null>(null);
+  // Con doble toque el pop-up espera a que termine la ráfaga de corazones.
+  const esperaPopup = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (esperaPopup.current !== null) clearTimeout(esperaPopup.current);
+    },
+    []
+  );
 
   const registrarRef = useCallback((indice: number, el: HTMLElement | null) => {
     if (el) secciones.current.set(indice, el);
@@ -82,7 +94,12 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
             return dado;
           }}
           onDarPique={() => {
-            if (piques.dar(item.pitch.id)) setPopup(item);
+            if (!piques.dar(item.pitch.id)) return;
+            if (esperaPopup.current !== null) clearTimeout(esperaPopup.current);
+            esperaPopup.current = window.setTimeout(() => {
+              esperaPopup.current = null;
+              setPopup(item);
+            }, ESPERA_POPUP_MS);
           }}
           registrarRef={registrarRef}
         />

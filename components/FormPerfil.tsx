@@ -4,28 +4,53 @@ import { unstable_rethrow } from "next/navigation";
 import { type ReactNode, useActionState, useEffect, useState } from "react";
 import { type EstadoGuardar, guardarPerfil } from "@/app/cuenta/acciones";
 import Avatar from "@/components/Avatar";
+import { ChipsMultiple, ChipsUnico, SelectorEtapa } from "@/components/Chips";
 import {
   CONSENTIMIENTO,
-  type CampoPerfil,
+  type CampoLista,
+  type CampoSimple,
   DESCRIPCION_MAX,
+  DESCRIPCION_ROL,
   NOMBRE_MAX,
-  OPCIONES_ROL,
-  OPCIONES_TIPO,
+  TIPOS_POR_ROL,
   slugDesdeNombre,
   urlPerfil,
   validarPerfil,
   validarSlug,
 } from "@/lib/cuenta";
+import {
+  CARGOS,
+  ESPECIALIDADES,
+  ETAPAS,
+  INDUSTRIAS,
+  MAX_ESPECIALIDADES,
+  MAX_INDUSTRIAS_INTERES,
+  MAX_INDUSTRIAS_PROYECTO,
+  RONDAS,
+  RONDAS_INTERES,
+  TICKETS,
+  TONO,
+} from "@/lib/etiquetas";
+import { ROLES, TIPOS } from "@/lib/rol";
 import type { Perfil, Rol } from "@/types/pecera";
 
 export type PerfilPropio = Perfil & { oculto: boolean };
 
-type Valores = Record<Exclude<CampoPerfil, "slug" | "consentimiento">, string>;
+type Valores = Record<CampoSimple, string>;
+type Listas = Record<CampoLista, string[]>;
 
 const LADO_FOTO = 512;
 const MAX_FOTO = 512 * 1024;
 /** Sin respuesta en este tiempo, se ofrece recargar. */
 const ESPERA_MAXIMA_MS = 20_000;
+
+const OPCIONES_INDUSTRIAS = INDUSTRIAS.map(({ valor, label }) => ({ valor, label }));
+const OPCIONES_CARGOS = CARGOS.map(({ valor, label, tono }) => ({ valor, label, tono: TONO[tono] }));
+const OPCIONES_ESPECIALIDADES = ESPECIALIDADES.map(({ valor, label, tono }) => ({
+  valor,
+  label,
+  tono: TONO[tono],
+}));
 
 /**
  * Achica la foto en el celular: cuadrada de 512 px, recortada al centro, en JPG.
@@ -113,19 +138,71 @@ function describir(id: string, error?: string, ayuda = false) {
   return ids || undefined;
 }
 
-export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) {
+/** Bloque numerado del formulario: guía el orden sin partirlo en pantallas. */
+function Paso({
+  numero,
+  titulo,
+  bajada,
+  children,
+}: {
+  numero: number;
+  titulo: string;
+  bajada?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-labelledby={`paso-${numero}`}
+      className="flex flex-col gap-5 rounded-3xl border border-tinta/10 bg-tinta/[0.03] px-4 py-5"
+    >
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden
+          className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-tinta font-display text-sm font-semibold text-marfil"
+        >
+          {numero}
+        </span>
+        <div className="flex flex-col gap-0.5">
+          <h2 id={`paso-${numero}`} className="font-display text-xl font-semibold leading-tight text-tinta">
+            {titulo}
+          </h2>
+          {bajada && <p className="text-sm text-tinta/70">{bajada}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export default function FormPerfil({
+  perfil,
+  rolInicial,
+}: {
+  perfil: PerfilPropio | null;
+  /** Desde /sumate: el rol ya elegido en la landing. */
+  rolInicial?: Rol;
+}) {
   const creando = perfil === null;
 
   const [valores, setValores] = useState<Valores>({
     nombre: perfil?.nombre ?? "",
     tipo: perfil?.tipo ?? "",
-    rol: perfil?.rol ?? "",
+    rol: perfil?.rol ?? rolInicial ?? "",
     descripcion: perfil?.descripcion ?? "",
     whatsapp: perfil?.whatsapp ?? "",
     email: perfil?.email ?? "",
     linkedin: perfil?.linkedin ?? "",
     instagram: perfil?.instagram ?? "",
     web: perfil?.web ?? "",
+    etapa: perfil?.etapa ?? "",
+    ronda: perfil?.ronda ?? "",
+    cargo: perfil?.cargo ?? "",
+    ticket: perfil?.ticket ?? "",
+  });
+  const [listas, setListas] = useState<Listas>({
+    industrias: perfil?.industrias ?? [],
+    especialidades: perfil?.especialidades ?? [],
+    rondas_interes: perfil?.rondas_interes ?? [],
   });
   const [slug, setSlug] = useState("");
   const [slugTocado, setSlugTocado] = useState(false);
@@ -136,12 +213,13 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
   const [tardando, setTardando] = useState(false);
 
   const slugVisible = creando ? (slugTocado ? slug : slugDesdeNombre(valores.nombre)) : perfil.slug;
+  const rol = (valores.rol || null) as Rol | null;
 
   const [estado, accion, guardando] = useActionState(
     async (previo: EstadoGuardar, formData: FormData): Promise<EstadoGuardar> => {
       setTardando(false);
       // Mismas reglas que el servidor, para avisar al toque.
-      const { errores } = validarPerfil(valores);
+      const { errores } = validarPerfil({ ...valores, ...listas });
       if (creando) {
         const errorSlug = validarSlug(slugVisible);
         if (errorSlug) errores.slug = errorSlug;
@@ -178,6 +256,7 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
     { errores: {} }
   );
   const errores = estado.errores;
+  const hayErrores = Object.keys(errores).length > 0;
 
   // Límite de seguridad: si el guardado no vuelve, que nadie quede mirando
   // "Guardando…" para siempre.
@@ -187,9 +266,23 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
     return () => clearTimeout(espera);
   }, [guardando]);
 
-  function cambiar(campo: keyof Valores) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+  function cambiar(campo: CampoSimple) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setValores((v) => ({ ...v, [campo]: e.target.value }));
+  }
+
+  const poner = (campo: CampoSimple) => (valor: string) =>
+    setValores((v) => ({ ...v, [campo]: valor }));
+  const ponerLista = (campo: CampoLista) => (valor: string[]) =>
+    setListas((l) => ({ ...l, [campo]: valor }));
+
+  /** Cambiar de rol limpia el "qué sos" si ya no corresponde. */
+  function elegirRol(nuevo: Rol) {
+    setValores((v) => ({
+      ...v,
+      rol: nuevo,
+      tipo: TIPOS_POR_ROL[nuevo].includes(v.tipo as never) ? v.tipo : TIPOS_POR_ROL[nuevo][0],
+    }));
   }
 
   async function elegirFoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -206,159 +299,299 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
     }
   }
 
-  const rolAvatar = (valores.rol || "emprendedor") as Rol;
+  const rolAvatar = rol ?? "emprendedor";
   const avatar = foto?.url ?? perfil?.avatar_url ?? null;
 
   return (
     <form action={accion} noValidate className="flex flex-col gap-5">
-      <div className="flex items-center gap-4">
-        <Avatar
-          perfil={{ nombre: valores.nombre || "?", rol: rolAvatar, avatar_url: avatar }}
-          size={72}
-        />
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor="foto"
-            className="inline-flex min-h-11 cursor-pointer items-center self-start rounded-full border border-tinta/55 px-4 text-sm font-medium text-tinta transition-colors duration-200 ease-pecera focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-arcilla hover:border-arcilla hover:text-arcilla"
-          >
-            {avatar ? "Cambiar foto o logo" : "Subir foto o logo"}
-            <input
-              id="foto"
-              type="file"
-              accept="image/*"
-              onChange={elegirFoto}
-              className="sr-only"
-            />
-          </label>
-          <p className="text-xs text-tinta/70">Se guarda cuadrada y sin datos de ubicación.</p>
+      {/* 1 · Rol: la decisión que ordena todo lo demás. */}
+      <Paso numero={1} titulo="¿Cómo entrás a Pecera?">
+        <fieldset className="flex flex-col gap-2.5" aria-describedby={errores.rol ? "rol-error" : undefined}>
+          <legend className="sr-only">Tu rol en el ecosistema</legend>
+          {(Object.keys(ROLES) as Rol[]).map((r) => {
+            const elegido = rol === r;
+            return (
+              <label
+                key={r}
+                className={`flex cursor-pointer items-start gap-3 rounded-2xl border-2 bg-marfil px-4 py-3.5 transition-colors duration-200 ease-pecera has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-arcilla ${
+                  elegido ? "border-tinta" : "border-tinta/15 hover:border-tinta/40"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="rol"
+                  value={r}
+                  checked={elegido}
+                  onChange={() => elegirRol(r)}
+                  className="sr-only"
+                />
+                <span aria-hidden className={`mt-1.5 size-3 shrink-0 rounded-full ${ROLES[r].bg}`} />
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-display text-lg font-semibold leading-tight text-tinta">
+                    {ROLES[r].label}
+                  </span>
+                  <span className="text-sm text-tinta/75">{DESCRIPCION_ROL[r]}</span>
+                </span>
+                <span
+                  aria-hidden
+                  className={`ml-auto mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                    elegido ? "border-tinta bg-tinta" : "border-tinta/30"
+                  }`}
+                >
+                  {elegido && <span className="size-2 rounded-full bg-marfil" />}
+                </span>
+              </label>
+            );
+          })}
+          {errores.rol && <MensajeError id="rol-error">{errores.rol}</MensajeError>}
+        </fieldset>
+
+        {rol && (
+          <ChipsUnico
+            id="tipo"
+            nombre="tipo"
+            legend="¿Qué sos?"
+            opciones={TIPOS_POR_ROL[rol].map((t) => ({
+              valor: t,
+              label: t === "fondo" ? "Fondo de inversión" : TIPOS[t],
+            }))}
+            valor={valores.tipo}
+            onCambiar={poner("tipo")}
+            error={errores.tipo}
+          />
+        )}
+      </Paso>
+
+      {/* 2 · Quién sos. */}
+      <Paso numero={2} titulo="Tu perfil" bajada="Es lo que ve quien toca tu pitch o tu tarjeta NFC.">
+        <div className="flex items-center gap-4">
+          <Avatar
+            perfil={{ nombre: valores.nombre || "?", rol: rolAvatar, avatar_url: avatar }}
+            size={72}
+          />
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="foto"
+              className="inline-flex min-h-11 cursor-pointer items-center self-start rounded-full border border-tinta/55 px-4 text-sm font-medium text-tinta transition-colors duration-200 ease-pecera focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-arcilla hover:border-arcilla hover:text-arcilla"
+            >
+              {avatar ? "Cambiar foto o logo" : "Subir foto o logo"}
+              <input
+                id="foto"
+                type="file"
+                accept="image/*"
+                onChange={elegirFoto}
+                className="sr-only"
+              />
+            </label>
+            <p className="text-xs text-tinta/70">Se guarda cuadrada y sin datos de ubicación.</p>
+          </div>
         </div>
-      </div>
-      {errorFoto && <MensajeError>{errorFoto}</MensajeError>}
+        {errorFoto && <MensajeError>{errorFoto}</MensajeError>}
 
-      <Campo id="nombre" label="Nombre del proyecto o persona" error={errores.nombre}>
-        <input
-          id="nombre"
-          name="nombre"
-          type="text"
-          maxLength={NOMBRE_MAX}
-          autoComplete="off"
-          value={valores.nombre}
-          onChange={cambiar("nombre")}
-          aria-invalid={!!errores.nombre}
-          aria-describedby={describir("nombre", errores.nombre)}
-          className={claseInput(errores.nombre)}
-        />
-      </Campo>
-
-      {creando ? (
         <Campo
-          id="slug"
-          label="Tu dirección en Pecera"
-          error={errores.slug}
-          ayuda={
-            <>
-              <span className="break-all font-medium text-tinta">
-                {urlPerfil(slugVisible || "tu-direccion")}
-              </span>
-              <br />
-              Después no se puede cambiar: es la dirección de tu tarjeta NFC.
-            </>
-          }
+          id="nombre"
+          label={rol === "emprendedor" ? "Nombre del proyecto o el tuyo" : "Tu nombre o el de tu organización"}
+          error={errores.nombre}
         >
           <input
-            id="slug"
-            name="slug"
+            id="nombre"
+            name="nombre"
             type="text"
-            maxLength={60}
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            value={slugVisible}
-            onChange={(e) => {
-              setSlugTocado(true);
-              setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
-            }}
-            aria-invalid={!!errores.slug}
-            aria-describedby={describir("slug", errores.slug, true)}
-            className={claseInput(errores.slug)}
+            maxLength={NOMBRE_MAX}
+            autoComplete="off"
+            value={valores.nombre}
+            onChange={cambiar("nombre")}
+            aria-invalid={!!errores.nombre}
+            aria-describedby={describir("nombre", errores.nombre)}
+            className={claseInput(errores.nombre)}
           />
         </Campo>
-      ) : (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-medium text-tinta">Tu dirección en Pecera</p>
-          <p className="break-all text-sm text-tinta/70">{urlPerfil(perfil.slug)}</p>
-        </div>
+
+        {creando ? (
+          <Campo
+            id="slug"
+            label="Tu dirección en Pecera"
+            error={errores.slug}
+            ayuda={
+              <>
+                <span className="break-all font-medium text-tinta">
+                  {urlPerfil(slugVisible || "tu-direccion")}
+                </span>
+                <br />
+                Después no se puede cambiar: es la dirección de tu tarjeta NFC.
+              </>
+            }
+          >
+            <input
+              id="slug"
+              name="slug"
+              type="text"
+              maxLength={60}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={slugVisible}
+              onChange={(e) => {
+                setSlugTocado(true);
+                setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
+              }}
+              aria-invalid={!!errores.slug}
+              aria-describedby={describir("slug", errores.slug, true)}
+              className={claseInput(errores.slug)}
+            />
+          </Campo>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-sm font-medium text-tinta">Tu dirección en Pecera</p>
+            <p className="break-all text-sm text-tinta/70">{urlPerfil(perfil.slug)}</p>
+          </div>
+        )}
+
+        <Campo
+          id="descripcion"
+          label="Descripción en una línea"
+          error={errores.descripcion}
+          ayuda={`${valores.descripcion.length}/${DESCRIPCION_MAX}`}
+        >
+          <textarea
+            id="descripcion"
+            name="descripcion"
+            rows={3}
+            maxLength={DESCRIPCION_MAX}
+            value={valores.descripcion}
+            onChange={cambiar("descripcion")}
+            placeholder={
+              rol === "inversor"
+                ? "Invierto en fintech y agtech en etapa temprana."
+                : rol === "aliado"
+                  ? "Acompaño founders en ventas B2B y primeros clientes."
+                  : "Convertimos la borra de café en sustrato para huertas."
+            }
+            aria-invalid={!!errores.descripcion}
+            aria-describedby={describir("descripcion", errores.descripcion, true)}
+            className={`${claseInput(errores.descripcion)} resize-none`}
+          />
+        </Campo>
+      </Paso>
+
+      {/* 3 · Lo que pide cada rol. */}
+      {rol === "emprendedor" && (
+        <Paso
+          numero={3}
+          titulo="Tu proyecto"
+          bajada="Con esto los inversores y aliados te encuentran por etapa e industria."
+        >
+          <SelectorEtapa
+            id="etapa"
+            nombre="etapa"
+            legend="¿En qué etapa está?"
+            etapas={ETAPAS}
+            valor={valores.etapa}
+            onCambiar={poner("etapa")}
+            error={errores.etapa}
+          />
+          <ChipsMultiple
+            id="industrias"
+            nombre="industrias"
+            legend="Industria"
+            opciones={OPCIONES_INDUSTRIAS}
+            valores={listas.industrias}
+            onCambiar={ponerLista("industrias")}
+            max={MAX_INDUSTRIAS_PROYECTO}
+            error={errores.industrias}
+          />
+          <ChipsUnico
+            id="ronda"
+            nombre="ronda"
+            legend="¿Qué ronda estás buscando?"
+            opciones={RONDAS}
+            valor={valores.ronda}
+            onCambiar={poner("ronda")}
+            permitirNinguno
+            ayuda="Opcional. Pre-seed y seed son las primeras rondas con inversores."
+            error={errores.ronda}
+          />
+          <ChipsUnico
+            id="cargo"
+            nombre="cargo"
+            legend="Tu cargo en el equipo"
+            opciones={OPCIONES_CARGOS}
+            valor={valores.cargo}
+            onCambiar={poner("cargo")}
+            permitirNinguno
+            ayuda="Opcional. Si tu equipo tiene página de empresa, cada uno muestra el suyo."
+            error={errores.cargo}
+          />
+        </Paso>
       )}
 
-      <Campo id="tipo" label="¿Qué sos?" error={errores.tipo}>
-        <select
-          id="tipo"
-          name="tipo"
-          value={valores.tipo}
-          onChange={cambiar("tipo")}
-          aria-invalid={!!errores.tipo}
-          aria-describedby={describir("tipo", errores.tipo)}
-          className={claseInput(errores.tipo)}
-        >
-          <option value="" disabled>
-            Elegí una opción
-          </option>
-          {OPCIONES_TIPO.map(([valor, label]) => (
-            <option key={valor} value={valor}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </Campo>
+      {rol === "inversor" && (
+        <Paso numero={3} titulo="Tu tesis" bajada="Así te llegan los proyectos que de verdad mirás.">
+          <ChipsMultiple
+            id="rondas_interes"
+            nombre="rondas_interes"
+            legend="¿En qué rondas invertís?"
+            opciones={RONDAS_INTERES}
+            valores={listas.rondas_interes}
+            onCambiar={ponerLista("rondas_interes")}
+            error={errores.rondas_interes}
+          />
+          <ChipsUnico
+            id="ticket"
+            nombre="ticket"
+            legend="Ticket típico"
+            opciones={TICKETS}
+            valor={valores.ticket}
+            onCambiar={poner("ticket")}
+            permitirNinguno
+            ayuda="Opcional. Se muestra en tu perfil."
+            error={errores.ticket}
+          />
+          <ChipsMultiple
+            id="industrias"
+            nombre="industrias"
+            legend="Industrias que mirás"
+            opciones={OPCIONES_INDUSTRIAS}
+            valores={listas.industrias}
+            onCambiar={ponerLista("industrias")}
+            max={MAX_INDUSTRIAS_INTERES}
+            error={errores.industrias}
+          />
+        </Paso>
+      )}
 
-      <Campo id="rol" label="Tu rol en el ecosistema" error={errores.rol}>
-        <select
-          id="rol"
-          name="rol"
-          value={valores.rol}
-          onChange={cambiar("rol")}
-          aria-invalid={!!errores.rol}
-          aria-describedby={describir("rol", errores.rol)}
-          className={claseInput(errores.rol)}
-        >
-          <option value="" disabled>
-            Elegí una opción
-          </option>
-          {OPCIONES_ROL.map(([valor, label]) => (
-            <option key={valor} value={valor}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </Campo>
+      {rol === "aliado" && (
+        <Paso numero={3} titulo="Cómo ayudás" bajada="Los proyectos te buscan por lo que sabés hacer.">
+          <ChipsMultiple
+            id="especialidades"
+            nombre="especialidades"
+            legend="Tus especialidades"
+            opciones={OPCIONES_ESPECIALIDADES}
+            valores={listas.especialidades}
+            onCambiar={ponerLista("especialidades")}
+            max={MAX_ESPECIALIDADES}
+            error={errores.especialidades}
+          />
+          <ChipsMultiple
+            id="industrias"
+            nombre="industrias"
+            legend="Industrias donde más aportás"
+            opciones={OPCIONES_INDUSTRIAS}
+            valores={listas.industrias}
+            onCambiar={ponerLista("industrias")}
+            max={MAX_INDUSTRIAS_INTERES}
+            ayuda="Opcional."
+            error={errores.industrias}
+          />
+        </Paso>
+      )}
 
-      <Campo
-        id="descripcion"
-        label="Descripción en una línea"
-        error={errores.descripcion}
-        ayuda={`${valores.descripcion.length}/${DESCRIPCION_MAX}`}
+      {/* 4 · Contacto. */}
+      <Paso
+        numero={rol ? 4 : 3}
+        titulo="Cómo te escriben"
+        bajada="Todo es opcional y se muestra en tu perfil público. Sumá al menos uno."
       >
-        <textarea
-          id="descripcion"
-          name="descripcion"
-          rows={3}
-          maxLength={DESCRIPCION_MAX}
-          value={valores.descripcion}
-          onChange={cambiar("descripcion")}
-          aria-invalid={!!errores.descripcion}
-          aria-describedby={describir("descripcion", errores.descripcion, true)}
-          className={`${claseInput(errores.descripcion)} resize-none`}
-        />
-      </Campo>
-
-      <fieldset className="flex flex-col gap-5">
-        <legend className="font-display text-lg font-semibold text-tinta">
-          Cómo te escriben
-        </legend>
-        <p className="-mt-3 text-sm text-tinta/70">
-          Todo es opcional y se muestra en tu perfil público.
-        </p>
-
         <Campo
           id="whatsapp"
           label="WhatsApp"
@@ -450,7 +683,7 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
             className={claseInput(errores.web)}
           />
         </Campo>
-      </fieldset>
+      </Paso>
 
       {creando ? (
         <div className="flex flex-col gap-1.5">
@@ -508,17 +741,20 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
       )}
 
       {estado.general && <MensajeError>{estado.general}</MensajeError>}
+      {hayErrores && !estado.general && (
+        <MensajeError>Revisá los campos marcados más arriba.</MensajeError>
+      )}
 
-      <div className="flex flex-col gap-2">
+      <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 flex flex-col gap-2">
         <button
           type="submit"
           disabled={guardando}
-          className="min-h-12 rounded-full bg-tinta px-5 font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-70"
+          className="min-h-12 rounded-full bg-tinta px-5 font-medium text-marfil shadow-[0_8px_24px_rgb(28_27_22/0.25)] transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-70"
         >
           {guardando ? "Guardando…" : creando ? "Crear mi perfil" : "Guardar cambios"}
         </button>
         {guardando && tardando ? (
-          <div role="alert" className="flex flex-col items-center gap-2 text-center">
+          <div role="alert" className="flex flex-col items-center gap-2 rounded-2xl bg-marfil p-3 text-center">
             <p className="text-sm text-tinta">
               Está tardando más de lo normal. Recargá la página: si tu perfil se guardó, lo vas
               a ver.
@@ -532,8 +768,10 @@ export default function FormPerfil({ perfil }: { perfil: PerfilPropio | null }) 
             </button>
           </div>
         ) : (
-          <p role="status" className="min-h-5 text-center text-sm text-tinta">
-            {!guardando && estado.guardado && !errorFoto ? "Listo, guardado." : ""}
+          <p role="status" className="min-h-5 rounded-full text-center text-sm text-tinta">
+            {!guardando && estado.guardado && !errorFoto
+              ? (estado.aviso ?? "Listo, guardado.")
+              : ""}
           </p>
         )}
       </div>

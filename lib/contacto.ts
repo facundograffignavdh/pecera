@@ -25,12 +25,12 @@ function hrefWhatsapp(numero: string, saludo: string): string | null {
 }
 
 /** Los perfiles cargan la URL a mano: puede venir sin protocolo. */
-function conProtocolo(url: string): string {
+export function conProtocolo(url: string): string {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
 /** Acepta "@usuario", "usuario" o la URL completa. */
-function hrefInstagram(valor: string): string {
+export function hrefInstagram(valor: string): string {
   if (/^https?:\/\//i.test(valor)) return valor;
   return `https://instagram.com/${valor.replace(/^@/, "")}`;
 }

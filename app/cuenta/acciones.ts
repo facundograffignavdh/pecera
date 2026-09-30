@@ -5,11 +5,17 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  CAMPOS_LISTA,
+  CAMPOS_SIMPLES,
   type CampoPerfil,
+  type EntradaPerfil,
   type Errores,
+  destinoSeguro,
+  soloBase,
   validarPerfil,
   validarSlug,
 } from "@/lib/cuenta";
+import { faltaMigracion } from "@/lib/datos";
 import { guardarFoto } from "@/lib/foto";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 
@@ -22,12 +28,18 @@ async function origen(): Promise<string> {
   return `${proto}://${h.get("host")}`;
 }
 
-/** "Entrar con Google" (PKCE: el verifier queda en una cookie). */
-export async function entrar(): Promise<void> {
+/**
+ * "Entrar con Google" (PKCE: el verifier queda en una cookie). Vuelve a `next`
+ * (campo del form, solo rutas internas) o a /cuenta.
+ */
+export async function entrar(formData?: FormData): Promise<void> {
+  const next = destinoSeguro(String(formData?.get("next") ?? ""));
   const supabase = await supabaseConSesion();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${await origen()}/auth/callback?next=/cuenta` },
+    options: {
+      redirectTo: `${await origen()}/auth/callback?next=${encodeURIComponent(next)}`,
+    },
   });
   if (error || !data.url) {
     console.error(`Supabase (entrar): ${error?.code ?? ""} ${error?.message ?? "sin url"}`);
@@ -49,28 +61,34 @@ export type EstadoGuardar = {
   guardado?: boolean;
   /** El perfil se guardó pero la foto no: se puede volver a subir. */
   errorFoto?: string;
+  /** Se guardó lo básico: la base todavía no tiene los campos nuevos. */
+  aviso?: string;
 };
 
-const CAMPOS: CampoPerfil[] = [
-  "nombre",
-  "tipo",
-  "rol",
-  "descripcion",
-  "whatsapp",
-  "email",
-  "linkedin",
-  "instagram",
-  "web",
-];
+const CAMPOS: CampoPerfil[] = [...CAMPOS_SIMPLES, ...CAMPOS_LISTA];
 
 const ERROR_GENERAL = "No pudimos guardar. Probá de nuevo en un rato.";
+const SIN_FILA = {
+  code: "PGRST116",
+  message: "el alta no devolvió la fila",
+  details: "",
+  hint: "",
+  name: "PostgrestError",
+} as PostgrestError;
+const AVISO_SIN_MIGRACION =
+  "Guardamos tu perfil. Etapa, industrias y etiquetas se van a poder guardar en un rato: estamos actualizando Pecera.";
 
 /**
  * Error de Supabase → mensaje para la persona. El trigger `perfiles_guardian`
- * levanta 22023 con "dato inválido: <campo>": ese va al campo; el resto, general.
+ * levanta 22023 con "dato inválido: <campo>" y los CHECK de feria_lista, 23514
+ * con "perfiles_<campo>_valid...": los dos van al campo; el resto, general.
  */
 function errorDeLaBase(error: PostgrestError, errores: Errores): EstadoGuardar {
   console.error(`Supabase (guardarPerfil): ${error.code} ${error.message}`);
+  if (error.code === "23514") {
+    const campo = CAMPOS.find((c) => error.message.includes(`perfiles_${c}_valid`));
+    if (campo) return { errores: { [campo]: "Revisá este dato." } };
+  }
   if (error.code === "22023") {
     const campo = /^dato inválido: (\w+)$/.exec(error.message)?.[1] as CampoPerfil | undefined;
     if (campo && CAMPOS.includes(campo)) return { errores: { [campo]: "Revisá este dato." } };
@@ -119,9 +137,10 @@ async function guardar(formData: FormData): Promise<EstadoGuardar | { ir: string
   } = await supabase.auth.getUser();
   if (!user) return { errores: {}, general: "Se cerró tu sesión. Volvé a entrar." };
 
-  const entrada = Object.fromEntries(
-    CAMPOS.map((campo) => [campo, String(formData.get(campo) ?? "")])
-  );
+  const entrada: EntradaPerfil = {
+    ...Object.fromEntries(CAMPOS_SIMPLES.map((c) => [c, String(formData.get(c) ?? "")])),
+    ...Object.fromEntries(CAMPOS_LISTA.map((c) => [c, formData.getAll(c).map(String)])),
+  };
   const { datos, errores } = validarPerfil(entrada);
   const oculto = formData.get("oculto") === "on";
   const archivo = formData.get("foto");
@@ -136,15 +155,20 @@ async function guardar(formData: FormData): Promise<EstadoGuardar | { ir: string
 
   if (actual) {
     if (Object.keys(errores).length) return { errores };
-    const { error } = await supabase
-      .from("perfiles")
-      .update({ ...datos, oculto })
-      .eq("id", actual.id);
+    const editar = (campos: object) =>
+      supabase.from("perfiles").update({ ...campos, oculto }).eq("id", actual.id);
+
+    let { error } = await editar(datos);
+    let aviso: string | undefined;
+    if (faltaMigracion(error)) {
+      ({ error } = await editar(soloBase(datos)));
+      aviso = AVISO_SIN_MIGRACION;
+    }
     if (error) return errorDeLaBase(error, errores);
 
     const errorFoto = foto ? await guardarFoto(supabase, user.id, actual, foto) : null;
     revalidar(actual.slug);
-    return { errores: {}, guardado: true, ...(errorFoto && { errorFoto }) };
+    return { errores: {}, guardado: true, ...(errorFoto && { errorFoto }), ...(aviso && { aviso }) };
   }
 
   const slug = String(formData.get("slug") ?? "").trim();
@@ -155,18 +179,22 @@ async function guardar(formData: FormData): Promise<EstadoGuardar | { ir: string
   }
   if (Object.keys(errores).length) return { errores };
 
-  const { data: creado, error } = await supabase
-    .from("perfiles")
-    .insert({
-      ...datos,
-      slug,
-      oculto,
-      usuario_id: user.id,
-      // El trigger lo pisa con now(); acá solo marca que se aceptó.
-      consentimiento_at: new Date().toISOString(),
-    })
-    .select("id, avatar_url")
-    .single();
+  const crear = (campos: object) =>
+    supabase
+      .from("perfiles")
+      .insert({
+        ...campos,
+        slug,
+        oculto,
+        usuario_id: user.id,
+        // El trigger lo pisa con now(); acá solo marca que se aceptó.
+        consentimiento_at: new Date().toISOString(),
+      })
+      .select("id, avatar_url")
+      .single();
+
+  let { data: creado, error } = await crear(datos);
+  if (faltaMigracion(error)) ({ data: creado, error } = await crear(soloBase(datos)));
   if (error?.code === "23505" && error.message.includes("usuario_id")) {
     // Esta cuenta ya tiene perfil (doble envío o reintento): a editarlo.
     revalidatePath("/cuenta");
@@ -175,7 +203,7 @@ async function guardar(formData: FormData): Promise<EstadoGuardar | { ir: string
   if (error?.code === "23505" && error.message.includes("slug")) {
     return { errores: { slug: "Esa dirección ya está tomada, probá otra." } };
   }
-  if (error) return errorDeLaBase(error, errores);
+  if (error || !creado) return errorDeLaBase(error ?? SIN_FILA, errores);
 
   // La foto va después de crear: si falla, se llega igual a la confirmación y se
   // vuelve a subir desde la edición.

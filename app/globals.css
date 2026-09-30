@@ -8,6 +8,25 @@
   --color-inversor: #0c6aa8;
   --color-aliado: #1f7a52;
 
+  /* Tonos de etiquetas (cargos, especialidades): fondo suave + texto fuerte, AA
+     sobre marfil y sobre video. Se usan solo desde lib/etiquetas.ts. */
+  --color-t-arcilla: #8a3310;
+  --color-t-arcilla-suave: #f6dccb;
+  --color-t-azul: #0b4f7c;
+  --color-t-azul-suave: #d6e6f4;
+  --color-t-verde: #16603f;
+  --color-t-verde-suave: #d8eedf;
+  --color-t-ocre: #6b4f06;
+  --color-t-ocre-suave: #f3e6c4;
+  --color-t-ciruela: #8a2358;
+  --color-t-ciruela-suave: #f1d9e6;
+  --color-t-violeta: #4b3690;
+  --color-t-violeta-suave: #e4ddf3;
+  --color-t-petroleo: #1e5e5e;
+  --color-t-petroleo-suave: #d5eaea;
+  --color-t-tierra: #5c4424;
+  --color-t-tierra-suave: #ede3d2;
+
   --font-display: var(--font-fraunces), Georgia, serif;
   --font-sans: var(--font-grotesk), system-ui, sans-serif;
 
@@ -80,6 +99,10 @@ body {
   65% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--giro)) scale(1); }
   100% { opacity: 0; transform: translate(-50%, calc(-50% - 40px)) rotate(var(--giro)) scale(1.1); }
 }
+@keyframes pista-quieta {
+  0%, 100% { opacity: 0; }
+  10%, 88% { opacity: 1; }
+}
 @keyframes corazon-quieto {
   70% { opacity: 1; }
   100% { opacity: 0; }
@@ -87,6 +110,17 @@ body {
 .corazon-toque {
   transform: translate(-50%, -50%) rotate(var(--giro));
   animation: corazon-toque 900ms var(--ease-pecera) forwards;
+}
+
+/* Pista del doble toque: aparece un rato en el primer reel y se va sola. */
+@keyframes pista-pique {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  12%, 85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 0); }
+}
+.pista-pique {
+  transform: translateX(-50%);
+  animation: pista-pique 4200ms var(--ease-pecera) 900ms both;
 }
 
 /* Pop-up del Pique: entra con fade + 14 px, sale con fade. */
@@ -204,6 +238,289 @@ body {
   animation: texto-pique 450ms var(--ease-pecera) 1100ms both;
 }
 
+/* ============================================================
+   Landing /sumate. El JS vive en components/landing/Movimiento.tsx.
+   ============================================================ */
+
+/* Entradas de 550 ms con fade + 14 px: el hero al cargar (en cascada con
+   animation-delay), el resto al aparecer en pantalla. */
+@keyframes entrada {
+  from { opacity: 0; transform: translateY(14px); }
+}
+.entrada {
+  animation: entrada 550ms var(--ease-pecera) both;
+}
+[data-revelar] {
+  transition:
+    opacity 550ms var(--ease-pecera),
+    transform 550ms var(--ease-pecera);
+}
+html[data-revelar] [data-revelar]:not([data-visible]) {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+/* Títulos palabra por palabra, al revelarse su bloque. */
+.palabra {
+  display: inline-block;
+  transition:
+    opacity 800ms var(--ease-pecera),
+    transform 800ms var(--ease-pecera);
+  transition-delay: calc(var(--i) * 60ms);
+}
+html[data-revelar] [data-revelar]:not([data-visible]) .palabra {
+  opacity: 0;
+  transform: translateY(55%);
+}
+
+/* Hero: acuario de fondo con un leve dolly al scrollear, donde hay soporte. */
+.hero-video {
+  filter: saturate(0.92) contrast(1.02) brightness(1.03);
+}
+@supports (animation-timeline: scroll()) {
+  .hero-video {
+    animation: dolly linear both;
+    animation-timeline: scroll(nearest);
+    animation-range: 0 90vh;
+  }
+  @keyframes dolly {
+    from { transform: scale(1.08); }
+    to { transform: scale(1); }
+  }
+}
+/* Velo Marfil: aclara la columna del texto (AA) y deja ver el agua en los
+   bordes; fuerte arriba (header) y abajo (la ola). */
+.hero-velo {
+  background:
+    radial-gradient(62% 66% at 50% 42%,
+      rgb(245 244 236 / 0.9) 0%,
+      rgb(245 244 236 / 0.6) 42%,
+      rgb(245 244 236 / 0) 74%),
+    linear-gradient(180deg,
+      rgb(245 244 236 / 0.85) 0%,
+      rgb(245 244 236 / 0.32) 26%,
+      rgb(245 244 236 / 0.1) 52%,
+      rgb(245 244 236 / 0.25) 80%,
+      rgb(245 244 236 / 0.75) 100%);
+}
+.hero-velo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgb(248 124 67 / 0.06), rgb(12 106 168 / 0.05));
+  mix-blend-mode: soft-light;
+}
+@media (max-width: 767px) {
+  .hero-velo {
+    background: linear-gradient(180deg,
+      rgb(245 244 236 / 0.93) 0%,
+      rgb(245 244 236 / 0.72) 45%,
+      rgb(245 244 236 / 0.5) 75%,
+      rgb(245 244 236 / 0.8) 100%);
+  }
+}
+.hero-texto {
+  text-shadow: 0 1px 10px rgb(245 244 236 / 0.6);
+}
+
+/* Burbujas que suben (hero y banda final). */
+.burbujas span {
+  position: absolute;
+  bottom: -40px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-burbuja, rgb(28 27 22 / 0.28));
+  animation: subir 16s linear infinite;
+}
+.burbujas span:nth-child(1) { left: 6%; animation-delay: 0s; --s: 0.7; }
+.burbujas span:nth-child(2) { left: 16%; animation-delay: 4s; --s: 1.15; }
+.burbujas span:nth-child(3) { left: 28%; animation-delay: 9s; --s: 0.5; }
+.burbujas span:nth-child(4) { left: 70%; animation-delay: 2s; --s: 0.9; }
+.burbujas span:nth-child(5) { left: 82%; animation-delay: 7s; --s: 0.6; }
+.burbujas span:nth-child(6) { left: 92%; animation-delay: 11s; --s: 1.05; }
+.burbujas span:nth-child(7) { left: 48%; animation-delay: 13s; --s: 0.8; }
+@keyframes subir {
+  from { transform: translateY(0) scale(var(--s, 1)); opacity: 0; }
+  6% { opacity: 0.9; }
+  85% { opacity: 0.7; }
+  to { transform: translateY(-105vh) scale(var(--s, 1)); opacity: 0; }
+}
+
+/* Titular rotativo. */
+.rotador {
+  transition:
+    opacity 280ms ease-out,
+    transform 280ms ease-out;
+}
+.rotador[data-saliendo] {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Subtítulo del hero: marea entre los dos lados de la marca. Va a 24 px o
+   más: con texto grande alcanza 3:1 (Arcilla 3,5:1 sobre Marfil). */
+.marea {
+  background: linear-gradient(90deg, #d95a22 0%, #3a3830 35%, #0c6aa8 70%, #d95a22 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #3a3830;
+  animation:
+    entrada 550ms var(--ease-pecera) 180ms both,
+    marea 7s ease-in-out 900ms infinite;
+}
+@keyframes marea {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+}
+
+/* Botones: brillo que los recorre al hover e imán hacia el cursor. */
+.brillo {
+  position: relative;
+  overflow: hidden;
+}
+.brillo::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -75%;
+  width: 50%;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  transform: skewX(-20deg);
+  transition: left 450ms ease-out;
+  pointer-events: none;
+}
+.brillo:hover::after { left: 125%; }
+[data-magnetic] {
+  transition: translate 200ms var(--ease-pecera);
+}
+
+/* Tarjetas con tilt 3D y luz que sigue al cursor (el JS escribe las variables). */
+[data-tilt] {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
+    translateY(var(--lift, 0px));
+  transition:
+    transform 200ms ease-out,
+    box-shadow 200ms ease-out;
+}
+[data-tilt]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), var(--foco, rgb(12 106 168 / 0.09)), transparent 65%);
+  opacity: 0;
+  transition: opacity 250ms ease-out;
+  pointer-events: none;
+}
+[data-tilt]:hover::after { opacity: 1; }
+
+/* Haz de luz que barre las bandas oscuras al aparecer. */
+.haz {
+  position: relative;
+  overflow: hidden;
+}
+.haz::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  left: -10%;
+  width: 130%;
+  height: 180%;
+  background: radial-gradient(ellipse 38% 14% at 50% 50%, rgb(255 255 255 / 0.14), transparent 70%);
+  transform: translate(-30%, -25%) rotate(-18deg) scale(0.6);
+  opacity: 0;
+  pointer-events: none;
+}
+.haz[data-visible]::before {
+  animation: haz 2s var(--ease-pecera) 0.4s forwards;
+}
+@keyframes haz {
+  to { opacity: 1; transform: translate(0, 0) rotate(-18deg) scale(1); }
+}
+
+/* "[ unicornio ]": destello que lo recorre. */
+.destello {
+  display: inline-block;
+  background: linear-gradient(100deg, #f7a878 20%, #fffdf6 40%, #f7a878 60%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #f7a878;
+  animation: destello 2.8s linear infinite;
+}
+@keyframes destello {
+  from { background-position: 120% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* Cardumen de industrias en marquesina. */
+.cardumen-pista {
+  display: flex;
+  width: max-content;
+  animation: nadar 32s linear infinite;
+}
+.cardumen:hover .cardumen-pista { animation-play-state: paused; }
+@keyframes nadar {
+  to { transform: translateX(-50%); }
+}
+
+/* Pasos: entran en cascada y cada número se enciende con un pop. */
+html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
+.pasos[data-anim] .paso {
+  animation: paso-entra 550ms var(--ease-pecera) both;
+  animation-delay: calc(var(--i) * 120ms + 50ms);
+}
+.pasos[data-anim] .paso-num {
+  animation: paso-num 600ms var(--ease-pecera) both;
+  animation-delay: calc(var(--i) * 120ms + 50ms);
+}
+@keyframes paso-entra {
+  from { opacity: 0; transform: translateX(-14px); }
+}
+@keyframes paso-num {
+  0% { transform: scale(0.4); background: #efede2; color: rgb(28 27 22 / 0.7); border-color: rgb(28 27 22 / 0.25); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* El celular de ejemplo flota. */
+@keyframes flotar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.flotar { animation: flotar 6s ease-in-out infinite; }
+
+/* Preguntas: apertura suave donde hay soporte. */
+@supports (interpolate-size: allow-keywords) {
+  .preguntas { interpolate-size: allow-keywords; }
+  .preguntas details::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition:
+      block-size 300ms var(--ease-pecera),
+      content-visibility 300ms allow-discrete;
+  }
+  .preguntas details[open]::details-content { block-size: auto; }
+}
+
+/* Botón burbuja "volver arriba". */
+#arriba {
+  transition:
+    opacity 250ms var(--ease-pecera),
+    transform 250ms var(--ease-pecera);
+}
+#arriba[data-oculto] {
+  opacity: 0;
+  transform: translateY(12px) scale(0.9);
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* La regla general los dejaría en el último frame, corridos: mejor quietos.
      La escena queda en reposo: pez junto al anzuelo, caña recta. */
@@ -213,6 +530,10 @@ body {
   .popup-tarjeta,
   .popup-pique::backdrop {
     animation: none !important;
+  }
+  /* La pista aparece y se va sin moverse. */
+  .pista-pique {
+    animation: pista-quieta 4200ms linear 900ms both !important;
   }
   /* El corazón del doble toque aparece quieto y se desvanece. */
   .corazon-toque {
@@ -227,4 +548,26 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Menú principal: entra desde la izquierda. Sin animación con reducir movimiento. */
+.menu-principal[open] > nav {
+  animation: menu-entra 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes menu-entra {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-principal[open] > nav {
+    animation: none;
+  }
+}
+
+/* Docs: el concepto o documento al que apunta el link compartido se marca. */
+.concepto:target,
+.documento:target {
+  border-color: var(--color-arcilla);
+  box-shadow: 0 0 0 3px rgb(217 90 34 / 0.18);
 }

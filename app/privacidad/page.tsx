@@ -33,8 +33,8 @@ export default function PrivacidadPage() {
   return (
     <PaginaLegal
       titulo="Política de privacidad"
-      actualizado="28 de septiembre de 2026"
-      actualizadoIso="2026-09-28"
+      actualizado="29 de septiembre de 2026"
+      actualizadoIso="2026-09-29"
       intro={
         <p>
           Pecera muestra pitches en video de emprendedores, inversores y aliados para que se
@@ -63,7 +63,9 @@ export default function PrivacidadPage() {
             <strong className="font-semibold text-tinta">Tu perfil.</strong> Lo que cargás en
             &quot;Mi perfil&quot;: nombre, tipo (startup, fondo, coach, etc.), rol, descripción,
             tus canales de contacto (WhatsApp, email, LinkedIn, Instagram y web), tu foto y la
-            dirección de tu perfil (por ejemplo, /p/tu-nombre). También guardamos la fecha
+            dirección de tu perfil (por ejemplo, /p/tu-nombre). Según tu rol, también las
+            etiquetas que elijas: etapa, industrias, ronda y cargo; rondas, ticket e industrias
+            de interés; o tus especialidades. También guardamos la fecha
             en que aceptaste publicarlo. La foto se achica y se recorta en tu celular antes de
             subirla; en ese paso se borran sus datos internos, incluida la ubicación.
           </li>
@@ -72,6 +74,24 @@ export default function PrivacidadPage() {
             comprimido, una imagen de portada sacada del video, la descripción y los subtítulos.
             Al comprimir el video le borramos los datos internos (fecha, equipo, ubicación). Los
             subtítulos se generan automáticamente a partir del audio.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Tu empresa.</strong> Si creás una
+            empresa o te sumás a una: su nombre, descripción, redes, etapa, industrias y ronda,
+            quiénes son parte del equipo y el cargo de cada uno. El código de invitación es
+            privado del equipo.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Transparencia.</strong> Las métricas y
+            los links a documentos que el equipo cargue (por ejemplo MRR, churn o el pitch
+            deck). Nacen privados: solo los ve el equipo hasta que alguien marca cada uno como
+            compartido.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Eventos y votos.</strong> Si anotás tu
+            perfil en un evento, y a qué proyecto votaste (uno por cuenta). El voto se guarda
+            atado a tu cuenta para que no se repita, pero no lo mostramos: solo el total de cada
+            proyecto, cuando el equipo publica los resultados.
           </li>
           <li>
             <strong className="font-semibold text-tinta">El formulario de carga.</strong> Los
@@ -107,6 +127,8 @@ export default function PrivacidadPage() {
           <li>Que te puedan contactar por los canales que elegiste publicar.</li>
           <li>Saber a qué perfil corresponde cada video que llega por el formulario.</li>
           <li>Contar los piques de cada pitch.</li>
+          <li>Armar la página de cada empresa con su equipo y lo que decida compartir.</li>
+          <li>Organizar los eventos y contar los votos del público.</li>
           <li>Mantener tu sesión abierta y cuidar el servicio de abusos.</li>
         </ul>
         <p>No vendemos tus datos, no los usamos para publicidad y no los compartimos con nadie
@@ -117,14 +139,16 @@ export default function PrivacidadPage() {
         <p>
           Mientras tu perfil esté publicado y no lo ocultes, <strong className="font-semibold text-tinta">cualquier
           persona puede ver</strong> tu nombre, tipo, rol, descripción, foto, los canales de contacto
-          que cargaste y tus pitches (video, portada, descripción y subtítulos), sin necesidad de
-          tener cuenta. Tené en cuenta que quien lo vea puede copiar esos datos o guardarse el
+          que cargaste, tus etiquetas y tus pitches (video, portada, descripción y subtítulos), sin
+          necesidad de tener cuenta. Si sos parte de una empresa, también su página, con tu cargo
+          y los datos de transparencia que el equipo compartió. Tené en cuenta que quien lo vea puede copiar esos datos o guardarse el
           video, y eso queda fuera de nuestro control.
         </p>
         <p>
           <strong className="font-semibold text-tinta">Nunca publicamos</strong> el email de tu
-          cuenta ni los emails del formulario. Tampoco mostramos quién dio cada pique: solo el
-          total.
+          cuenta ni los emails del formulario. Tampoco mostramos quién dio cada pique ni a quién
+          votó cada persona: solo los totales. Los datos de transparencia que no se comparten
+          los ve solo el equipo de la empresa.
         </p>
       </Seccion>
 
@@ -173,8 +197,9 @@ export default function PrivacidadPage() {
           <li>
             <strong className="font-semibold text-tinta">Pedir tus datos o borrar todo:</strong>{" "}
             escribinos a <Email /> desde el email de tu cuenta. Podés pedir una copia de tus datos
-            o que borremos tu cuenta y todo lo asociado: perfil, foto, pitches, subtítulos,
-            registros del formulario y los videos originales.
+            o que borremos tu cuenta y todo lo asociado: perfil, foto, pitches, subtítulos, votos,
+            registros del formulario y los videos originales. Salir de una empresa lo podés hacer
+            vos desde Mi perfil.
           </li>
         </ul>
         <p>

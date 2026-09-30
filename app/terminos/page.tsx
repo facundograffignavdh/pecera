@@ -13,7 +13,8 @@ export const metadata: Metadata = {
 
 const INDICE = [
   { id: "que-es", titulo: "Qué es Pecera (y qué no)" },
-  { id: "interes", titulo: "Piques y contactos" },
+  { id: "interes", titulo: "Piques, votos y contactos" },
+  { id: "empresas", titulo: "Empresas, transparencia y Docs" },
   { id: "cuenta", titulo: "Tu cuenta" },
   { id: "contenido", titulo: "Tu contenido" },
   { id: "no-permitido", titulo: "Qué no se puede publicar" },
@@ -31,8 +32,8 @@ export default function TerminosPage() {
   return (
     <PaginaLegal
       titulo="Condiciones de uso"
-      actualizado="28 de septiembre de 2026"
-      actualizadoIso="2026-09-28"
+      actualizado="29 de septiembre de 2026"
+      actualizadoIso="2026-09-29"
       intro={
         <p>
           Estas condiciones explican cómo funciona Pecera y qué acordamos cuando la usás. Al crear
@@ -61,13 +62,35 @@ export default function TerminosPage() {
         </p>
       </Seccion>
 
-      <Seccion id="interes" titulo="Piques y contactos">
+      <Seccion id="interes" titulo="Piques, votos y contactos">
         <p>
           Un pique (&quot;me picó&quot;) o un mensaje por los canales de un perfil son solo
           muestras de interés. No obligan a nadie a nada: no son una oferta, un compromiso de
           inversión ni un acuerdo. Lo que se converse o se acuerde fuera de Pecera queda entre
           las partes.
         </p>
+        <p>
+          La votación de un evento es del público y sirve para reconocer proyectos: no es una
+          evaluación, una recomendación ni una garantía. Es un voto por cuenta de Google; si
+          detectamos votos armados o cuentas falsas, podemos anularlos.
+        </p>
+      </Seccion>
+
+      <Seccion id="empresas" titulo="Empresas, transparencia y Docs">
+        <ul>
+          <li>
+            Quien crea una empresa en Pecera confirma que forma parte de ella. El código de
+            invitación es para su equipo: compartirlo con otra gente la suma a la página.
+          </li>
+          <li>
+            Las métricas y documentos de transparencia los carga y los comparte cada equipo, bajo
+            su responsabilidad. Pecera no los verifica ni los audita.
+          </li>
+          <li>
+            Los conceptos y las guías de documentos legales de Docs son material educativo. No son
+            asesoramiento legal, contable ni financiero: para firmar, consultá a un profesional.
+          </li>
+        </ul>
       </Seccion>
 
       <Seccion id="cuenta" titulo="Tu cuenta">

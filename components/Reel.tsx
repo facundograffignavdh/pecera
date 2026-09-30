@@ -3,10 +3,17 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import Avatar from "@/components/Avatar";
+import { EtiquetasReel } from "@/components/Etiquetas";
 import { IconoCorazon, IconoSonido, IconoSubtitulos } from "@/components/Iconos";
 import Subtitulos from "@/components/Subtitulos";
+import { marcarPistaVista, usePistaPendiente } from "@/lib/pista-pique";
 import { ROLES, TIPOS } from "@/lib/rol";
 import type { ItemFeed } from "@/types/pecera";
+
+/** Ventana del doble toque: el segundo toque tiene que llegar antes. */
+const DOBLE_TOQUE_MS = 250;
+/** Después de un corazón, cada toque dentro de esta ventana suma otro (ráfaga). */
+const RAFAGA_MS = 450;
 
 type Props = {
   item: ItemFeed;
@@ -62,6 +69,9 @@ export default function Reel({
   const [corazones, setCorazones] = useState<Corazon[]>([]);
   const ultimoCorazon = useRef(0);
   const primerToque = useRef<number | null>(null);
+  // Momento del último corazón: los toques seguidos arman una ráfaga sin pausar.
+  const ultimoCorazonMs = useRef(-Infinity);
+  const pistaPendiente = usePistaPendiente();
 
   // Al salir de pantalla se olvida la pausa manual, así el reel vuelve a
   // arrancar solo cuando el usuario regresa. Ajuste en render, no en efecto.
@@ -127,29 +137,47 @@ export default function Reel({
     []
   );
 
-  // Un toque pausa, pero espera 250 ms por si es un doble toque (pique).
+  /**
+   * Un toque pausa, pero espera 250 ms por si es un doble toque (pique). Después de
+   * un corazón, cada toque rápido suma otro (ráfaga, como en TikTok) y nunca pausa.
+   * El pique se da una sola vez por ráfaga; lo demás es festejo.
+   */
   function alTocarVideo(e: MouseEvent<HTMLVideoElement>) {
+    // Hora del toque según el navegador (misma escala que performance.now()).
+    const ahora = e.timeStamp;
+    const enRafaga = ahora - ultimoCorazonMs.current < RAFAGA_MS;
+
+    if (primerToque.current === null && !enRafaga) {
+      primerToque.current = window.setTimeout(() => {
+        primerToque.current = null;
+        alternarReproduccion();
+      }, DOBLE_TOQUE_MS);
+      return;
+    }
+
     if (primerToque.current !== null) {
       clearTimeout(primerToque.current);
       primerToque.current = null;
-      const caja = e.currentTarget.getBoundingClientRect();
-      const id = ++ultimoCorazon.current;
-      // Giro entre -15° y 15° que cambia en cada corazón, sin Math.random.
-      const corazon = {
-        id,
-        x: e.clientX - caja.left,
-        y: e.clientY - caja.top,
-        giro: ((id * 17) % 31) - 15,
-      };
-      setCorazones((cs) => [...cs, corazon]);
-      setLatidos((n) => n + 1);
-      onDarPique();
-      return;
     }
-    primerToque.current = window.setTimeout(() => {
-      primerToque.current = null;
-      alternarReproduccion();
-    }, 250);
+    ultimoCorazonMs.current = ahora;
+
+    const caja = e.currentTarget.getBoundingClientRect();
+    const id = ++ultimoCorazon.current;
+    // Giro entre -15° y 15° que cambia en cada corazón, sin Math.random.
+    const corazon = {
+      id,
+      x: e.clientX - caja.left,
+      y: e.clientY - caja.top,
+      giro: ((id * 17) % 31) - 15,
+    };
+    setCorazones((cs) => [...cs, corazon]);
+    setLatidos((n) => n + 1);
+    // Vibración corta donde existe (Android); iOS la ignora.
+    navigator.vibrate?.(enRafaga ? 8 : 15);
+    if (!enRafaga) {
+      marcarPistaVista();
+      onDarPique();
+    }
   }
 
   function alTocarCorazon() {
@@ -210,10 +238,23 @@ export default function Reel({
         </span>
       ))}
 
+      {activo && pistaPendiente && !piqueado && (
+        <span
+          aria-hidden
+          onAnimationEnd={marcarPistaVista}
+          className="pista-pique vidrio pointer-events-none absolute left-1/2 top-[38%] flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium text-tinta"
+        >
+          <IconoCorazon lleno className="size-4 text-arcilla" />
+          Tocá dos veces para dar pique
+        </span>
+      )}
+
       {/* Gradiente para que el texto se lea sobre cualquier frame. */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-tinta via-tinta/80 to-transparent" />
 
-      <div className="absolute inset-x-0 bottom-0 pb-[max(2rem,calc(env(safe-area-inset-bottom)_+_0.75rem))] pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-marfil">
+      {/* El bloque deja pasar los toques al video (doble toque en toda la pantalla);
+          solo links y botones los capturan. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 pb-[max(2rem,calc(env(safe-area-inset-bottom)_+_0.75rem))] pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-marfil">
         <div className="flex items-end gap-2">
           {/* Arriba del nombre y a la izquierda de la columna: el bloque está
               anclado abajo, así que los subtítulos crecen hacia arriba y nunca
@@ -225,7 +266,7 @@ export default function Reel({
           </div>
 
           {/* Columna de acciones, como la de TikTok: termina justo arriba del nombre. */}
-          <div className="flex w-12 shrink-0 flex-col items-center gap-2">
+          <div className="pointer-events-auto flex w-12 shrink-0 flex-col items-center gap-2">
             <button
               type="button"
               onClick={alTocarCorazon}
@@ -274,13 +315,17 @@ export default function Reel({
         {/* Margen derecho del ancho de la columna: un texto largo nunca queda debajo. */}
         <div className="mt-3 pr-14">
           <div className="flex items-center gap-3">
-            <Link href={href} aria-label={`Ver el perfil de ${perfil.nombre}`}>
+            <Link
+              href={href}
+              aria-label={`Ver el perfil de ${perfil.nombre}`}
+              className="pointer-events-auto"
+            >
               <Avatar perfil={perfil} size={48} />
             </Link>
             <div className="min-w-0">
               <Link
                 href={href}
-                className="font-display text-xl font-semibold leading-tight"
+                className="pointer-events-auto font-display text-xl font-semibold leading-tight"
               >
                 {perfil.nombre}
               </Link>
@@ -295,13 +340,15 @@ export default function Reel({
             </div>
           </div>
 
+          <EtiquetasReel perfil={perfil} />
+
           <p className="mt-3 max-w-prose text-sm leading-relaxed text-marfil/90">
             {pitch.descripcion || perfil.descripcion}
           </p>
 
           <Link
             href={href}
-            className="mt-4 inline-flex rounded-full bg-arcilla px-5 py-2.5 font-medium text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera"
+            className="pointer-events-auto mt-4 inline-flex rounded-full bg-arcilla px-5 py-2.5 font-medium text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera"
           >
             Ver perfil
           </Link>

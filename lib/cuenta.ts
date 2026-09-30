@@ -1,3 +1,16 @@
+import {
+  CARGOS,
+  ESPECIALIDADES,
+  ETAPAS,
+  INDUSTRIAS,
+  MAX_ESPECIALIDADES,
+  MAX_INDUSTRIAS_INTERES,
+  MAX_INDUSTRIAS_PROYECTO,
+  RONDAS,
+  RONDAS_INTERES,
+  TICKETS,
+  esValor,
+} from "@/lib/etiquetas";
 import { ROLES, TIPOS } from "@/lib/rol";
 import type { Rol, TipoPerfil } from "@/types/pecera";
 
@@ -31,9 +44,14 @@ export function urlFormularioPitch(email: string): string {
   return `${FORMULARIO_PITCH}?usp=pp_url&entry.481163043=${e}&authuser=${e}`;
 }
 
+/** URL pública de una ruta interna ("/docs" → "https://…/docs"). */
+export function urlSitio(ruta: string): string {
+  return `${siteUrl}${ruta}`;
+}
+
 /** URL pública del perfil: la que va en la tarjeta NFC. */
 export function urlPerfil(slug: string): string {
-  return `${siteUrl}/p/${slug}`;
+  return urlSitio(`/p/${slug}`);
 }
 
 /** Opciones del select, con las etiquetas del Form ("Fondo de inversión"). */
@@ -45,6 +63,19 @@ export const OPCIONES_TIPO = Object.entries({
 export const OPCIONES_ROL = Object.entries(ROLES).map(
   ([valor, { label }]) => [valor, label] as [Rol, string]
 );
+
+/** "¿Qué sos?" según el rol: menos ruido que las 7 opciones juntas. */
+export const TIPOS_POR_ROL: Record<Rol, TipoPerfil[]> = {
+  emprendedor: ["startup", "emprendimiento"],
+  inversor: ["angel", "fondo", "aceleradora"],
+  aliado: ["aceleradora", "incubadora", "coach"],
+};
+
+export const DESCRIPCION_ROL: Record<Rol, string> = {
+  emprendedor: "Tengo una startup o un proyecto y quiero mostrarlo.",
+  inversor: "Busco proyectos para invertir y quiero escribirles directo.",
+  aliado: "Acompaño proyectos: mentoría, coaching, aceleración o servicios.",
+};
 
 /**
  * Nombre → slug: sin tildes, minúsculas, guiones. Nunca "test-" (lo borra la
@@ -62,12 +93,18 @@ export function slugDesdeNombre(nombre: string): string {
   return slug.startsWith("test-") ? `p-${slug}` : slug;
 }
 
-/** A dónde volver después de entrar: solo rutas internas. */
+/**
+ * A dónde volver después de entrar: solo rutas internas. La barra invertida también
+ * se rechaza: `new URL("/\\otro.com", origen)` la lee como "//otro.com" (open redirect).
+ */
 export function destinoSeguro(valor: string | null | undefined): string {
-  return valor && valor.startsWith("/") && !valor.startsWith("//") ? valor : "/cuenta";
+  return valor && valor.startsWith("/") && !valor.startsWith("//") && !valor.includes("\\")
+    ? valor
+    : "/cuenta";
 }
 
-export type CampoPerfil =
+/** Campos de texto (un valor). */
+export type CampoSimple =
   | "nombre"
   | "tipo"
   | "rol"
@@ -77,10 +114,38 @@ export type CampoPerfil =
   | "linkedin"
   | "instagram"
   | "web"
-  | "slug"
-  | "consentimiento";
+  | "etapa"
+  | "ronda"
+  | "cargo"
+  | "ticket";
 
-export type DatosEditables = {
+/** Campos de varias opciones (chips). */
+export type CampoLista = "industrias" | "especialidades" | "rondas_interes";
+
+export type CampoPerfil = CampoSimple | CampoLista | "slug" | "consentimiento";
+
+export const CAMPOS_SIMPLES: CampoSimple[] = [
+  "nombre",
+  "tipo",
+  "rol",
+  "descripcion",
+  "whatsapp",
+  "email",
+  "linkedin",
+  "instagram",
+  "web",
+  "etapa",
+  "ronda",
+  "cargo",
+  "ticket",
+];
+export const CAMPOS_LISTA: CampoLista[] = ["industrias", "especialidades", "rondas_interes"];
+
+export type EntradaPerfil = Partial<Record<CampoSimple, string>> &
+  Partial<Record<CampoLista, string[]>>;
+
+/** Lo que existe desde v2-cuentas: si la base no tiene la migración nueva, se guarda esto. */
+export type DatosBase = {
   nombre: string;
   tipo: TipoPerfil;
   rol: Rol;
@@ -92,6 +157,19 @@ export type DatosEditables = {
   web: string | null;
 };
 
+/** Campos de la migración feria_lista. Los que no corresponden al rol van vacíos. */
+export type DatosRol = {
+  etapa: string | null;
+  ronda: string | null;
+  cargo: string | null;
+  ticket: string | null;
+  industrias: string[];
+  especialidades: string[];
+  rondas_interes: string[];
+};
+
+export type DatosEditables = DatosBase & DatosRol;
+
 export type Errores = Partial<Record<CampoPerfil, string>>;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -100,22 +178,28 @@ const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const opcional = (v: string) => v.trim() || null;
 
+/** Sin repetidos y solo valores del vocabulario. */
+function limpiarLista(lista: string[] | undefined, vocabulario: readonly { valor: string }[]) {
+  return [...new Set(lista ?? [])].filter((v) => esValor(vocabulario, v));
+}
+
 /** Valida y normaliza lo que viene del formulario. */
-export function validarPerfil(
-  entrada: Partial<Record<CampoPerfil, string>>
-): { datos: DatosEditables; errores: Errores } {
+export function validarPerfil(entrada: EntradaPerfil): { datos: DatosEditables; errores: Errores } {
   const errores: Errores = {};
-  const v = (campo: CampoPerfil) => entrada[campo] ?? "";
+  const v = (campo: CampoSimple) => entrada[campo] ?? "";
 
   const nombre = v("nombre").trim();
   if (!nombre) errores.nombre = "Poné tu nombre o el de tu proyecto.";
   else if (nombre.length > NOMBRE_MAX) errores.nombre = `Hasta ${NOMBRE_MAX} caracteres.`;
 
+  const rol = v("rol") as Rol;
+  if (!(rol in ROLES)) errores.rol = "Elegí cómo entrás a Pecera.";
+
   const tipo = v("tipo") as TipoPerfil;
   if (!(tipo in TIPOS)) errores.tipo = "Elegí qué sos.";
-
-  const rol = v("rol") as Rol;
-  if (!(rol in ROLES)) errores.rol = "Elegí tu rol.";
+  else if (rol in ROLES && !TIPOS_POR_ROL[rol].includes(tipo)) {
+    errores.tipo = "Elegí una opción que vaya con tu rol.";
+  }
 
   const descripcion = v("descripcion").trim();
   if (!descripcion) errores.descripcion = "Contá en una línea qué hacés.";
@@ -146,10 +230,90 @@ export function validarPerfil(
     errores.web = "Revisá la dirección (por ejemplo, tuweb.com.ar).";
   }
 
+  const rolDatos = validarRol(rol, entrada, errores);
+
   return {
-    datos: { nombre, tipo, rol, descripcion, whatsapp, email, linkedin, instagram, web },
+    datos: { nombre, tipo, rol, descripcion, whatsapp, email, linkedin, instagram, web, ...rolDatos },
     errores,
   };
+}
+
+/**
+ * Lo que se pide según el rol. Lo que no corresponde se guarda vacío: si alguien
+ * pasa de emprendedor a inversor, no le queda una etapa colgada.
+ */
+function validarRol(rol: Rol, entrada: EntradaPerfil, errores: Errores): DatosRol {
+  const vacio: DatosRol = {
+    etapa: null,
+    ronda: null,
+    cargo: null,
+    ticket: null,
+    industrias: [],
+    especialidades: [],
+    rondas_interes: [],
+  };
+  const texto = (campo: CampoSimple) => (entrada[campo] ?? "").trim();
+
+  if (rol === "emprendedor") {
+    const etapa = texto("etapa");
+    if (!esValor(ETAPAS, etapa)) errores.etapa = "Elegí en qué etapa está tu proyecto.";
+
+    const ronda = texto("ronda");
+    const cargo = texto("cargo");
+    const industrias = limpiarLista(entrada.industrias, INDUSTRIAS);
+    if (!industrias.length) errores.industrias = "Elegí al menos una industria.";
+    else if (industrias.length > MAX_INDUSTRIAS_PROYECTO) {
+      errores.industrias = `Hasta ${MAX_INDUSTRIAS_PROYECTO} industrias.`;
+    }
+
+    return {
+      ...vacio,
+      etapa: esValor(ETAPAS, etapa) ? etapa : null,
+      ronda: esValor(RONDAS, ronda) ? ronda : null,
+      cargo: esValor(CARGOS, cargo) ? cargo : null,
+      industrias,
+    };
+  }
+
+  if (rol === "inversor") {
+    const ticket = texto("ticket");
+    const rondas = limpiarLista(entrada.rondas_interes, RONDAS_INTERES);
+    if (!rondas.length) errores.rondas_interes = "Elegí al menos una ronda.";
+    const industrias = limpiarLista(entrada.industrias, INDUSTRIAS);
+    if (!industrias.length) errores.industrias = "Elegí al menos una industria que mirás.";
+    else if (industrias.length > MAX_INDUSTRIAS_INTERES) {
+      errores.industrias = `Hasta ${MAX_INDUSTRIAS_INTERES} industrias.`;
+    }
+
+    return {
+      ...vacio,
+      ticket: esValor(TICKETS, ticket) ? ticket : null,
+      rondas_interes: rondas,
+      industrias,
+    };
+  }
+
+  if (rol === "aliado") {
+    const especialidades = limpiarLista(entrada.especialidades, ESPECIALIDADES);
+    if (!especialidades.length) errores.especialidades = "Elegí al menos una especialidad.";
+    else if (especialidades.length > MAX_ESPECIALIDADES) {
+      errores.especialidades = `Hasta ${MAX_ESPECIALIDADES} especialidades.`;
+    }
+    const industrias = limpiarLista(entrada.industrias, INDUSTRIAS);
+    if (industrias.length > MAX_INDUSTRIAS_INTERES) {
+      errores.industrias = `Hasta ${MAX_INDUSTRIAS_INTERES} industrias.`;
+    }
+
+    return { ...vacio, especialidades, industrias };
+  }
+
+  return vacio;
+}
+
+/** Separa lo de siempre de lo nuevo, para guardar sin la migración si hace falta. */
+export function soloBase(datos: DatosEditables): DatosBase {
+  const { nombre, tipo, rol, descripcion, whatsapp, email, linkedin, instagram, web } = datos;
+  return { nombre, tipo, rol, descripcion, whatsapp, email, linkedin, instagram, web };
 }
 
 /** El slug solo se elige al crear y queda fijo para siempre. */

@@ -85,8 +85,9 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   con `NEXT_PUBLIC_MEDIA_URL` y `lib/datos.ts` ya la aplica.
 - La service key de Supabase vive solo en los secrets del workflow, jamás en la app.
 - Cuentas (rama v2-cuentas): login con Google (Supabase Auth, PKCE) y "Mi perfil"
-  en `/cuenta`. `@supabase/ssr` solo en `/cuenta` y `/auth` (`lib/supabase-servidor.ts`
-  y `proxy.ts`, cuyo matcher cubre solo esas dos rutas). Las páginas públicas nunca
+  en `/cuenta`. `@supabase/ssr` solo en `/cuenta`, `/auth`, `/subir`, `/admin` y las
+  actions de `/eventos` (`lib/supabase-servidor.ts` y `proxy.ts`, cuyo matcher cubre esas
+  rutas; la página del evento sigue estática y pide la sesión por action). Las páginas públicas nunca
   leen cookies: `lib/cuenta-local.ts` (`useCuentaLocal`) combina la cookie de sesión
   (parseada por nombre, con partes `.0`/`.1`; nada de regex en template literals) y
   un dato chico y público del perfil en localStorage (`pecera:cuenta`: slug, nombre,
@@ -107,6 +108,18 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   de la Ley 25.326) y cuánto guardar los originales de Drive (hoy la ingesta no los
   borra). Si cambia qué datos se guardan o un proveedor, actualizar /privacidad y
   su fecha.
+- Feria (rama v2-feria-lista, sobre v2-cuentas; guía en `docs/GUIA-FERIA.md`, pendientes
+  en `docs/AUDITORIA.md`): migración aditiva `20261001120000_feria_lista.sql` con etiquetas
+  de perfil, empresas, transparencia, eventos/votos y panel admin. Todo por funciones
+  `security definer`; la app nunca escribe `empresa_id` ni las tablas nuevas directo.
+  Si la migración no corrió, `faltaMigracion()` (lib/datos.ts) hace caer a las columnas de
+  siempre y las páginas nuevas muestran un estado neutro. Pruebas de la migración sin tocar
+  ninguna base: `supabase/pruebas/feria_lista.mjs` (PGlite en carpeta aparte).
+- Vocabularios (etapas, rondas, tickets, industrias, cargos, especialidades) en
+  `lib/etiquetas.ts`, espejo EXACTO de los `CHECK`: cambiar uno = migración nueva.
+  Transparencia en `lib/transparencia.ts` (espejo de `empresa_datos_clave_valida`), glosario
+  en `lib/glosario.ts` (los `slug` son anclas compartidas: no cambiarlos), legales en
+  `lib/legales.ts`, programa del evento en `lib/eventos.ts`.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
@@ -156,6 +169,18 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   ofrece recargar; `app/cuenta/error.tsx` atrapa el resto.
 - `/subir` → al Form de pitches con el email de la sesión (sin sesión, a /cuenta)
 - `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
+- `/e/[slug]` → página de empresa: equipo con cargos, pitches de todos y datos de
+  transparencia compartidos (ISR, se genera en la primera visita)
+- `/eventos` y `/eventos/[slug]` → Feria 21: programa, cómo votar y votación
+  (`components/eventos/Votacion.tsx` pide el estado de la sesión al montar)
+- `/docs`, `/docs/conceptos`, `/docs/legales` → glosario y guía de documentos (estáticas)
+- `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
+- `/sumate` → landing de captación, basada en la landing anterior (`pecera-vc`). Los CTA
+  abren `ElegirRol` y llevan a `/cuenta?rol=…` (un solo alta, con Google). Hero
+  con video de acuario (`public/landing/`), que se pausa fuera de pantalla y con
+  reducir movimiento. `MaquetaReel` dibuja un reel en un celular a partir de un
+  `EjemploPitch`. La capa de movimiento (reveals, contadores, tilt, imán, progreso) es
+  `components/landing/Movimiento.tsx` sobre atributos `data-*`.
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,
@@ -186,6 +211,20 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `r2_borrar`: clave, bytes, borrar_despues — claves viejas de R2 a borrar (solo
   service key)
 - `*_url` guardan la clave de R2 o, en el seed, una ruta `/...`
+- perfiles (feria_lista): etapa, ronda, industrias[], cargo, especialidades[], ticket,
+  rondas_interes[], empresa_id. `empresa_id` solo cambia por RPC (trigger
+  `perfiles_empresa_guardian` + flag `pecera.empresa_rpc`).
+- `empresas` (slug, nombre, descripcion, redes, industrias, etapa, ronda, dueno_id, oculta):
+  visible si no está oculta y tiene al menos un perfil visible. `empresas_codigos` (privada)
+  y `empresas_intentos` (10 intentos/hora). RPCs: `crear_empresa`, `unirse_empresa` (null si
+  el código no existe), `editar_empresa`, `salir_empresa`, `renovar_codigo_empresa`, `mi_empresa`.
+- `empresa_datos` (clave, valor, url https, visible): privado por defecto; anon solo ve lo
+  visible de empresas visibles. RPCs `mis_datos_empresa`, `guardar_dato_empresa` (vacío = borrar).
+- `eventos` (votacion_abierta, resultados_visibles, activo), `evento_participantes`, `votos`
+  (PK evento + votante). Solo reciben votos perfiles `emprendedor`; nadie se vota ni vota a
+  su empresa. Resultados visibles solo si el equipo los muestra (o para admins).
+- `admins` (email en minúsculas, solo SQL editor): `es_admin()` y las `admin_*` lo exigen;
+  para publicar pasan el guardián limpiando los claims del JWT solo en esa transacción.
 
 ## Marca (resumen del manual)
 - Colores: fondo Marfil #F5F4EC · texto Tinta #1C1B16 · naranja Pecera #F87C43 (solo
@@ -199,9 +238,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   fondos del público, no custodia activos ni realiza oferta pública de valores o
   asesoramiento financiero."
 
-## Fuera de alcance (NO construir)
-Login de usuarios, likes, comentarios, búsqueda, subida de videos desde la app,
-panel de admin, doble aprobación, verificación de inversores.
+## Fuera de alcance (NO construir sin decidirlo antes)
+Comentarios, chat interno, pagos o inversión dentro de la app, subida de videos desde la app
+(sigue por el Form), doble aprobación. La verificación de inversores y los filtros del feed
+son los próximos candidatos (ver `docs/AUDITORIA.md`, P2).
 
 ## Reglas de trabajo
 - Mobile-first: probar pensando en celular.
