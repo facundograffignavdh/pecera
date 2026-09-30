@@ -420,3 +420,76 @@ revoke execute on function public.borrar_portafolio(uuid) from public, anon;
 grant execute on function public.mi_portafolio() to authenticated;
 grant execute on function public.guardar_portafolio(uuid, text, text, text, text, boolean) to authenticated;
 grant execute on function public.borrar_portafolio(uuid) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 6) Seguir perfiles (feed "Stakeholding" y "Mi red")
+-- ---------------------------------------------------------------------------
+-- Como los piques: por dispositivo anónimo (uuid al azar), sin cuenta ni datos
+-- personales. En la feria se sigue gente sin haber entrado. La lista de a quién
+-- seguís vive en el celular; la base guarda el par para contar seguidores.
+create table public.seguidos (
+  perfil_id   uuid not null references public.perfiles (id) on delete cascade,
+  dispositivo uuid not null,
+  created_at  timestamptz not null default now(),
+  primary key (perfil_id, dispositivo)
+);
+
+alter table public.seguidos enable row level security;
+revoke all on public.seguidos from anon, authenticated;
+
+create function public.seguir(p_perfil uuid, p_dispositivo uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if p_perfil is null or p_dispositivo is null then
+    raise exception 'seguir inválido' using errcode = '22023';
+  end if;
+  if not exists (
+    select 1 from public.perfiles p where p.id = p_perfil and p.publicado and not p.oculto
+  ) then
+    raise exception 'perfil inexistente' using errcode = '22023';
+  end if;
+  perform public.medicion_limitar(p_dispositivo, 'seguir', 30);
+  insert into public.seguidos (perfil_id, dispositivo) values (p_perfil, p_dispositivo)
+  on conflict do nothing;
+end;
+$$;
+
+create function public.dejar_de_seguir(p_perfil uuid, p_dispositivo uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if p_dispositivo is null then
+    raise exception 'seguir inválido' using errcode = '22023';
+  end if;
+  perform public.medicion_limitar(p_dispositivo, 'seguir', 30);
+  delete from public.seguidos where perfil_id = p_perfil and dispositivo = p_dispositivo;
+end;
+$$;
+
+-- Solo el total por perfil visible: nunca quién sigue a quién.
+create function public.seguidores_de(p_slug text)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer
+  from public.seguidos s
+  join public.perfiles p on p.id = s.perfil_id
+  where p.slug = p_slug and p.publicado and not p.oculto;
+$$;
+
+revoke execute on function public.seguir(uuid, uuid) from public;
+revoke execute on function public.dejar_de_seguir(uuid, uuid) from public;
+revoke execute on function public.seguidores_de(text) from public;
+grant execute on function public.seguir(uuid, uuid) to anon, authenticated;
+grant execute on function public.dejar_de_seguir(uuid, uuid) to anon, authenticated;
+grant execute on function public.seguidores_de(text) to anon, authenticated;

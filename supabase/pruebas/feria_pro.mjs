@@ -276,6 +276,23 @@ async function main() {
   const trasOcultar = (await como("anon", null, `select count(*)::int n from public.portafolio`)).rows[0].n;
   trasOcultar === 0 ? bien("si el perfil se oculta, su portafolio deja de verse") : mal(`anon ve ${trasOcultar}`);
 
+  console.log("\n6) Seguir perfiles");
+  const D1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const D2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  await como("anon", null, `select public.seguir($1, $2)`, [ana, D1]);
+  await como("anon", null, `select public.seguir($1, $2)`, [ana, D1]);
+  await como("anon", null, `select public.seguir($1, $2)`, [ana, D2]);
+  const seguidores = (await como("anon", null, `select public.seguidores_de('ana-startup') n`)).rows[0].n;
+  seguidores === 2 ? bien("dos dispositivos siguen a ana (seguir dos veces no suma)") : mal(`seguidores: ${seguidores}`);
+  await como("anon", null, `select public.dejar_de_seguir($1, $2)`, [ana, D2]);
+  (await como("anon", null, `select public.seguidores_de('ana-startup') n`)).rows[0].n === 1
+    ? bien("dejar de seguir resta")
+    : mal("dejar de seguir no restó");
+  await espera("no se sigue un perfil oculto", () => como("anon", null, `select public.seguir($1, $2)`, [caro, D1]), "perfil inexistente");
+  await espera("anon no lee quién sigue a quién", () => como("anon", null, `select * from public.seguidos`), "permission denied");
+  for (let i = 0; i < 28; i++) await como("anon", null, `select public.seguir($1, $2)`, [ana, D1]);
+  await espera("el seguir 31 del minuto se corta", () => como("anon", null, `select public.seguir($1, $2)`, [ana, D1]), "demasiadas acciones");
+
   console.log(`\n${ok} ok · ${fallas} fallas`);
   process.exit(fallas ? 1 : 0);
 }
