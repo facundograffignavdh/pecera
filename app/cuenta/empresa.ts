@@ -12,6 +12,9 @@ import {
   esValor,
 } from "@/lib/etiquetas";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
+import { faltaMigracion } from "@/lib/datos";
+import { guardarLogo } from "@/lib/foto";
+import { urlMedia } from "@/lib/media";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 import { CLAVES_DATO, esUrlSegura } from "@/lib/transparencia";
 
@@ -31,6 +34,7 @@ async function conSesion() {
 
 function refrescar(slug?: string) {
   revalidatePath("/cuenta");
+  revalidatePath("/cuenta/empresa");
   revalidatePath("/");
   if (slug) revalidatePath(`/e/${slug}`);
 }
@@ -194,4 +198,33 @@ export async function participar(participa: boolean): Promise<Resultado> {
   revalidatePath("/cuenta");
   revalidatePath(`/eventos/${EVENTO_ACTUAL.slug}`);
   return { ok: true };
+}
+
+/** Sube (o saca) el logo de la empresa apenas se elige. Cualquier miembro puede. */
+export async function subirLogo(formData: FormData): Promise<Resultado & { url?: string | null }> {
+  const { supabase, user } = await conSesion();
+  if (!user) return { ok: false, mensaje: SIN_SESION };
+
+  const { data, error } = await supabase.rpc("mi_empresa_v2");
+  if (faltaMigracion(error)) return { ok: false, mensaje: "El logo se va a poder subir en un rato: estamos actualizando Pecera." };
+  if (error) return traducir(error, "mi_empresa_v2");
+  const empresa = ((data ?? []) as Array<{ id: string; slug: string; logo_url: string | null }>)[0];
+  if (!empresa) return { ok: false, mensaje: "Primero creá o sumate a una empresa." };
+
+  if (formData.get("quitar") === "1") {
+    const { error: e } = await supabase.rpc("cambiar_logo_empresa", { p_logo: null });
+    if (e) return traducir(e, "cambiar_logo_empresa");
+    refrescar(empresa.slug);
+    return { ok: true, url: null, mensaje: "Sacaste el logo." };
+  }
+
+  const logo = formData.get("logo");
+  if (!(logo instanceof Blob) || logo.size === 0) return { ok: false, mensaje: "Elegí una imagen." };
+  const fallo = await guardarLogo(supabase, empresa, logo);
+  if (fallo) return { ok: false, mensaje: fallo };
+
+  const { data: nueva } = await supabase.rpc("mi_empresa_v2");
+  const clave = ((nueva ?? []) as Array<{ logo_url: string | null }>)[0]?.logo_url ?? null;
+  refrescar(empresa.slug);
+  return { ok: true, url: clave && urlMedia(clave), mensaje: "Logo actualizado." };
 }

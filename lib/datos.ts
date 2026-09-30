@@ -1,7 +1,17 @@
 import { cache } from "react";
 import { urlMedia } from "@/lib/media";
 import { supabase } from "@/lib/supabase";
-import type { DatoEmpresa, Empresa, ItemFeed, Metricas, Perfil, Pitch } from "@/types/pecera";
+import { hashtagsDe, normalizarTag } from "@/lib/hashtags";
+import { calcularRacha, type Racha } from "@/lib/racha";
+import type {
+  DatoEmpresa,
+  Empresa,
+  ItemFeed,
+  ItemPortafolio,
+  Metricas,
+  Perfil,
+  Pitch,
+} from "@/types/pecera";
 
 /**
  * Única puerta a los datos públicos. Los filtros por `publicado` (equipo) y
@@ -21,15 +31,39 @@ const COLUMNAS_PERFIL_BASE =
   "id, slug, nombre, tipo, rol, descripcion, avatar_url, whatsapp, email, linkedin, instagram, web, publicado";
 const COLUMNAS_PERFIL_NUEVAS =
   "etapa, ronda, industrias, cargo, especialidades, ticket, rondas_interes, empresa_id";
-const EMPRESA_EMBEBIDA = "empresa:empresas(slug, nombre)";
-const COLUMNAS_PERFIL = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, ${EMPRESA_EMBEBIDA}`;
+const COLUMNAS_COFUNDADOR =
+  "busca_cofundador, cofundador_aporta, cofundador_busca, cofundador_dedicacion, cofundador_nota";
+const COLUMNAS_PERFIL_LISTA = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, empresa:empresas(slug, nombre)`;
+const COLUMNAS_PERFIL = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, ${COLUMNAS_COFUNDADOR}, empresa:empresas(slug, nombre, logo_url)`;
 
-const COLUMNAS_PITCH = "id, perfil_id, video_url, poster_url, orden, publicado, descripcion";
+/**
+ * Columnas por migración, de la más nueva a la más vieja: feria_pro → feria_lista →
+ * lo de siempre. Cada consulta prueba en ese orden y se queda con la primera que la
+ * base entiende; así el deploy nunca depende de que la migración ya haya corrido.
+ */
+const NIVELES_PERFIL = [COLUMNAS_PERFIL, COLUMNAS_PERFIL_LISTA, COLUMNAS_PERFIL_BASE];
+
+async function enCascada<T extends { error: { code?: string } | null }>(
+  niveles: string[],
+  consulta: (columnas: string, nivel: number) => PromiseLike<T>
+): Promise<T & { nivel: number }> {
+  let resultado = await consulta(niveles[0], 0);
+  let nivel = 0;
+  while (faltaMigracion(resultado.error) && nivel < niveles.length - 1) {
+    nivel++;
+    resultado = await consulta(niveles[nivel], nivel);
+  }
+  return Object.assign(resultado, { nivel });
+}
+
+const COLUMNAS_PITCH =
+  "id, perfil_id, video_url, poster_url, orden, publicado, descripcion, created_at";
 // El perfil no dibuja subtítulos: solo el feed los pide.
 const COLUMNAS_PITCH_FEED = `${COLUMNAS_PITCH}, subtitulos`;
 
-const COLUMNAS_EMPRESA =
+const COLUMNAS_EMPRESA_LISTA =
   "id, slug, nombre, descripcion, web, linkedin, instagram, industrias, etapa, ronda";
+const COLUMNAS_EMPRESA = `${COLUMNAS_EMPRESA_LISTA}, logo_url`;
 
 /**
  * Códigos de "eso todavía no existe en la base": columna (42703), tabla (42P01),
@@ -56,7 +90,13 @@ function conUrlsPitch(pitch: Pitch): Pitch {
 }
 
 function conUrlsPerfil(perfil: Perfil): Perfil {
-  return { ...perfil, avatar_url: perfil.avatar_url && urlMedia(perfil.avatar_url) };
+  return {
+    ...perfil,
+    avatar_url: perfil.avatar_url && urlMedia(perfil.avatar_url),
+    ...(perfil.empresa && {
+      empresa: { ...perfil.empresa, logo_url: perfil.empresa.logo_url && urlMedia(perfil.empresa.logo_url) },
+    }),
+  };
 }
 
 /** Pitches publicados con perfil publicado, ordenados por `orden`. */
@@ -72,15 +112,39 @@ export async function getFeed(): Promise<ItemFeed[]> {
       .order("id")
       .overrideTypes<Array<Pitch & { perfil: Perfil }>, { merge: false }>();
 
-  const [primera, conteos] = await Promise.all([consulta(COLUMNAS_PERFIL), getConteoPiques()]);
-  const feed = faltaMigracion(primera.error) ? await consulta(COLUMNAS_PERFIL_BASE) : primera;
+  const [feed, conteos] = await Promise.all([enCascada(NIVELES_PERFIL, consulta), getConteoPiques()]);
   if (feed.error) fallo("getFeed", feed.error);
+
+  // Racha de cada perfil con las fechas de todos sus pitches publicados.
+  const fechas = new Map<string, string[]>();
+  for (const { perfil_id, created_at } of feed.data) {
+    fechas.set(perfil_id, [...(fechas.get(perfil_id) ?? []), created_at ?? ""]);
+  }
+  const rachas = new Map([...fechas].map(([id, lista]) => [id, calcularRacha(lista).actual]));
 
   return feed.data.map(({ perfil, ...pitch }) => ({
     pitch: conUrlsPitch(pitch),
     perfil: conUrlsPerfil(perfil),
     piques: conteos.get(pitch.id) ?? 0,
+    racha: rachas.get(pitch.perfil_id) ?? 0,
   }));
+}
+
+/** Hashtags de los pitches del feed con cuántos pitches tiene cada uno. */
+export async function getTags(): Promise<Array<{ tag: string; total: number }>> {
+  const cuenta = new Map<string, number>();
+  for (const { pitch } of await getFeed()) {
+    for (const tag of hashtagsDe(pitch.descripcion)) cuenta.set(tag, (cuenta.get(tag) ?? 0) + 1);
+  }
+  return [...cuenta]
+    .map(([tag, total]) => ({ tag, total }))
+    .sort((a, b) => b.total - a.total || a.tag.localeCompare(b.tag));
+}
+
+/** Pitches del feed que llevan un hashtag (sección /t/tag). */
+export async function getPitchesDeTag(tag: string): Promise<ItemFeed[]> {
+  const buscado = normalizarTag(tag);
+  return (await getFeed()).filter(({ pitch }) => hashtagsDe(pitch.descripcion).includes(buscado));
 }
 
 /**
@@ -99,36 +163,77 @@ async function getConteoPiques(): Promise<Map<string, number>> {
   return new Map(filas.map((fila) => [fila.pitch_id, fila.total]));
 }
 
+export type PaginaPerfil = {
+  perfil: Perfil;
+  pitches: Pitch[];
+  portafolio: ItemPortafolio[];
+  racha: Racha;
+};
+
 /**
- * Perfil publicado con sus pitches publicados, o `null` si no existe.
- * Con `cache` para que `generateMetadata` y la página hagan una sola consulta.
+ * Perfil publicado con sus pitches publicados, su portafolio visible y su racha, o
+ * `null` si no existe. Con `cache` para que `generateMetadata` y la página hagan
+ * una sola consulta.
  */
-export const getPerfil = cache(
-  async (slug: string): Promise<{ perfil: Perfil; pitches: Pitch[] } | null> => {
-    const consulta = (columnas: string) =>
-      supabase
-        .from("perfiles")
-        .select(`${columnas}, pitches(${COLUMNAS_PITCH})`)
-        .eq("slug", slug)
-        .eq("publicado", true)
-        .eq("oculto", false)
-        .eq("pitches.publicado", true)
-        .order("orden", { referencedTable: "pitches" })
-        .maybeSingle()
-        .overrideTypes<(Perfil & { pitches: Pitch[] }) | null, { merge: false }>();
+export const getPerfil = cache(async (slug: string): Promise<PaginaPerfil | null> => {
+  const consulta = (columnas: string, nivel: number) =>
+    supabase
+      .from("perfiles")
+      .select(
+        `${columnas}, pitches(${COLUMNAS_PITCH})${
+          nivel === 0 ? ", portafolio(id, tipo, titulo, descripcion, url, visible, orden)" : ""
+        }`
+      )
+      .eq("slug", slug)
+      .eq("publicado", true)
+      .eq("oculto", false)
+      .eq("pitches.publicado", true)
+      .order("orden", { referencedTable: "pitches" })
+      .maybeSingle()
+      .overrideTypes<
+        (Perfil & { pitches: Pitch[]; portafolio?: ItemPortafolio[] }) | null,
+        { merge: false }
+      >();
 
-    const primera = await consulta(COLUMNAS_PERFIL);
-    const { data, error } = faltaMigracion(primera.error)
-      ? await consulta(COLUMNAS_PERFIL_BASE)
-      : primera;
+  const { data, error } = await enCascada(NIVELES_PERFIL, consulta);
+  if (error) fallo("getPerfil", error);
+  if (!data) return null;
 
-    if (error) fallo("getPerfil", error);
-    if (!data) return null;
+  const { pitches, portafolio = [], ...perfil } = data;
+  return {
+    perfil: conUrlsPerfil(perfil),
+    pitches: pitches.map(conUrlsPitch),
+    portafolio: portafolio.filter((i) => i.visible).sort((a, b) => a.orden - b.orden),
+    racha: calcularRacha(pitches.map((p) => p.created_at)),
+  };
+});
 
-    const { pitches, ...perfil } = data;
-    return { perfil: conUrlsPerfil(perfil), pitches: pitches.map(conUrlsPitch) };
+/** Seguidores de un perfil (solo el total). No lanza: sin migración, 0. */
+export async function getSeguidores(slug: string): Promise<number> {
+  const { data, error } = await supabase.rpc("seguidores_de", { p_slug: slug });
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getSeguidores): ${error.message}`);
+    return 0;
   }
-);
+  return typeof data === "number" ? data : 0;
+}
+
+/** Perfiles visibles que buscan cofundador/a (/cofundadores). Sin migración, vacío. */
+export async function getCofundadores(): Promise<Perfil[]> {
+  const { data, error } = await supabase
+    .from("perfiles")
+    .select(COLUMNAS_PERFIL)
+    .eq("publicado", true)
+    .eq("oculto", false)
+    .eq("busca_cofundador", true)
+    .order("created_at", { ascending: false })
+    .overrideTypes<Perfil[], { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getCofundadores): ${error.message}`);
+    return [];
+  }
+  return data.map(conUrlsPerfil);
+}
 
 /**
  * Vistas y piques por pitch de un perfil visible. Como los piques del feed, no
@@ -177,21 +282,25 @@ export type PaginaEmpresa = {
  * migración todavía.
  */
 export const getEmpresa = cache(async (slug: string): Promise<PaginaEmpresa | null> => {
-  const { data: empresa, error } = await supabase
-    .from("empresas")
-    .select(COLUMNAS_EMPRESA)
-    .eq("slug", slug)
-    .maybeSingle()
-    .overrideTypes<Empresa | null, { merge: false }>();
+  const { data: fila, error } = await enCascada([COLUMNAS_EMPRESA, COLUMNAS_EMPRESA_LISTA], (columnas) =>
+    supabase
+      .from("empresas")
+      .select(columnas)
+      .eq("slug", slug)
+      .maybeSingle()
+      .overrideTypes<Empresa | null, { merge: false }>()
+  );
 
   if (faltaMigracion(error)) return null;
   if (error) fallo("getEmpresa", error);
-  if (!empresa) return null;
+  if (!fila) return null;
+  const empresa: Empresa = { ...fila, logo_url: fila.logo_url && urlMedia(fila.logo_url) };
 
   const [miembrosRes, datosRes] = await Promise.all([
     supabase
       .from("perfiles")
       .select(`${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, pitches(${COLUMNAS_PITCH})`)
+      .order("created_at")
       .eq("empresa_id", empresa.id)
       .eq("publicado", true)
       .eq("oculto", false)

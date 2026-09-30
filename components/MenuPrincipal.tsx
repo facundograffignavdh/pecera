@@ -4,14 +4,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import { IconoCerrar, IconoMenu } from "@/components/Iconos";
+import SelectorTema from "@/components/SelectorTema";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 
-const ENLACES = [
-  { href: "/", label: "Feed", bajada: "Los pitches en video" },
-  { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "Programa y votación" },
-  { href: "/docs", label: "Docs", bajada: "Conceptos y documentos legales" },
-  { href: "/sumate", label: "Sumate", bajada: "Qué es Pecera y cómo entrar" },
-  { href: "/cuenta", label: "Mi perfil", bajada: "Tu perfil, tu empresa y tus datos" },
+const GRUPOS = [
+  {
+    titulo: "Descubrir",
+    enlaces: [
+      { href: "/", label: "Feed", bajada: "Para vos y Stakeholding" },
+      { href: "/explorar", label: "Explorar", bajada: "Hashtags y secciones" },
+      { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "Programa y votación" },
+      { href: "/cofundadores", label: "Cofundadores", bajada: "Encontrá socio/a, como en YC" },
+    ],
+  },
+  {
+    titulo: "Lo tuyo",
+    enlaces: [
+      { href: "/red", label: "Mi red", bajada: "Los perfiles que seguís y guardaste" },
+      { href: "/cuenta", label: "Mi perfil", bajada: "Tu tarjeta, tu empresa y tu pitch" },
+    ],
+  },
+  {
+    titulo: "Pecera",
+    enlaces: [
+      { href: "/docs", label: "Docs", bajada: "Conceptos y documentos legales" },
+      { href: "/sumate", label: "Landing", bajada: "Qué es Pecera y cómo sumarte" },
+    ],
+  },
 ] as const;
 
 /**
@@ -55,29 +74,39 @@ export default function MenuPrincipal() {
               <IconoCerrar className="size-4" />
             </button>
           </div>
-          <ul className="flex flex-col gap-1">
-            {ENLACES.map((e) => {
-              const actual = e.href === "/" ? ruta === "/" : ruta.startsWith(e.href);
-              return (
-                <li key={e.href}>
-                  <Link
-                    href={e.href}
-                    onClick={cerrar}
-                    aria-current={actual ? "page" : undefined}
-                    className={`flex min-h-14 flex-col justify-center rounded-2xl px-4 py-2 transition-colors duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
-                      actual ? "bg-tinta text-marfil" : "text-tinta hover:bg-tinta/5"
-                    }`}
-                  >
-                    <span className="font-medium">{e.label}</span>
-                    <span className={`text-sm ${actual ? "text-marfil/75" : "text-tinta/60"}`}>{e.bajada}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="mt-auto text-xs leading-relaxed text-tinta/60">
-            Pecera es una capa de descubrimiento y conexión. No capta fondos del público.
-          </p>
+          <div className="no-scrollbar -mx-1 flex flex-1 flex-col gap-4 overflow-y-auto px-1">
+            {GRUPOS.map((grupo) => (
+              <div key={grupo.titulo} className="flex flex-col gap-1">
+                <p className="px-4 text-xs font-semibold uppercase tracking-[0.12em] text-tinta/50">{grupo.titulo}</p>
+                <ul className="flex flex-col gap-0.5">
+                  {grupo.enlaces.map((e) => {
+                    const actual = e.href === "/" ? ruta === "/" : ruta.startsWith(e.href);
+                    return (
+                      <li key={e.href}>
+                        <Link
+                          href={e.href}
+                          onClick={cerrar}
+                          aria-current={actual ? "page" : undefined}
+                          className={`boton flex min-h-13 flex-col justify-center rounded-2xl px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
+                            actual ? "bg-tinta text-marfil" : "text-tinta hover:bg-tinta/5"
+                          }`}
+                        >
+                          <span className="font-medium">{e.label}</span>
+                          <span className={`text-sm ${actual ? "text-marfil/75" : "text-tinta/60"}`}>{e.bajada}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-col gap-3 border-t border-tinta/10 pt-4">
+            <SelectorTema />
+            <p className="text-xs leading-relaxed text-tinta/60">
+              Pecera es una capa de descubrimiento y conexión. No capta fondos del público.
+            </p>
+          </div>
         </nav>
       </dialog>
     </>

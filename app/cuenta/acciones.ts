@@ -11,12 +11,14 @@ import {
   type EntradaPerfil,
   type Errores,
   destinoSeguro,
+  sinCofundador,
   soloBase,
   validarPerfil,
   validarSlug,
 } from "@/lib/cuenta";
 import { faltaMigracion } from "@/lib/datos";
 import { guardarFoto } from "@/lib/foto";
+import { urlMedia } from "@/lib/media";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 
 /** Origen de la request: anda igual en localhost, en las vistas previas y en producción. */
@@ -65,7 +67,7 @@ export type EstadoGuardar = {
   aviso?: string;
 };
 
-const CAMPOS: CampoPerfil[] = [...CAMPOS_SIMPLES, ...CAMPOS_LISTA];
+const CAMPOS: CampoPerfil[] = [...CAMPOS_SIMPLES, ...CAMPOS_LISTA, "busca_cofundador"];
 
 const ERROR_GENERAL = "No pudimos guardar. Probá de nuevo en un rato.";
 const SIN_FILA = {
@@ -140,6 +142,7 @@ async function guardar(formData: FormData): Promise<EstadoGuardar | { ir: string
   const entrada: EntradaPerfil = {
     ...Object.fromEntries(CAMPOS_SIMPLES.map((c) => [c, String(formData.get(c) ?? "")])),
     ...Object.fromEntries(CAMPOS_LISTA.map((c) => [c, formData.getAll(c).map(String)])),
+    busca_cofundador: formData.get("busca_cofundador") === "on",
   };
   const { datos, errores } = validarPerfil(entrada);
   const oculto = formData.get("oculto") === "on";
@@ -158,8 +161,10 @@ async function guardar(formData: FormData): Promise<EstadoGuardar | { ir: string
     const editar = (campos: object) =>
       supabase.from("perfiles").update({ ...campos, oculto }).eq("id", actual.id);
 
+    // En cascada: todo → sin cofounder (falta feria_pro) → lo básico (falta feria_lista).
     let { error } = await editar(datos);
     let aviso: string | undefined;
+    if (faltaMigracion(error)) ({ error } = await editar(sinCofundador(datos)));
     if (faltaMigracion(error)) {
       ({ error } = await editar(soloBase(datos)));
       aviso = AVISO_SIN_MIGRACION;
@@ -194,6 +199,7 @@ async function guardar(formData: FormData): Promise<EstadoGuardar | { ir: string
       .single();
 
   let { data: creado, error } = await crear(datos);
+  if (faltaMigracion(error)) ({ data: creado, error } = await crear(sinCofundador(datos)));
   if (faltaMigracion(error)) ({ data: creado, error } = await crear(soloBase(datos)));
   if (error?.code === "23505" && error.message.includes("usuario_id")) {
     // Esta cuenta ya tiene perfil (doble envío o reintento): a editarlo.
@@ -210,4 +216,33 @@ async function guardar(formData: FormData): Promise<EstadoGuardar | { ir: string
   const errorFoto = foto ? await guardarFoto(supabase, user.id, creado, foto) : null;
   revalidar(slug);
   return { ir: `/cuenta?creado=1${errorFoto ? "&foto=error" : ""}` };
+}
+
+/**
+ * Sube la foto apenas se elige (perfil ya creado): sin esperar a "Guardar", así no
+ * se pierde si la persona sale del formulario. Devuelve la URL nueva para mostrarla.
+ */
+export async function subirFoto(formData: FormData): Promise<{ ok: boolean; mensaje?: string; url?: string }> {
+  const supabase = await supabaseConSesion();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, mensaje: "Se cerró tu sesión. Volvé a entrar." };
+
+  const foto = formData.get("foto");
+  if (!(foto instanceof Blob) || foto.size === 0) return { ok: false, mensaje: "Elegí una foto." };
+
+  const { data: actual, error } = await supabase
+    .from("perfiles")
+    .select("id, slug, avatar_url")
+    .eq("usuario_id", user.id)
+    .maybeSingle();
+  if (error || !actual) return { ok: false, mensaje: "Primero creá tu perfil." };
+
+  const errorFoto = await guardarFoto(supabase, user.id, actual, foto);
+  if (errorFoto) return { ok: false, mensaje: errorFoto };
+
+  const { data: nuevo } = await supabase.from("perfiles").select("avatar_url").eq("id", actual.id).single();
+  revalidar(actual.slug);
+  return { ok: true, url: nuevo?.avatar_url ? urlMedia(nuevo.avatar_url) : undefined };
 }

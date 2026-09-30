@@ -17,7 +17,10 @@ export const TIPOS: Record<TipoPerfil, string> = {
   incubadora: "Incubadora",
   angel: "Inversor ángel",
   fondo: "Fondo",
-  coach: "Coach / mentor",
+  coach: "Mentor/a o coach",
+  profesional: "Profesional",
+  empresa: "Empresa",
+  institucion: "Universidad o institución",
 };
 
 /** Iniciales de hasta dos palabras: "Raíz Verde" → "RV". */

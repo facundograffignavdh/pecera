@@ -72,7 +72,7 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
   }, [items.length]);
 
   return (
-    <main id={ID_FEED} className="no-scrollbar h-dvh snap-y snap-mandatory overflow-y-auto overscroll-y-contain">
+    <main id={ID_FEED} className="tema-fijo no-scrollbar h-dvh snap-y snap-mandatory overflow-y-auto overscroll-y-contain">
       {items.map((item, indice) => (
         <Reel
           key={item.pitch.id}

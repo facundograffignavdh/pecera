@@ -21,6 +21,6 @@ export default function FeedMezclado({ items }: { items: ItemFeed[] }) {
   );
   const mezclados = useMemo(() => (enCelular ? mezclar(items) : null), [enCelular, items]);
 
-  if (!mezclados) return <main aria-busy className="h-dvh bg-tinta" />;
+  if (!mezclados) return <main aria-busy className="tema-fijo h-dvh bg-tinta" />;
   return <Feed items={mezclados} />;
 }

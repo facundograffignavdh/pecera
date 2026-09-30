@@ -27,14 +27,26 @@ export const metadata: Metadata = {
 // a borde y los controles se corren solos de la barra de inicio y la muesca.
 export const viewport: Viewport = {
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#13120f" },
+    { color: "#f5f4ec" },
+  ],
 };
+
+// Tema elegido (luz/noche) antes del primer pintado: sin parpadeo. "Auto" no deja
+// marca y sigue al sistema. Mismo nombre de clave que lib/tema.ts.
+const SCRIPT_TEMA = `try{var t=localStorage.getItem("pecera:tema");if(t==="luz"||t==="noche")document.documentElement.dataset.tema=t}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es-AR"
+      suppressHydrationWarning
       className={`${fraunces.variable} ${grotesk.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body className="h-dvh overflow-hidden">{children}</body>
     </html>
   );
