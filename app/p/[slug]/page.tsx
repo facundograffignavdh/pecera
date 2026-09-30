@@ -1,24 +1,21 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Avatar from "@/components/Avatar";
-import BotonCopiar from "@/components/BotonCopiar";
+import CanalesPerfil from "@/components/CanalesPerfil";
 import EditarPerfil from "@/components/EditarPerfil";
 import Encabezado from "@/components/Encabezado";
 import { EtiquetasPerfil } from "@/components/Etiquetas";
+import GrillaPitches from "@/components/GrillaPitches";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
-import { canalesDe } from "@/lib/contacto";
-import { getPerfil, getSlugs } from "@/lib/datos";
+import { getMetricasPerfil, getPerfil, getSlugs } from "@/lib/datos";
 import { cargo } from "@/lib/etiquetas";
 import { ROLES, TIPOS } from "@/lib/rol";
 
 export const revalidate = 60;
 
-const CLASE_CANAL =
-  "inline-flex rounded-full border border-tinta/25 px-4 py-2 text-sm text-tinta transition-colors duration-200 ease-pecera hover:border-arcilla hover:text-arcilla";
 // Un perfil aprobado después del build se genera en la primera visita.
 export const dynamicParams = true;
 
@@ -51,12 +48,11 @@ export async function generateMetadata({
 
 export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
   const { slug } = await params;
-  const datos = await getPerfil(slug);
+  const [datos, metricas] = await Promise.all([getPerfil(slug), getMetricasPerfil(slug)]);
   if (!datos) notFound();
 
   const { perfil, pitches } = datos;
   const rol = ROLES[perfil.rol];
-  const canales = canalesDe(perfil);
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
@@ -111,66 +107,19 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
 
         <p className="mt-5 leading-relaxed text-tinta/90">{perfil.descripcion}</p>
 
-        {canales.length > 0 && (
-          <section className="mt-7">
-            <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-tinta/50">
-              Escribile
-            </h2>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {canales.map((canal) => (
-                <li key={canal.clave} className="flex gap-2">
-                  <a
-                    href={canal.href}
-                    {...(canal.externo && { target: "_blank", rel: "noopener noreferrer" })}
-                    className={CLASE_CANAL}
-                  >
-                    {canal.label}
-                  </a>
-                  {/* Para quien no tiene app de correo: el mailto no hace nada. */}
-                  {canal.clave === "email" && perfil.email && (
-                    <BotonCopiar texto={perfil.email} etiqueta="Copiar email" className={CLASE_CANAL} />
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        <CanalesPerfil perfil={perfil} />
 
         {pitches.length > 0 && (
           <section className="mt-7">
             <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-tinta/50">
               {pitches.length === 1 ? "Su pitch" : "Sus pitches"}
             </h2>
-            <ul className="mt-3 grid grid-cols-2 gap-3">
-              {pitches.map((pitch) => (
-                <li key={pitch.id}>
-                  <Link
-                    href={`/#${pitch.id}`}
-                    className="block overflow-hidden rounded-xl bg-tinta"
-                    aria-label={`Ver el pitch de ${perfil.nombre} en el feed`}
-                  >
-                    {pitch.poster_url ? (
-                      <Image
-                        src={pitch.poster_url}
-                        alt=""
-                        width={360}
-                        height={640}
-                        className="aspect-[9/16] w-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex aspect-[9/16] w-full items-center justify-center text-2xl text-marfil">
-                        &#9654;
-                      </span>
-                    )}
-                  </Link>
-                  {pitch.descripcion && (
-                    <p className="mt-2 line-clamp-3 text-sm leading-snug text-tinta/80">
-                      {pitch.descripcion}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <GrillaPitches
+              slug={perfil.slug}
+              nombre={perfil.nombre}
+              pitches={pitches}
+              metricas={metricas}
+            />
           </section>
         )}
 

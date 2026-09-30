@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { urlMedia } from "@/lib/media";
 import { supabase } from "@/lib/supabase";
-import type { DatoEmpresa, Empresa, ItemFeed, Perfil, Pitch } from "@/types/pecera";
+import type { DatoEmpresa, Empresa, ItemFeed, Metricas, Perfil, Pitch } from "@/types/pecera";
 
 /**
  * Única puerta a los datos públicos. Los filtros por `publicado` (equipo) y
@@ -129,6 +129,22 @@ export const getPerfil = cache(
     return { perfil: conUrlsPerfil(perfil), pitches: pitches.map(conUrlsPitch) };
   }
 );
+
+/**
+ * Vistas y piques por pitch de un perfil visible. Como los piques del feed, no
+ * lanza: un contador no tumba el perfil (sin la migración, todo en 0) y el cliente
+ * lo vuelve a pedir al montar.
+ */
+export async function getMetricasPerfil(slug: string): Promise<Metricas> {
+  const { data, error } = await supabase.rpc("metricas_perfil", { p_slug: slug });
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getMetricasPerfil): ${error.message}`);
+    return {};
+  }
+
+  const filas = (data ?? []) as Array<{ pitch_id: string; vistas: number; piques: number }>;
+  return Object.fromEntries(filas.map((f) => [f.pitch_id, { vistas: f.vistas, piques: f.piques }]));
+}
 
 /** Slugs publicados, para `generateStaticParams`. */
 export async function getSlugs(): Promise<string[]> {

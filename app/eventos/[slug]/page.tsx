@@ -112,6 +112,9 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
                       <span className="font-normal normal-case tracking-normal">{j.fecha}</span>
                     </p>
                     <h3 className="mt-1 font-display text-lg font-semibold leading-tight text-tinta">{j.titulo}</h3>
+                    <p className="mt-1 text-sm font-medium text-tinta">
+                      <time dateTime={j.inicio}>{j.horario}</time> · {j.lugar}
+                    </p>
                     <p className="mt-1 text-sm text-tinta/80">{j.resumen}</p>
                     <ul className="mt-2 flex flex-col gap-1">
                       {j.momentos.map((m) => (

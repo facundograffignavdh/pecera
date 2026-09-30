@@ -15,6 +15,11 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   los datos. `lib/mock-data.ts` quedó sin usar.
 - `/` y `/p/[slug]` son ISR con `revalidate = 60`. En el feed, solo el reel activo
   y sus vecinos llevan `src`.
+- Orden del feed al azar en el celular (`components/FeedMezclado.tsx` + `lib/orden-feed.ts`):
+  el HTML del ISR no trae reels (fondo vacío hasta hidratar). El orden vive en una variable
+  de módulo: nuevo en cada recarga, el mismo al navegar dentro de la app (el `#hash` de
+  "Volver" cae en el mismo reel). El logo del header (`LogoInicio`) lleva al feed; en el
+  feed sube al primer reel sin scroll suave.
 - `supabase/test-50.sql` carga 50 perfiles `test-*` y `test-50-limpiar.sql` los borra.
 - Helpers: `lib/rol.ts` (colores y labels de rol/tipo) y `lib/contacto.ts`
   (normalización de canales). Reutilizarlos, no duplicar lógica.
@@ -80,6 +85,12 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   al darlo, con la escena animada `components/EscenaPique.tsx`. `lib/piques.ts`: uuid anónimo en localStorage, piques propios recordados,
   optimista con RPC `dar_pique`/`quitar_pique`; los conteos salen de
   `conteo_piques` (ISR + refresco al montar). Si el conteo falla, el feed sale igual.
+- Medición (`20261002120000_medicion.sql`, `lib/medicion.ts`): vistas (3 s de video, una
+  por dispositivo y pitch cada 12 h, `registrar_vista`) y contactos (toques en canales del
+  perfil y del pop-up, `registrar_contacto` con `keepalive`), con el uuid de
+  `lib/dispositivo.ts`. anon solo ve agregados: `metricas_perfil(slug)` (vistas y piques
+  por pitch en /p/slug, `GrillaPitches`). Los contactos solo en /admin (`admin_metricas`).
+  Pruebas: `supabase/pruebas/medicion.mjs`.
 - Migraciones nuevas en `supabase/migrations/` (las corre el usuario).
 - La base guarda claves de R2 (`<id>.mp4`); `lib/media.ts` (`urlMedia`) arma la URL
   con `NEXT_PUBLIC_MEDIA_URL` y `lib/datos.ts` ya la aplica.
@@ -119,7 +130,9 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `lib/etiquetas.ts`, espejo EXACTO de los `CHECK`: cambiar uno = migración nueva.
   Transparencia en `lib/transparencia.ts` (espejo de `empresa_datos_clave_valida`), glosario
   en `lib/glosario.ts` (los `slug` son anclas compartidas: no cambiarlos), legales en
-  `lib/legales.ts`, programa del evento en `lib/eventos.ts`.
+  `lib/legales.ts`, programa del evento en `lib/eventos.ts` (Feria 21: 7 y 8/10 de 9 a
+  17 h y 9/10 a la mañana en la Carpa Feria; Demo Day 9/10 14 h en el Auditorio, Urquía).
+  La votación se abre y cierra a mano en /admin; `votacion` es el cronograma que se muestra.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)

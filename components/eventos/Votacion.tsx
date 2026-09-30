@@ -9,6 +9,7 @@ import Avatar from "@/components/Avatar";
 import { BarraEtapa } from "@/components/Etiquetas";
 import { useCuentaLocal } from "@/lib/cuenta-local";
 import type { Participante } from "@/lib/datos";
+import { getEventoDefinido } from "@/lib/eventos";
 import type { Resultado } from "@/lib/errores-base";
 import { cargo, labelIndustria } from "@/lib/etiquetas";
 
@@ -218,9 +219,13 @@ function EstadoSesion({
     );
   }
   if (!abierta) {
+    // Se abre y se cierra a mano desde /admin: el texto da el cronograma, no el estado.
+    const cronograma = getEventoDefinido(evento)?.votacion;
     return (
       <p className="rounded-2xl bg-tinta/5 px-4 py-3 text-sm text-tinta">
-        La votación todavía no abrió. Se abre el Día 3: mientras, mirá los proyectos.
+        La votación no está abierta ahora.
+        {cronograma &&
+          ` Abre el ${cronograma.abre} y cierra el ${cronograma.cierra}. Los resultados ${cronograma.resultados}.`}
       </p>
     );
   }

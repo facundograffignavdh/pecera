@@ -13,7 +13,7 @@ ponerlo en marcha y cómo operar la feria. La auditoría con los pendientes est�
 | Perfil con nombre, tipo, rol, descripción y contacto | Formulario en 4 pasos con **etiquetas por rol**: etapa (idea → escalando), industrias, ronda que busca y cargo (CEO, CTO, CFO…) para innovadores; rondas, ticket e industrias de interés para inversores; especialidades con colores para aliados (mentoría, coaching, legal, fundraising…) |
 | Cada persona suelta | **Empresas**: alguien la crea, pasa un código de 8 caracteres, el equipo se suma con su cargo. Página pública `/e/slug` con el equipo y **todos los pitches juntos** |
 | Nada de métricas | **Transparencia**: 42 métricas y documentos (MRR, churn, CAC, MOAT, pitch deck, cap table, SAFE…), **privados** hasta que el equipo comparte cada uno |
-| Sin eventos | **Feria 21** en `/eventos/feria-21`: programa Día 1, 2, 3 + Demo Day, cómo votar y **votación del público** (un voto por cuenta de Google, solo compiten proyectos) |
+| Sin eventos | **Feria 21** en `/eventos/feria-21`: programa del 7 al 9 de octubre + Demo Day, cómo votar y **votación del público** (un voto por cuenta de Google, solo compiten proyectos) |
 | Sin material educativo | **Docs**: 98 conceptos con ejemplo y buscador (`/docs/conceptos`) y 16 documentos legales con kit por etapa (`/docs/legales`). Todo se comparte con link directo |
 | Doble toque en parte del video | **Doble toque en toda la pantalla**, ráfaga de corazones (tap-tap-tap), vibración, pista la primera vez y el pop-up espera a que termine la ráfaga |
 | Sin navegación | **Menú** (☰ arriba a la izquierda): Feed, Feria 21, Docs, Sumate, Mi perfil |
@@ -45,8 +45,9 @@ funciona igual: guarda lo básico del perfil, avisa y las páginas nuevas muestr
 6. Decidir **autopublicar** desde el Resumen del panel: prendido = cada perfil nuevo se ve
    enseguida (recomendado durante la feria, con el equipo mirando el panel); apagado = cada
    perfil espera tu OK.
-7. **Confirmar las fechas** de los Días 1 a 3 en `lib/eventos.ts` (hoy dicen "Fecha a confirmar";
-   el Demo Day del 5/10 sale del Drive). Commit + deploy.
+7. **Revisar el programa** en `lib/eventos.ts`: miércoles 7 y jueves 8, feria de 9:00 a 17:00 h
+   en la Carpa Feria; viernes 9, feria desde las 9:00 h y Demo Day a las 14:00 h en el Auditorio,
+   Urquía. Si algo cambia, se edita ahí. Commit + deploy.
 8. **Verificar que el lanzamiento de v2-cuentas quedó completo** (PR #2, mergeado el 29/9;
    checklist en `CLAUDE.md`): `lanzamiento-cuentas.sql` corrido, variables de R2 en Production
    de Vercel, app de Google en modo producción y el Form viejo cerrado.
@@ -103,10 +104,10 @@ entra con Google (un voto por cuenta, lo puede cambiar mientras la votación est
 | Momento | Qué hace el equipo |
 | --- | --- |
 | **Antes** | Pasos de la sección 2. Imprimir QR a `/sumate` y a `/eventos/feria-21`. Cargar las tarjetas NFC con `/p/slug` de cada proyecto. |
-| **Día 1 — Abrimos la pecera** | Mesa de alta: cada equipo entra con Google, arma perfil + empresa + se anota en la feria. Set de grabación de pitches. En `/admin` → Resumen, vaciar "pendientes" cada hora. |
-| **Día 2 — Mentorías y conexiones** | Mentores y aliados con perfil: los proyectos los encuentran por especialidad. Revisar **Envíos** (videos trabados) y publicar pitches. |
-| **Día 3 — El público vota** | `/admin` → Feria 21 → **Abrir** votación. Pantalla con el QR a `/eventos/feria-21#votacion`. Mirar el ranking; si hay algo raro (muchos votos de cuentas nuevas), anotarlo. Al final del día, **Cerrar**. |
-| **Demo Day (5/10)** | Con la votación cerrada, **Mostrar** resultados en el momento del anuncio: la página del evento pasa a ranking con barras. |
+| **Miércoles 7, 9:00 h (Carpa Feria)** | `/admin` → Feria 21 → **Abrir** votación. Mesa de alta: cada equipo entra con Google, arma perfil + empresa + se anota en la feria. Pantalla con el QR a `/eventos/feria-21#votacion`. En `/admin` → Resumen, vaciar "pendientes" cada hora. |
+| **Jueves 8, 9:00 a 17:00 h (Carpa Feria)** | Revisar **Envíos** (videos trabados) y publicar pitches. Mirar el ranking; si hay algo raro (muchos votos de cuentas nuevas), anotarlo. En el Resumen, vistas y contactos por perfil. |
+| **Viernes 9, mañana (Carpa Feria)** | La votación sigue abierta hasta el Demo Day. |
+| **Viernes 9, 14:00 h — Demo Day (Auditorio, Urquía)** | Al empezar, **Cerrar** la votación. **Mostrar** resultados en el momento del anuncio: la página del evento pasa a ranking con barras. |
 | **Después** | Dejar los resultados visibles o esconderlos. Exportar el ranking si se necesita (captura del panel). |
 
 La votación y los resultados se controlan por separado: se puede abrir la votación con los

@@ -33,8 +33,8 @@ export default function PrivacidadPage() {
   return (
     <PaginaLegal
       titulo="Política de privacidad"
-      actualizado="29 de septiembre de 2026"
-      actualizadoIso="2026-09-29"
+      actualizado="30 de septiembre de 2026"
+      actualizadoIso="2026-09-30"
       intro={
         <p>
           Pecera muestra pitches en video de emprendedores, inversores y aliados para que se
@@ -107,10 +107,19 @@ export default function PrivacidadPage() {
             No está atado a tu nombre ni a tu cuenta.
           </li>
           <li>
+            <strong className="font-semibold text-tinta">Las vistas y los contactos.</strong> Con
+            el mismo identificador al azar contamos las vistas (cuando un video se reproduce al
+            menos 3 segundos, una por celular y pitch cada 12 horas) y los toques en los canales
+            de contacto de un perfil (WhatsApp, email, LinkedIn, Instagram o web), desde el
+            perfil o desde el aviso del pique. Guardamos el identificador, el pitch o el perfil,
+            el canal y la fecha, más un contador para frenar abusos. Tampoco está atado a tu
+            nombre ni a tu cuenta.
+          </li>
+          <li>
             <strong className="font-semibold text-tinta">En tu navegador.</strong> Si entrás a tu
             cuenta, usamos cookies de sesión para saber que sos vos. Además guardamos en tu
-            navegador (no en nuestros servidores) si querés ver subtítulos, qué piques diste, el
-            identificador de los piques y un resumen público de tu perfil (nombre, foto y
+            navegador (no en nuestros servidores) si querés ver subtítulos, qué piques diste, qué
+            pitches viste en las últimas 12 horas, el identificador al azar y un resumen público de tu perfil (nombre, foto y
             dirección) para mostrar tu foto arriba de la pantalla. No usamos cookies de
             publicidad ni de seguimiento.
           </li>
@@ -126,7 +135,8 @@ export default function PrivacidadPage() {
           <li>Mostrar tu perfil y tus pitches en Pecera para que otras personas te conozcan.</li>
           <li>Que te puedan contactar por los canales que elegiste publicar.</li>
           <li>Saber a qué perfil corresponde cada video que llega por el formulario.</li>
-          <li>Contar los piques de cada pitch.</li>
+          <li>Contar los piques y las vistas de cada pitch.</li>
+          <li>Medir cuántas veces se toca cada canal de contacto, para saber si Pecera sirve para conectar.</li>
           <li>Armar la página de cada empresa con su equipo y lo que decida compartir.</li>
           <li>Organizar los eventos y contar los votos del público.</li>
           <li>Mantener tu sesión abierta y cuidar el servicio de abusos.</li>
@@ -147,7 +157,9 @@ export default function PrivacidadPage() {
         <p>
           <strong className="font-semibold text-tinta">Nunca publicamos</strong> el email de tu
           cuenta ni los emails del formulario. Tampoco mostramos quién dio cada pique ni a quién
-          votó cada persona: solo los totales. Los datos de transparencia que no se comparten
+          votó cada persona: solo los totales. En cada pitch mostramos cuántas vistas y
+          cuántos piques tiene; los contactos no se muestran: los ve solo el equipo de Pecera,
+          contados por perfil. Los datos de transparencia que no se comparten
           los ve solo el equipo de la empresa.
         </p>
       </Seccion>
@@ -177,8 +189,9 @@ export default function PrivacidadPage() {
         <p>
           Guardamos tus datos mientras tu cuenta exista o hasta que nos pidas borrarlos. Cuando
           cambiás tu foto o se reemplaza un video, la versión anterior se borra sola en
-          aproximadamente una hora. Los identificadores de piques se quedan en tu navegador hasta
-          que borres los datos del sitio.
+          aproximadamente una hora. Los piques, las vistas y los contactos se guardan mientras
+          exista el pitch o el perfil al que corresponden. El identificador al azar se queda en
+          tu navegador hasta que borres los datos del sitio.
         </p>
       </Seccion>
 

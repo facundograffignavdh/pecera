@@ -84,3 +84,8 @@ export type ItemFeed = {
   /** Piques del pitch según el último ISR; el cliente lo refresca al montar. */
   piques: number;
 };
+
+/** Vistas y piques de un pitch (solo agregados), para el perfil. */
+export type MetricasPitch = { vistas: number; piques: number };
+/** Por id de pitch. */
+export type Metricas = Record<string, MetricasPitch>;

@@ -80,13 +80,13 @@ URLs de documentos solo `https` y con `rel="nofollow noopener"`, ISR en todo lo 
 | 3 | **App de Google OAuth en producción** | Google Cloud → OAuth consent screen → *Publish app*. En *Testing* solo entran 100 usuarios de prueba: el público no podría votar. | CEO/CTO | 15 min (+ verificación de Google si pide scopes sensibles; los nuestros no) |
 | 4 | **Dominio final y Redirect URLs** | Decidir el dominio **antes de grabar las tarjetas NFC** (la URL `/p/slug` queda impresa). Configurarlo en Vercel, en `NEXT_PUBLIC_SITE_URL` y en Supabase → Auth → *Site URL* y *Redirect URLs* (`/auth/callback`). | CEO | 30 min |
 | 5 | **Verificar el lanzamiento de v2-cuentas** (PR #2 ya en `main`) | Checklist de `CLAUDE.md`: `lanzamiento-cuentas.sql` corrido, variables de R2 en Production de Vercel, Form viejo cerrado. Probar un alta real con foto en producción. | CTO | 20 min |
-| 6 | **Fechas del programa** | Confirmar Día 1, 2 y 3 en `lib/eventos.ts` (hoy "Fecha a confirmar"). | CEO | 5 min |
+| 6 | ~~**Fechas del programa**~~ | Hecho: 7, 8 y 9 de octubre y Demo Day el 9 a las 14 h, en `lib/eventos.ts`. | CEO | — |
 
-### P1 — antes del Demo Day (5/10) o durante la feria
+### P1 — antes del Demo Day (9/10) o durante la feria
 
 | # | Pendiente | Por qué | Cómo hacerlo |
 | --- | --- | --- | --- |
-| 7 | **Medir intros** (toques en WhatsApp, email, LinkedIn, web) | Es la North Star: sin esto no podemos decir cuántas conexiones generó la feria. | Mismo patrón que los piques: tabla `contactos (perfil_id, canal, dispositivo, created_at)`, RPC `registrar_contacto` con límite por dispositivo, y `navigator.sendBeacon` en el `onClick` de cada canal de `/p/[slug]` y del pop-up. Sin datos personales. ~2 h. |
+| 7 | ~~**Medir intros**~~ (hecho: tabla `contactos`, en `/admin` → Resumen) (toques en WhatsApp, email, LinkedIn, web) | Es la North Star: sin esto no podemos decir cuántas conexiones generó la feria. | Mismo patrón que los piques: tabla `contactos (perfil_id, canal, dispositivo, created_at)`, RPC `registrar_contacto` con límite por dispositivo, y `navigator.sendBeacon` en el `onClick` de cada canal de `/p/[slug]` y del pop-up. Sin datos personales. ~2 h. |
 | 8 | **Analítica de uso y errores** | DAU/MAU y retención 7/30/90 (lo pide la guía); enterarnos de un error antes que el usuario. | Vercel Web Analytics (sin cookies, sin dependencia pesada) y Sentry para errores. **Son dependencias nuevas: aprobar antes de instalar.** |
 | 9 | **Backup antes de la feria** | El plan free de Supabase no tiene restauración a un punto en el tiempo. | `supabase db dump` (CLI) o *Database → Backups* si el plan lo permite, el día antes y el día después. |
 | 10 | **Revisión legal express** | Privacidad y condiciones son borrador; ahora hay más datos (empresas, transparencia, votos). | Enviar `/privacidad` y `/terminos` al abogado con la lista de pendientes de `CLAUDE.md`: inscripción de la base en el Registro Nacional, transferencia internacional (art. 12, Ley 25.326), conservación de originales de Drive. |
@@ -145,7 +145,7 @@ order by 2 desc;
 | Pitches publicados | `/admin → Resumen` | 1 por proyecto |
 | Piques | `/admin → Resumen` | 10 por pitch en promedio |
 | Votos | `/admin → Feria 21` | 1 por asistente con cuenta |
-| **Intros** (toques en canales) | **No se mide todavía** (P1 #7) | 20 intros completadas (meta de 6 meses del Drive, adelantada) |
+| **Intros** (toques en canales) | `/admin → Resumen`, por perfil y canal | 20 intros completadas (meta de 6 meses del Drive, adelantada) |
 
 Las metas son una propuesta para discutir en el equipo; lo importante es medirlas igual el Día 1
 y el Demo Day para tener la curva.
