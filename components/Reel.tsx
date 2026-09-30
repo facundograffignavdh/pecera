@@ -6,6 +6,8 @@ import Avatar from "@/components/Avatar";
 import { EtiquetasReel } from "@/components/Etiquetas";
 import { IconoCorazon, IconoSonido, IconoSubtitulos } from "@/components/Iconos";
 import Subtitulos from "@/components/Subtitulos";
+import { formatoCompacto } from "@/lib/formato";
+import { registrarVista } from "@/lib/medicion";
 import { marcarPistaVista, usePistaPendiente } from "@/lib/pista-pique";
 import { ROLES, TIPOS } from "@/lib/rol";
 import type { ItemFeed } from "@/types/pecera";
@@ -14,6 +16,8 @@ import type { ItemFeed } from "@/types/pecera";
 const DOBLE_TOQUE_MS = 250;
 /** Después de un corazón, cada toque dentro de esta ventana suma otro (ráfaga). */
 const RAFAGA_MS = 450;
+/** Una vista = el video se reprodujo al menos esto. */
+const SEGUNDOS_VISTA = 3;
 
 type Props = {
   item: ItemFeed;
@@ -72,6 +76,8 @@ export default function Reel({
   // Momento del último corazón: los toques seguidos arman una ráfaga sin pausar.
   const ultimoCorazonMs = useRef(-Infinity);
   const pistaPendiente = usePistaPendiente();
+  // La vista se cuenta una vez por pasada por el reel.
+  const vistaContada = useRef(false);
 
   // Al salir de pantalla se olvida la pausa manual, así el reel vuelve a
   // arrancar solo cuando el usuario regresa. Ajuste en render, no en efecto.
@@ -98,6 +104,7 @@ export default function Reel({
     if (!activo) {
       video.pause();
       video.currentTime = 0;
+      vistaContada.current = false;
       return;
     }
 
@@ -180,6 +187,14 @@ export default function Reel({
     }
   }
 
+  // Sin controles no se puede adelantar: llegar a los 3 s es haberlos reproducido.
+  function alAvanzar() {
+    const video = videoRef.current;
+    if (!activo || vistaContada.current || !video || video.currentTime < SEGUNDOS_VISTA) return;
+    vistaContada.current = true;
+    registrarVista(pitch.id);
+  }
+
   function alTocarCorazon() {
     if (onAlternarPique()) setLatidos((n) => n + 1);
   }
@@ -212,6 +227,7 @@ export default function Reel({
         loop
         preload={activo ? "auto" : "metadata"}
         onClick={alTocarVideo}
+        onTimeUpdate={alAvanzar}
         className="absolute inset-0 h-full w-full cursor-pointer touch-manipulation object-cover"
       />
 
@@ -362,7 +378,5 @@ type Corazon = { id: number; x: number; y: number; giro: number };
 
 /** 0 muestra el nombre del gesto; desde 1000, "1,2 mil". */
 function formatoPiques(n: number): string {
-  if (n === 0) return "Pique";
-  if (n < 1000) return String(n);
-  return `${(n / 1000).toLocaleString("es-AR", { maximumFractionDigits: 1 })} mil`;
+  return n === 0 ? "Pique" : formatoCompacto(n);
 }

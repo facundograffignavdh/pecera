@@ -12,6 +12,7 @@ import {
   publicarPitch,
 } from "@/app/admin/acciones";
 import { entrar } from "@/app/cuenta/acciones";
+import type { Canal } from "@/lib/contacto";
 import { faltaMigracion } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
@@ -190,10 +191,33 @@ type ResumenDatos = {
   autopublicar: boolean;
 };
 
+type MetricaPerfil = {
+  perfil_id: string;
+  slug: string;
+  nombre: string;
+  vistas: number;
+  contactos: number;
+  por_canal: Partial<Record<Canal["clave"], number>>;
+};
+
+const CANALES: [Canal["clave"], string][] = [
+  ["whatsapp", "WhatsApp"],
+  ["email", "Email"],
+  ["linkedin", "LinkedIn"],
+  ["instagram", "Instagram"],
+  ["web", "Web"],
+];
+
 async function Resumen({ supabase }: { supabase: Supabase }) {
-  const { data, error } = await supabase.rpc("admin_resumen");
-  fallo("admin_resumen", error);
-  const r = data as ResumenDatos;
+  const [resumen, medicion] = await Promise.all([
+    supabase.rpc("admin_resumen"),
+    supabase.rpc("admin_metricas"),
+  ]);
+  fallo("admin_resumen", resumen.error);
+  const r = resumen.data as ResumenDatos;
+  // Sin la migración de medición, la parte de vistas y contactos no aparece.
+  if (medicion.error && !faltaMigracion(medicion.error)) fallo("admin_metricas", medicion.error);
+  const metricas = medicion.error ? null : ((medicion.data ?? []) as MetricaPerfil[]);
 
   const alertas = [
     r.perfiles_pendientes > 0 && {
@@ -211,6 +235,12 @@ async function Resumen({ supabase }: { supabase: Supabase }) {
     ["Perfiles visibles", r.perfiles_visibles],
     ["Pitches publicados", r.pitches_publicados],
     ["Piques", r.piques],
+    ...(metricas
+      ? ([
+          ["Vistas", metricas.reduce((t, m) => t + m.vistas, 0)],
+          ["Contactos", metricas.reduce((t, m) => t + m.contactos, 0)],
+        ] as [string, number][])
+      : []),
     ["Empresas", r.empresas],
     [`En ${EVENTO_ACTUAL.nombre}`, r.participantes],
     ["Votos", r.votos],
@@ -255,6 +285,44 @@ async function Resumen({ supabase }: { supabase: Supabase }) {
           ))}
         </ul>
       </div>
+
+      {metricas && (
+        <section className={CAJA}>
+          <h2 className="font-medium text-tinta">Vistas y contactos por perfil</h2>
+          <p className="text-sm text-tinta/70">
+            Anónimos. Una vista = 3 s de video (una por celular cada 12 h). Los contactos son
+            toques en los canales del perfil o del pop-up del pique, y no se muestran en público.
+          </p>
+          {metricas.length === 0 ? (
+            <p className="mt-3 text-sm text-tinta/70">Todavía no hay datos.</p>
+          ) : (
+            <ul className="mt-3 flex flex-col divide-y divide-tinta/10">
+              {metricas.map((m) => (
+                <li key={m.perfil_id} className="flex flex-col gap-1 py-2.5">
+                  <span className="flex items-baseline justify-between gap-3">
+                    <Link href={`/p/${m.slug}`} className="min-w-0 truncate font-medium text-tinta underline-offset-4 hover:underline">
+                      {m.nombre}
+                    </Link>
+                    <span className="shrink-0 text-sm tabular-nums text-tinta">
+                      {m.vistas} {m.vistas === 1 ? "vista" : "vistas"} · {m.contactos}{" "}
+                      {m.contactos === 1 ? "contacto" : "contactos"}
+                    </span>
+                  </span>
+                  {m.contactos > 0 && (
+                    <span className="flex flex-wrap gap-x-3 text-xs tabular-nums text-tinta/70">
+                      {CANALES.filter(([c]) => m.por_canal[c]).map(([c, label]) => (
+                        <span key={c}>
+                          {label}: {m.por_canal[c]}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <div className={`${CAJA} flex items-center justify-between gap-4`}>
         <div>
@@ -649,6 +717,10 @@ async function Evento({ supabase }: { supabase: Supabase }) {
             {e.resultados_visibles ? "Ocultar" : "Mostrar"}
           </BotonAccion>
         </div>
+        <p className="border-t border-tinta/10 pt-3 text-sm text-tinta/70">
+          Cronograma: abrir el {EVENTO_ACTUAL.votacion.abre}; cerrar el {EVENTO_ACTUAL.votacion.cierra}. Los
+          resultados {EVENTO_ACTUAL.votacion.resultados}: mostralos en el momento del anuncio.
+        </p>
         <Link href={`/eventos/${EVENTO_ACTUAL.slug}`} className="self-start text-sm text-tinta/70 underline underline-offset-4">
           Ver la página del evento
         </Link>

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import EscenaPique from "@/components/EscenaPique";
 import { IconoCerrar } from "@/components/Iconos";
 import { canalesDe } from "@/lib/contacto";
+import { registrarContacto } from "@/lib/medicion";
 import type { ItemFeed } from "@/types/pecera";
 
 const SALUDO = "¡Hola! Te vi en Pecera y me picó tu pitch";
@@ -100,7 +101,10 @@ export default function PopupPique({ item, onCerrado }: Props) {
             <a
               href={canal.href}
               {...(canal.externo && { target: "_blank", rel: "noopener noreferrer" })}
-              onClick={cerrar}
+              onClick={() => {
+                registrarContacto({ perfilId: perfil.id, pitchId: pitch.id, canal: canal.clave });
+                cerrar();
+              }}
               className={clasesBoton}
             >
               {canal.clave === "whatsapp" ? "Escribir por WhatsApp" : "Escribir por email"}

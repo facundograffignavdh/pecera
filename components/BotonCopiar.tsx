@@ -23,10 +23,13 @@ export default function BotonCopiar({
   texto,
   etiqueta,
   className,
+  onCopiado,
 }: {
   texto: string;
   etiqueta: string;
   className?: string;
+  /** Después de copiar bien (el perfil lo mide como contacto por email). */
+  onCopiado?: () => void;
 }) {
   const [estado, setEstado] = useState<"listo" | "copiado" | "error">("listo");
   const respaldo = useRef<HTMLInputElement>(null);
@@ -35,6 +38,7 @@ export default function BotonCopiar({
   async function alTocar() {
     const ok = await copiar(texto, respaldo.current);
     setEstado(ok ? "copiado" : "error");
+    if (ok) onCopiado?.();
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setEstado("listo"), 2000);
   }

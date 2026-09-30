@@ -38,6 +38,16 @@ export function IconoCorazon({ lleno = false, className }: Props & { lleno?: boo
   );
 }
 
+/** Ojo: vistas de un pitch. */
+export function IconoVista({ className }: Props) {
+  return (
+    <Icono className={className}>
+      <path d="M2.75 12S6.25 5.5 12 5.5 21.25 12 21.25 12 17.75 18.5 12 18.5 2.75 12 2.75 12z" />
+      <circle cx="12" cy="12" r="2.75" />
+    </Icono>
+  );
+}
+
 /** Parlante con ondas; silenciado: parlante tachado. */
 export function IconoSonido({ silenciado, className }: Props & { silenciado: boolean }) {
   return (

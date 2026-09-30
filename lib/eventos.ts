@@ -3,15 +3,19 @@
  * aunque la migración no haya corrido: la base solo guarda participantes, votos y
  * si la votación está abierta.
  *
- * Fechas: el Demo Day del 5/10 sale del Taller de Pitch de Impulso Tech 2H 2026
- * (Drive). Los días 1 a 3 son una PROPUESTA de programa: el equipo confirma fechas y
- * horarios y los edita acá (ver docs/GUIA-FERIA.md).
+ * Programa confirmado de la Feria 21 (horario de Argentina, UTC-3). La votación se
+ * abre y se cierra a mano desde /admin; `votacion` es el cronograma que sigue el
+ * equipo y que se muestra en la página y en el panel.
  */
 
 export type Jornada = {
   id: string;
   dia: string;
   fecha: string;
+  /** Para `<time dateTime>`: ISO con el offset de Argentina (-03:00). */
+  inicio: string;
+  horario: string;
+  lugar: string;
   titulo: string;
   resumen: string;
   momentos: string[];
@@ -27,70 +31,88 @@ export type Evento = {
   lugar: string;
   fechas: string;
   agenda: Jornada[];
+  /**
+   * Cronograma de la votación del público, en frases que se completan ("abre el …",
+   * "los resultados …"). Lo aplica el equipo a mano desde /admin.
+   */
+  votacion: { abre: string; cierra: string; resultados: string };
   comoVotar: string[];
   reglas: string[];
 };
+
+const VOTACION = {
+  abre: "miércoles 7 a las 9:00 h",
+  cierra: "viernes 9 a las 14:00 h, cuando empieza el Demo Day",
+  resultados: "se anuncian en el Demo Day",
+};
+
+const RECORRER = [
+  "Stands de los proyectos en la Carpa Feria",
+  "Mirá sus pitches en Pecera y escribiles desde su perfil",
+  "Votá tu proyecto favorito",
+];
 
 export const EVENTO_ACTUAL: Evento = {
   slug: "feria-21",
   nombre: "Feria 21",
   tipo: "Feria emprendedora",
   bajada:
-    "Los proyectos de Impulso 21 y la comunidad emprendedora de la Universidad Siglo 21, en un solo lugar. Tres días de pitches, mentorías y conexiones, y un Demo Day para cerrar.",
+    "Los proyectos de Impulso 21 y la comunidad emprendedora de la Universidad Siglo 21, en un solo lugar. Tres días de feria y un Demo Day para cerrar.",
   lugar: "Universidad Siglo 21 · Córdoba",
-  fechas: "Octubre 2026 · Demo Day el 5 de octubre",
+  fechas: "7, 8 y 9 de octubre de 2026 · Demo Day el viernes 9 a las 14 h",
   agenda: [
     {
-      id: "dia-1",
-      dia: "Día 1",
-      fecha: "Fecha a confirmar",
-      titulo: "Abrimos la pecera",
-      resumen: "Llegan los proyectos, se arman los stands y cada equipo sube su pitch a Pecera.",
-      momentos: [
-        "Acreditación y armado de stands",
-        "Set de grabación: pitch de 90 segundos, en vertical",
-        "Cada proyecto crea su perfil y su página de empresa",
-      ],
+      id: "miercoles",
+      dia: "Miércoles 7",
+      fecha: "7 de octubre",
+      inicio: "2026-10-07T09:00:00-03:00",
+      horario: "9:00 a 17:00 h",
+      lugar: "Carpa Feria",
+      titulo: "Feria",
+      resumen: "Abren la feria y la votación del público.",
+      momentos: RECORRER,
     },
     {
-      id: "dia-2",
-      dia: "Día 2",
-      fecha: "Fecha a confirmar",
-      titulo: "Mentorías y conexiones",
-      resumen: "Mesas con mentores por especialidad y ronda de encuentros con inversores y aliados.",
-      momentos: [
-        "Mesas de mentoría: ventas, producto, legal y fundraising",
-        "Speed networking con inversores y aliados",
-        "Clínica de pitch deck y de métricas",
-      ],
+      id: "jueves",
+      dia: "Jueves 8",
+      fecha: "8 de octubre",
+      inicio: "2026-10-08T09:00:00-03:00",
+      horario: "9:00 a 17:00 h",
+      lugar: "Carpa Feria",
+      titulo: "Feria",
+      resumen: "Segundo día de feria. La votación sigue abierta.",
+      momentos: RECORRER,
     },
     {
-      id: "dia-3",
-      dia: "Día 3",
-      fecha: "Fecha a confirmar",
-      titulo: "El público vota",
-      resumen: "Se abre la votación en Pecera: recorré los stands, mirá los pitches y votá tu favorito.",
-      momentos: [
-        "Apertura de la votación del público",
-        "Demos en vivo en cada stand",
-        "Cierre de la votación",
-      ],
+      id: "viernes",
+      dia: "Viernes 9",
+      fecha: "9 de octubre, a la mañana",
+      inicio: "2026-10-09T09:00:00-03:00",
+      horario: "Desde las 9:00 h hasta el Demo Day",
+      lugar: "Carpa Feria",
+      titulo: "Último tramo de feria",
+      resumen: "La feria sigue hasta el Demo Day. Es la última oportunidad para votar.",
+      momentos: RECORRER,
     },
     {
       id: "demo-day",
       dia: "Demo Day",
-      fecha: "5 de octubre",
+      fecha: "Viernes 9 de octubre",
+      inicio: "2026-10-09T14:00:00-03:00",
+      horario: "14:00 h",
+      lugar: "Auditorio, Urquía",
       titulo: "Pitches ante el jurado",
       resumen:
         "Cada proyecto tiene 3 minutos frente al jurado. Cerramos con el proyecto más votado por el público.",
       momentos: [
+        "Cierre de la votación al empezar el Demo Day",
         "Pitch de 3 minutos por proyecto",
-        "Devolución del jurado",
-        "Anuncio del más votado en Pecera y cierre",
+        "Anuncio del más votado en Pecera",
       ],
       destacada: true,
     },
   ],
+  votacion: VOTACION,
   comoVotar: [
     "Entrá con tu cuenta de Google (es para que haya un voto por persona).",
     "Mirá los proyectos participantes y tocá «Votar» en tu favorito.",
@@ -99,7 +121,8 @@ export const EVENTO_ACTUAL: Evento = {
   reglas: [
     "Un voto por cuenta de Google.",
     "No se puede votar al propio proyecto ni a la propia empresa.",
-    "Los resultados se muestran al cierre, en el Demo Day.",
+    `La votación abre el ${VOTACION.abre} y cierra el ${VOTACION.cierra}.`,
+    `Los resultados ${VOTACION.resultados}.`,
   ],
 };
 

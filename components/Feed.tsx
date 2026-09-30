@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ID_FEED } from "@/components/LogoInicio";
 import PieLegal from "@/components/PieLegal";
 import PopupPique from "@/components/PopupPique";
 import Reel from "@/components/Reel";
@@ -71,7 +72,7 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
   }, [items.length]);
 
   return (
-    <main className="no-scrollbar h-dvh snap-y snap-mandatory overflow-y-auto overscroll-y-contain">
+    <main id={ID_FEED} className="no-scrollbar h-dvh snap-y snap-mandatory overflow-y-auto overscroll-y-contain">
       {items.map((item, indice) => (
         <Reel
           key={item.pitch.id}
