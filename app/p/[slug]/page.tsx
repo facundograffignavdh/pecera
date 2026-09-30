@@ -1,16 +1,25 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Avatar from "@/components/Avatar";
 import CanalesPerfil from "@/components/CanalesPerfil";
-import EditarPerfil from "@/components/EditarPerfil";
 import Encabezado from "@/components/Encabezado";
 import { EtiquetasPerfil } from "@/components/Etiquetas";
 import GrillaPitches from "@/components/GrillaPitches";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
-import { getMetricasPerfil, getPerfil, getSlugs } from "@/lib/datos";
+import AccionesPerfil from "@/components/perfil/AccionesPerfil";
+import BarraDueno from "@/components/perfil/BarraDueno";
+import {
+  BloqueCofundador,
+  BloquePortafolio,
+  BloqueRacha,
+  SUBTITULO,
+  TarjetaEmpresaPerfil,
+} from "@/components/perfil/Bloques";
+import DescripcionConTags from "@/components/DescripcionConTags";
+import { urlPerfil } from "@/lib/cuenta";
+import { getMetricasPerfil, getPerfil, getSeguidores, getSlugs } from "@/lib/datos";
 import { cargo } from "@/lib/etiquetas";
 import { ROLES, TIPOS } from "@/lib/rol";
 
@@ -23,16 +32,14 @@ export async function generateStaticParams() {
   return (await getSlugs()).map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/p/[slug]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/p/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const datos = await getPerfil(slug);
   if (!datos) return { title: "Perfil no encontrado — Pecera" };
 
   const { perfil, pitches } = datos;
   const title = `${perfil.nombre} — Pecera`;
-  const poster = pitches.find((p) => p.poster_url)?.poster_url;
+  const imagen = pitches.find((p) => p.poster_url)?.poster_url ?? perfil.avatar_url;
 
   return {
     title,
@@ -41,89 +48,101 @@ export async function generateMetadata({
       title,
       description: perfil.descripcion,
       type: "profile",
-      images: poster ? [poster] : undefined,
+      images: imagen ? [imagen] : undefined,
     },
   };
 }
 
+/** Degradé de la franja de arriba según el rol: se reconoce de un vistazo. */
+const FRANJA: Record<string, string> = {
+  emprendedor: "from-arcilla via-pecera to-t-ocre-suave",
+  inversor: "from-inversor via-t-azul to-t-azul-suave",
+  aliado: "from-aliado via-t-verde to-t-verde-suave",
+};
+
 export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
   const { slug } = await params;
-  const [datos, metricas] = await Promise.all([getPerfil(slug), getMetricasPerfil(slug)]);
+  const [datos, metricas, seguidores] = await Promise.all([
+    getPerfil(slug),
+    getMetricasPerfil(slug),
+    getSeguidores(slug),
+  ]);
   if (!datos) notFound();
 
-  const { perfil, pitches } = datos;
+  const { perfil, pitches, portafolio, racha } = datos;
   const rol = ROLES[perfil.rol];
+  const c = cargo(perfil.cargo);
+  const detalle = perfil.empresa ? `${c?.label ?? "Equipo"} en ${perfil.empresa.nombre}` : null;
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
-      {/* El padding de arriba deja "Volver" debajo de la píldora fija. */}
-      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl lg:max-w-6xl lg:px-8">
         <Suspense fallback={<EnlaceVolver href="/" />}>
           <VolverAlFeed />
         </Suspense>
 
-        <header className="mt-6 flex items-center gap-4">
-          <Avatar perfil={perfil} size={72} />
-          <div className="min-w-0">
-            <h1 className="font-display text-2xl font-semibold leading-tight text-tinta">
-              {perfil.nombre}
-            </h1>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm">
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium text-marfil ${rol.bg}`}
-              >
-                {rol.label}
-              </span>
-              <span className="text-tinta/60">{TIPOS[perfil.tipo]}</span>
-            </div>
+        <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
+          {/* ---- La tarjeta (a la izquierda y fija en PC) ---- */}
+          <div className="flex flex-col gap-5 lg:sticky lg:top-24">
+            <article className="aparecer overflow-hidden rounded-[2rem] border border-tinta/10 bg-marfil shadow-[0_18px_50px_rgb(28_27_22/0.10)]">
+              <div className={`relative h-24 bg-gradient-to-br ${FRANJA[perfil.rol]}`}>
+                <span aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_85%_20%,rgb(255_255_255/0.35),transparent_45%)]" />
+                {racha.actual > 1 && (
+                  <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-tinta/70 px-2.5 py-1 text-xs font-semibold text-marfil backdrop-blur">
+                    <span className="llama" aria-hidden>
+                      🔥
+                    </span>
+                    {racha.actual} días
+                  </span>
+                )}
+              </div>
+              <div className="-mt-12 flex flex-col gap-4 px-5 pb-5">
+                <span className="self-start rounded-full ring-4 ring-marfil">
+                  <Avatar perfil={perfil} size={96} />
+                </span>
+                <header className="flex flex-col gap-1.5">
+                  <h1 className="font-display text-3xl font-semibold leading-[1.05] text-tinta">{perfil.nombre}</h1>
+                  <p className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold text-marfil ${rol.bg}`}>{rol.label}</span>
+                    <span className="text-tinta/65">{TIPOS[perfil.tipo] ?? ""}</span>
+                  </p>
+                </header>
+                <EtiquetasPerfil perfil={perfil} conCargo={!perfil.empresa} />
+                <DescripcionConTags texto={perfil.descripcion} className="leading-relaxed text-tinta/90" />
+                <AccionesPerfil
+                  perfil={perfil}
+                  url={urlPerfil(perfil.slug)}
+                  seguidores={seguidores}
+                  detalle={detalle}
+                  empresa={perfil.empresa?.nombre ?? null}
+                  cargo={c?.label ?? null}
+                />
+              </div>
+            </article>
+
+            {perfil.empresa && <TarjetaEmpresaPerfil empresa={perfil.empresa} cargo={c?.label ?? null} />}
+            <CanalesPerfil perfil={perfil} />
           </div>
-        </header>
 
-        <EditarPerfil slug={perfil.slug} />
+          {/* ---- El contenido ---- */}
+          <div className="flex flex-col gap-7">
+            <BarraDueno slug={perfil.slug} sinPitch={pitches.length === 0} />
 
-        {perfil.empresa && (
-          <Link
-            href={`/e/${perfil.empresa.slug}`}
-            className="mt-5 flex min-h-12 items-center justify-between gap-3 rounded-2xl border border-tinta/15 px-4 py-2.5 text-tinta transition-colors duration-200 ease-pecera hover:border-arcilla"
-          >
-            <span className="min-w-0">
-              <span className="block text-xs text-tinta/60">
-                {cargo(perfil.cargo)?.label ?? "Equipo"} en
-              </span>
-              <span className="block truncate font-display text-lg font-semibold leading-tight">
-                {perfil.empresa.nombre}
-              </span>
-            </span>
-            <span aria-hidden className="text-tinta/60">
-              &rarr;
-            </span>
-          </Link>
-        )}
+            {pitches.length > 0 && (
+              <section aria-label={pitches.length === 1 ? "Su pitch" : "Sus pitches"}>
+                <h2 className={SUBTITULO}>{pitches.length === 1 ? "Su pitch" : `Sus pitches · ${pitches.length}`}</h2>
+                <GrillaPitches slug={perfil.slug} nombre={perfil.nombre} pitches={pitches} metricas={metricas} />
+              </section>
+            )}
 
-        <div className="mt-5">
-          <EtiquetasPerfil perfil={perfil} conCargo={!perfil.empresa} />
+            <BloqueRacha racha={racha} />
+            <BloqueCofundador perfil={perfil} />
+            <BloquePortafolio items={portafolio} rol={perfil.rol} />
+          </div>
         </div>
 
-        <p className="mt-5 leading-relaxed text-tinta/90">{perfil.descripcion}</p>
-
-        <CanalesPerfil perfil={perfil} />
-
-        {pitches.length > 0 && (
-          <section className="mt-7">
-            <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-tinta/50">
-              {pitches.length === 1 ? "Su pitch" : "Sus pitches"}
-            </h2>
-            <GrillaPitches
-              slug={perfil.slug}
-              nombre={perfil.nombre}
-              pitches={pitches}
-              metricas={metricas}
-            />
-          </section>
-        )}
-
-        <PieLegal tono="claro" className="mt-10 pb-8" />
+        <PieLegal tono="claro" className="mt-12 pb-8" />
       </div>
     </main>
   );

@@ -2,6 +2,7 @@ import {
   ETAPAS,
   cargo,
   especialidad,
+  industria,
   labelEtapa,
   labelIndustria,
   labelRonda,
@@ -88,14 +89,14 @@ export function EtiquetasPerfil({
     const ticket = labelTicket(perfil.ticket);
     if (ticket) {
       piezas.push(
-        <Etiqueta key="ticket" clase="bg-t-azul-suave text-t-azul">
+        <Etiqueta key="ticket" clase="bg-t-verde-suave text-t-verde">
           Ticket {ticket}
         </Etiqueta>
       );
     }
     for (const r of perfil.rondas_interes ?? []) {
       const label = labelRonda(r);
-      if (label) piezas.push(<Etiqueta key={`ri-${r}`} clase="bg-t-azul-suave text-t-azul">{label}</Etiqueta>);
+      if (label) piezas.push(<Etiqueta key={`ri-${r}`} clase="bg-t-verde-suave text-t-verde">{label}</Etiqueta>);
     }
   }
 
@@ -110,7 +111,7 @@ export function EtiquetasPerfil({
     }
   }
 
-  for (const i of visibles) piezas.push(<Etiqueta key={`in-${i}`}>{labelIndustria(i)}</Etiqueta>);
+  for (const i of visibles) piezas.push(<Etiqueta key={`in-${i}`} clase={industria(i).clase}>{industria(i).label}</Etiqueta>);
   if (resto > 0) piezas.push(<Etiqueta key="resto">+{resto}</Etiqueta>);
 
   const etapa = perfil.rol === "emprendedor" ? perfil.etapa : null;

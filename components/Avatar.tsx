@@ -18,7 +18,11 @@ export default function Avatar({ perfil, size = 48 }: Props) {
         alt=""
         width={size}
         height={size}
-        className="shrink-0 rounded-full object-cover"
+        // Ya viene de 512 px en JPG desde el celular: sin pasar por el optimizador
+        // (no depende de remotePatterns ni gasta cuota de imágenes).
+        unoptimized
+        style={estilo}
+        className="shrink-0 rounded-full bg-tinta/10 object-cover"
       />
     );
   }
