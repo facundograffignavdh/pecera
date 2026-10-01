@@ -86,8 +86,20 @@ export default function Hero() {
               startups
             </span>
           </h1>
+          <h2
+            className="entrada mt-5 max-w-[34rem] font-display text-xl font-medium leading-snug text-marfil text-balance sm:text-2xl"
+            style={{ animationDelay: "60ms" }}
+          >
+            Capital, talento y ejecución del ecosistema latinoamericano de startups
+          </h2>
+          <h3
+            className="entrada mt-3 max-w-[34rem] text-base font-semibold leading-snug text-marfil/90 sm:text-lg"
+            style={{ animationDelay: "100ms" }}
+          >
+            Construí y escalá tu startup en público
+          </h3>
           <p
-            className="entrada mt-6 max-w-[34rem] text-lg leading-relaxed text-marfil/90 text-pretty sm:text-xl"
+            className="entrada mt-5 max-w-[34rem] text-lg leading-relaxed text-marfil/90 text-pretty sm:text-xl"
             style={{ animationDelay: "120ms" }}
           >
             Startups, inversores y aliados de Latinoamérica en un solo lugar. Mostrá lo que construís con un pitch de
