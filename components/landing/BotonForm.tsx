@@ -2,38 +2,37 @@
 
 import type { ReactNode } from "react";
 import { abrirElegirRol } from "@/components/landing/ElegirRol";
+import { Flecha } from "@/components/landing/Seccion";
 
-function Flecha({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
-      <path
-        d="M4 10h11m0 0-4.5-4.5M15 10l-4.5 4.5"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+const TAMANOS = {
+  lg: "min-h-14 px-8 text-[18px]",
+  md: "min-h-12 px-6 text-base",
+};
 
-/** CTA principal: elegir rol y entrar con Google a armar el perfil (/cuenta?rol=…). */
+/**
+ * EL CTA de la landing: todos los "Sumate" abren la elección de rol y de ahí se
+ * entra con Google a armar el perfil (/cuenta?rol=…). Naranja con texto Tinta,
+ * brillo al pasar, imán hacia el cursor (solo con mouse) y foco visible.
+ */
 export default function BotonForm({
   children = "Sumate a Pecera",
+  tamano = "lg",
   className = "",
 }: {
   children?: ReactNode;
+  tamano?: keyof typeof TAMANOS;
   className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={abrirElegirRol}
+      aria-haspopup="dialog"
       data-magnetic
-      className={`brillo group inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-naranja px-8 text-[19px] font-bold text-tinta shadow-[0_1px_2px_rgb(28_27_22/0.15),0_8px_20px_rgb(217_90_34/0.28)] transition-shadow duration-200 ease-pecera hover:shadow-[0_1px_2px_rgb(28_27_22/0.15),0_12px_28px_rgb(217_90_34/0.4)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta hover:bg-pecera active:scale-[0.98]${className}`}
+      className={`brillo group inline-flex items-center justify-center gap-2 rounded-full bg-naranja font-bold text-tinta shadow-[0_1px_2px_rgb(28_27_22/0.15),0_8px_22px_rgb(244_124_60/0.32)] transition-[background-color,box-shadow,scale] duration-[var(--duracion)] ease-pecera hover:bg-pecera hover:shadow-[0_1px_2px_rgb(28_27_22/0.15),0_14px_30px_rgb(244_124_60/0.42)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta active:scale-[0.98] ${TAMANOS[tamano]} ${className}`}
     >
       {children}
-      <Flecha className="h-5 w-5 transition-transform duration-200 ease-pecera group-hover:translate-x-1" />
+      <Flecha className="h-5 w-5 transition-transform duration-[var(--duracion)] ease-pecera group-hover:translate-x-1" />
     </button>
   );
 }

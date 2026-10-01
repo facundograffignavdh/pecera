@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Video decorativo de fondo. `muted` se fuerza por JS porque React no lo
+ * Video decorativo de fondo (no se descarga hasta que hace falta). `muted` se fuerza por JS porque React no lo
  * escribe en el HTML del servidor y iOS no reproduce solo sin él. Se pausa
  * fuera de pantalla y con "reducir movimiento" (queda el poster).
  */
@@ -51,7 +51,7 @@ export default function VideoFondo({
       muted
       loop
       playsInline
-      preload="metadata"
+      preload="none"
       poster={poster}
       aria-hidden
       tabIndex={-1}

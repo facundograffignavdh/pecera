@@ -5,36 +5,26 @@ import { observarRevelar } from "@/lib/revelar";
 
 /**
  * Toda la capa de movimiento de la landing, sobre atributos del HTML:
- * - `data-revelar`: entra con fade + 14 px al aparecer. Los bloques solo se
- *   esconden cuando este efecto marca el <html>: sin JavaScript se ve todo.
- * - `data-contar`: número que cuenta desde 0 al revelarse su bloque.
- * - `data-tilt` / `data-magnetic`: tarjetas que se inclinan y botones que
- *   siguen al cursor (solo con mouse).
- * - `#progreso`, `#arriba`, `[data-parallax]`: atados al scroll de `scroller`.
- * - `[data-carrusel]`: flechas del carrusel.
- * Con "reducir movimiento" queda solo lo esencial: nada se mueve ni cuenta.
+ * - `data-revelar`: entra con fade + 14 px al aparecer (lib/revelar.ts). Sin
+ *   JavaScript se ve todo.
+ * - `data-escena`: se marca `data-en-escena` cuando está a la vista en serio
+ *   (la mitad en pantalla), para las transformaciones que hay que ver pasar.
+ * - `data-profundidad`: con el mouse, sus capas (`--z`) se corren a distintas
+ *   profundidades. `data-magnetic`: el botón se corre un poco hacia el cursor.
+ * - `#progreso`: barra de lectura atada al scroll de `scroller`.
+ * - `#cta-fijo`: el CTA fijo aparece solo cuando ningún `data-cta-zona` (los CTA
+ *   del hero y del cierre) está en pantalla; mientras tanto queda `inert`.
+ * Con "reducir movimiento" no hay profundidad ni imán; las entradas y los
+ * cambios de estado siguen, sin desplazamiento (globals.css).
  */
 
 const TITULO_AUSENTE = "La pecera te espera · Pecera";
-
-function contar(el: HTMLElement) {
-  const fin = Number(el.dataset.contar);
-  const antes = el.dataset.prefijo ?? "";
-  const despues = el.dataset.sufijo ?? "";
-  const inicio = performance.now();
-  const paso = (ahora: number) => {
-    const t = Math.min((ahora - inicio) / 1100, 1);
-    el.textContent = antes + Math.round(fin * (1 - Math.pow(1 - t, 3))) + despues;
-    if (t < 1) requestAnimationFrame(paso);
-  };
-  requestAnimationFrame(paso);
-}
 
 export default function Movimiento({ scroller }: { scroller: string }) {
   useEffect(() => {
     const contenedor = document.getElementById(scroller);
     const conMovimiento = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const conMouse = window.matchMedia("(hover: hover)").matches;
+    const conMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     const limpiar: (() => void)[] = [];
     const escuchar = <K extends keyof HTMLElementEventMap>(
       el: HTMLElement,
@@ -45,30 +35,47 @@ export default function Movimiento({ scroller }: { scroller: string }) {
       limpiar.push(() => el.removeEventListener(tipo, fn));
     };
 
-    // Entradas al hacer scroll; los números cuentan al revelarse su bloque.
-    limpiar.push(
-      observarRevelar((el) => {
-        if (conMovimiento) el.querySelectorAll<HTMLElement>("[data-contar]").forEach(contar);
-      })
-    );
+    limpiar.push(observarRevelar());
 
-    // Barra de progreso, burbuja para volver arriba y parallax del hero.
+    // Escenas: se disparan con la mitad a la vista, una sola vez.
+    const escenas = new IntersectionObserver(
+      (entradas) => {
+        for (const e of entradas) {
+          if (!e.isIntersecting) continue;
+          (e.target as HTMLElement).dataset.enEscena = "";
+          escenas.unobserve(e.target);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    document.querySelectorAll("[data-escena]").forEach((el) => escenas.observe(el));
+    limpiar.push(() => escenas.disconnect());
+
+    // CTA fijo: visible cuando no se ve ningún otro CTA.
+    const fijo = document.getElementById("cta-fijo");
+    if (fijo) {
+      const visibles = new Set<Element>();
+      const zonas = new IntersectionObserver((entradas) => {
+        for (const e of entradas) {
+          if (e.isIntersecting) visibles.add(e.target);
+          else visibles.delete(e.target);
+        }
+        const ocultar = visibles.size > 0;
+        fijo.toggleAttribute("data-oculto", ocultar);
+        fijo.toggleAttribute("inert", ocultar);
+      });
+      document.querySelectorAll("[data-cta-zona]").forEach((el) => zonas.observe(el));
+      limpiar.push(() => zonas.disconnect());
+    }
+
+    // Barra de lectura.
     const barra = document.getElementById("progreso");
-    const arriba = document.getElementById("arriba") as HTMLButtonElement | null;
-    const parallax = document.querySelector<HTMLElement>("[data-parallax]");
-    if (contenedor) {
+    if (contenedor && barra) {
       let pendiente = false;
       const actualizar = () => {
         pendiente = false;
-        const y = contenedor.scrollTop;
         const total = contenedor.scrollHeight - contenedor.clientHeight;
-        if (barra) barra.style.transform = `scaleX(${total > 0 ? y / total : 0})`;
-        arriba?.toggleAttribute("data-oculto", y < 700);
-        if (parallax && conMovimiento) {
-          const p = Math.min(1, y / (window.innerHeight * 0.8));
-          parallax.style.transform = `translateY(${(-p * 60).toFixed(1)}px)`;
-          parallax.style.opacity = String(1 - p * 0.85);
-        }
+        barra.style.transform = `scaleX(${total > 0 ? contenedor.scrollTop / total : 0})`;
       };
       const alScroll = () => {
         if (pendiente) return;
@@ -78,70 +85,40 @@ export default function Movimiento({ scroller }: { scroller: string }) {
       contenedor.addEventListener("scroll", alScroll, { passive: true });
       limpiar.push(() => contenedor.removeEventListener("scroll", alScroll));
       actualizar();
-
-      if (arriba) {
-        escuchar(arriba, "click", () =>
-          contenedor.scrollTo({ top: 0, behavior: conMovimiento ? "smooth" : "auto" })
-        );
-      }
     }
 
-    // Tarjetas con tilt 3D y luz que sigue al cursor.
     if (conMovimiento && conMouse) {
-      document.querySelectorAll<HTMLElement>("[data-tilt]").forEach((tarjeta) => {
+      // Profundidad: -1..1 según dónde está el cursor; cada capa se corre --z px.
+      document.querySelectorAll<HTMLElement>("[data-profundidad]").forEach((capa) => {
         let cuadro = 0;
-        escuchar(tarjeta, "mousemove", (e) => {
+        escuchar(capa, "pointermove", (e) => {
           if (cuadro) return;
           cuadro = requestAnimationFrame(() => {
             cuadro = 0;
-            const r = tarjeta.getBoundingClientRect();
-            const x = e.clientX - r.left;
-            const y = e.clientY - r.top;
-            tarjeta.style.setProperty("--ry", `${((x / r.width - 0.5) * 6).toFixed(2)}deg`);
-            tarjeta.style.setProperty("--rx", `${(-(y / r.height - 0.5) * 6).toFixed(2)}deg`);
-            tarjeta.style.setProperty("--lift", "-4px");
-            tarjeta.style.setProperty("--mx", `${x.toFixed(0)}px`);
-            tarjeta.style.setProperty("--my", `${y.toFixed(0)}px`);
+            const r = capa.getBoundingClientRect();
+            capa.style.setProperty("--px", (((e.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
+            capa.style.setProperty("--py", (((e.clientY - r.top) / r.height) * 2 - 1).toFixed(3));
           });
         });
-        escuchar(tarjeta, "mouseleave", () => {
-          tarjeta.style.setProperty("--rx", "0deg");
-          tarjeta.style.setProperty("--ry", "0deg");
-          tarjeta.style.setProperty("--lift", "0px");
+        escuchar(capa, "pointerleave", () => {
+          capa.style.setProperty("--px", "0");
+          capa.style.setProperty("--py", "0");
         });
       });
 
       // Botones magnéticos: se corren un poco hacia el cursor.
       document.querySelectorAll<HTMLElement>("[data-magnetic]").forEach((boton) => {
-        escuchar(boton, "mousemove", (e) => {
+        escuchar(boton, "pointermove", (e) => {
           const r = boton.getBoundingClientRect();
-          const dx = (e.clientX - r.left - r.width / 2) * 0.18;
-          const dy = (e.clientY - r.top - r.height / 2) * 0.18;
+          const dx = (e.clientX - r.left - r.width / 2) * 0.16;
+          const dy = (e.clientY - r.top - r.height / 2) * 0.16;
           boton.style.translate = `${dx.toFixed(1)}px ${dy.toFixed(1)}px`;
         });
-        escuchar(boton, "mouseleave", () => {
+        escuchar(boton, "pointerleave", () => {
           boton.style.translate = "0px 0px";
         });
       });
     }
-
-    // Carrusel: flechas y bordes.
-    document.querySelectorAll<HTMLElement>("[data-carrusel]").forEach((pista) => {
-      const bloque = pista.closest<HTMLElement>("[data-carrusel-raiz]");
-      const prev = bloque?.querySelector<HTMLButtonElement>("[data-carrusel-prev]");
-      const next = bloque?.querySelector<HTMLButtonElement>("[data-carrusel-next]");
-      if (!prev || !next) return;
-      const paso = () => Math.max(pista.clientWidth * 0.8, 280);
-      const comportamiento = conMovimiento ? "smooth" : "auto";
-      const bordes = () => {
-        prev.disabled = pista.scrollLeft <= 4;
-        next.disabled = pista.scrollLeft >= pista.scrollWidth - pista.clientWidth - 4;
-      };
-      escuchar(prev, "click", () => pista.scrollBy({ left: -paso(), behavior: comportamiento }));
-      escuchar(next, "click", () => pista.scrollBy({ left: paso(), behavior: comportamiento }));
-      escuchar(pista, "scroll", bordes);
-      bordes();
-    });
 
     // Guiño en la pestaña cuando la persona se va a otra.
     const tituloOriginal = document.title;

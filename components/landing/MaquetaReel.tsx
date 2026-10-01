@@ -65,7 +65,13 @@ export default function MaquetaReel({
                 <span className={`rounded-full px-1.5 py-0.5 font-medium ${rol.bg}`}>{rol.label}</span>
                 <span className="text-marfil/75">{TIPOS[pitch.tipo]}</span>
               </div>
-              <span className="mt-2.5 inline-flex rounded-full bg-arcilla px-3 py-1.5 text-[11px] font-medium">
+              <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-celeste px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-tinta">
+                <svg aria-hidden viewBox="0 0 12 12" className="size-2">
+                  <path d="M3 1.8v8.4L10 6z" fill="currentColor" />
+                </svg>
+                Pitch
+              </span>
+              <span className="mt-2.5 inline-flex rounded-full bg-naranja px-3 py-1.5 text-[11px] font-semibold text-tinta">
                 Ver perfil
               </span>
             </div>

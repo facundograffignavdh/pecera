@@ -494,3 +494,96 @@ export async function getEstadoEvento(evento: string): Promise<EstadoEvento> {
     resultados: Object.fromEntries(filas.map((f) => [f.perfil_id, Number(f.votos)])),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Landing
+// ---------------------------------------------------------------------------
+
+/** Un pitch reciente para la vitrina de la landing. */
+export type PitchVitrina = {
+  slug: string;
+  nombre: string;
+  rol: Perfil["rol"];
+  tipo: Perfil["tipo"];
+  poster: string;
+};
+
+/**
+ * Lo que la landing puede mostrar como prueba: conteos reales de lo visible y los
+ * pitches más recientes con poster. Deja afuera los perfiles `test-*` (los de
+ * prueba de supabase/test-50.sql). Nunca lanza: sin datos, la landing muestra sus
+ * principios y no inventa números.
+ */
+export type PulsoEcosistema = {
+  emprendedores: number;
+  inversores: number;
+  aliados: number;
+  empresas: number;
+  pitches: number;
+  vitrina: PitchVitrina[];
+};
+
+const ES_PRUEBA = (slug: string) => slug.startsWith("test-");
+
+export async function getPulsoEcosistema(): Promise<PulsoEcosistema | null> {
+  try {
+    return await pulso();
+  } catch (e) {
+    console.error(`getPulsoEcosistema: ${e instanceof Error ? e.message : "error"}`);
+    return null;
+  }
+}
+
+async function pulso(): Promise<PulsoEcosistema | null> {
+  const [perfiles, empresas, pitches] = await Promise.all([
+    supabase
+      .from("perfiles")
+      .select("slug, rol")
+      .eq("publicado", true)
+      .eq("oculto", false)
+      .limit(5000)
+      .overrideTypes<Array<{ slug: string; rol: Perfil["rol"] }>, { merge: false }>(),
+    supabase.from("empresas").select("id").limit(5000),
+    supabase
+      .from("pitches")
+      .select("poster_url, created_at, perfil:perfiles!inner(slug, nombre, rol, tipo)")
+      .eq("publicado", true)
+      .eq("perfil.publicado", true)
+      .eq("perfil.oculto", false)
+      .order("created_at", { ascending: false })
+      .limit(1000)
+      .overrideTypes<
+        Array<{ poster_url: string | null; perfil: Pick<Perfil, "slug" | "nombre" | "rol" | "tipo"> }>,
+        { merge: false }
+      >(),
+  ]);
+  if (perfiles.error || pitches.error) {
+    const error = perfiles.error ?? pitches.error;
+    if (error && !faltaMigracion(error)) console.error(`Supabase (getPulsoEcosistema): ${error.message}`);
+    return null;
+  }
+
+  const reales = perfiles.data.filter((p) => !ES_PRUEBA(p.slug));
+  const deRol = (rol: Perfil["rol"]) => reales.filter((p) => p.rol === rol).length;
+  const pitchesReales = pitches.data.filter((p) => !ES_PRUEBA(p.perfil.slug));
+
+  // Un pitch por perfil: la vitrina muestra gente distinta.
+  const vistos = new Set<string>();
+  const vitrina: PitchVitrina[] = [];
+  for (const { poster_url, perfil } of pitchesReales) {
+    if (!poster_url || vistos.has(perfil.slug)) continue;
+    vistos.add(perfil.slug);
+    vitrina.push({ ...perfil, poster: urlMedia(poster_url) });
+    if (vitrina.length === 8) break;
+  }
+
+  return {
+    emprendedores: deRol("emprendedor"),
+    inversores: deRol("inversor"),
+    aliados: deRol("aliado"),
+    // Sin la migración de empresas no hay número que mostrar.
+    empresas: empresas.error ? 0 : empresas.data.length,
+    pitches: pitchesReales.length,
+    vitrina,
+  };
+}
