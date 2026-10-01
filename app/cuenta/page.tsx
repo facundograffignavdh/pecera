@@ -10,10 +10,12 @@ import RecordarCuenta from "@/components/RecordarCuenta";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import AccionesPitch from "@/components/cuenta/AccionesPitch";
 import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
+import TarjetaBuild from "@/components/cuenta/TarjetaBuild";
 import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
 import TarjetaTransparencia from "@/components/cuenta/TarjetaTransparencia";
 import { entrar } from "@/app/cuenta/acciones";
+import { type Avance, type Hito, calcularRacha } from "@/lib/build";
 import { urlPerfil } from "@/lib/cuenta";
 import type { CuentaLocal } from "@/lib/cuenta-local";
 import { faltaMigracion } from "@/lib/datos";
@@ -193,6 +195,16 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             {perfil && extras?.disponible && (
               <>
                 <TarjetaEmpresa empresa={extras.empresa} />
+                {extras.empresa && extras.build && (
+                  <TarjetaBuild
+                    hitos={extras.build.hitos}
+                    avances={extras.build.avances.slice(0, 20)}
+                    racha={calcularRacha(
+                      extras.build.avances.map((a) => a.created_at),
+                      new Date()
+                    )}
+                  />
+                )}
                 {extras.empresa && (
                   <TarjetaTransparencia datos={extras.datos} slugEmpresa={extras.empresa.slug} />
                 )}
@@ -225,7 +237,36 @@ type Extras = {
   empresa: MiEmpresa | null;
   datos: DatoEmpresa[];
   participa: boolean;
+  /** null: la base todavía no tiene Build in Public (o falló la lectura). */
+  build: { hitos: Hito[]; avances: Avance[] } | null;
 };
+
+/** Build in Public de la empresa propia (los miembros lo leen aunque no sea visible). */
+async function leerBuild(
+  supabase: Awaited<ReturnType<typeof supabaseConSesion>>,
+  empresaId: string
+): Promise<Extras["build"]> {
+  const [hitos, avances] = await Promise.all([
+    supabase
+      .from("empresa_hitos")
+      .select("id, titulo, detalle, etapa, estado, progreso, fecha, created_at")
+      .eq("empresa_id", empresaId)
+      .overrideTypes<Hito[], { merge: false }>(),
+    supabase
+      .from("empresa_avances")
+      .select("id, texto, hito_id, created_at")
+      .eq("empresa_id", empresaId)
+      .order("created_at", { ascending: false })
+      .limit(120)
+      .overrideTypes<Avance[], { merge: false }>(),
+  ]);
+  const error = hitos.error ?? avances.error;
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (leerBuild): ${error.message}`);
+    return null;
+  }
+  return { hitos: hitos.data ?? [], avances: avances.data ?? [] };
+}
 
 async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>>): Promise<Extras> {
   const [empresa, datos, evento] = await Promise.all([
@@ -234,7 +275,7 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
     supabase.rpc("mi_evento", { p_evento: EVENTO_ACTUAL.slug }),
   ]);
   if (faltaMigracion(empresa.error)) {
-    return { disponible: false, empresa: null, datos: [], participa: false };
+    return { disponible: false, empresa: null, datos: [], participa: false, build: null };
   }
   for (const [donde, r] of [
     ["mi_empresa", empresa],
@@ -244,9 +285,11 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
     if (r.error) console.error(`Supabase (${donde}): ${r.error.message}`);
   }
   const filaEvento = (evento.data as Array<{ participa: boolean }> | null)?.[0];
+  const miEmpresa = ((empresa.data as MiEmpresa[] | null) ?? [])[0] ?? null;
   return {
     disponible: true,
-    empresa: ((empresa.data as MiEmpresa[] | null) ?? [])[0] ?? null,
+    build: miEmpresa ? await leerBuild(supabase, miEmpresa.id) : null,
+    empresa: miEmpresa,
     datos: (datos.data as DatoEmpresa[] | null) ?? [],
     participa: !!filaEvento?.participa,
   };

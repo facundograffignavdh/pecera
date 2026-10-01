@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { observarRevelar } from "@/lib/revelar";
 
 /**
  * Toda la capa de movimiento de la landing, sobre atributos del HTML:
@@ -31,7 +32,6 @@ function contar(el: HTMLElement) {
 
 export default function Movimiento({ scroller }: { scroller: string }) {
   useEffect(() => {
-    const raiz = document.documentElement;
     const contenedor = document.getElementById(scroller);
     const conMovimiento = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const conMouse = window.matchMedia("(hover: hover)").matches;
@@ -45,31 +45,12 @@ export default function Movimiento({ scroller }: { scroller: string }) {
       limpiar.push(() => el.removeEventListener(tipo, fn));
     };
 
-    // Entradas al hacer scroll. Lo que ya está en pantalla se marca antes de
-    // esconder nada, así no parpadea.
-    const mostrar = (el: HTMLElement) => {
-      el.dataset.visible = "";
-      if (conMovimiento) el.querySelectorAll<HTMLElement>("[data-contar]").forEach(contar);
-    };
-    const bloques = Array.from(document.querySelectorAll<HTMLElement>("[data-revelar]"));
-    const limite = window.innerHeight * 0.92;
-    for (const el of bloques) if (el.getBoundingClientRect().top < limite) mostrar(el);
-    raiz.dataset.revelar = "";
-    const observer = new IntersectionObserver(
-      (entradas) => {
-        for (const e of entradas) {
-          if (!e.isIntersecting) continue;
-          mostrar(e.target as HTMLElement);
-          observer.unobserve(e.target);
-        }
-      },
-      { rootMargin: "0px 0px -8% 0px" }
+    // Entradas al hacer scroll; los números cuentan al revelarse su bloque.
+    limpiar.push(
+      observarRevelar((el) => {
+        if (conMovimiento) el.querySelectorAll<HTMLElement>("[data-contar]").forEach(contar);
+      })
     );
-    for (const el of bloques) if (!("visible" in el.dataset)) observer.observe(el);
-    limpiar.push(() => {
-      observer.disconnect();
-      delete raiz.dataset.revelar;
-    });
 
     // Barra de progreso, burbuja para volver arriba y parallax del hero.
     const barra = document.getElementById("progreso");

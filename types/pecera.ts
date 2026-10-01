@@ -83,6 +83,8 @@ export type ItemFeed = {
   perfil: Perfil;
   /** Piques del pitch según el último ISR; el cliente lo refresca al montar. */
   piques: number;
+  /** Hito en curso de su empresa (Build in Public), si hay. */
+  construyendo?: { titulo: string; progreso: number | null; etapa: string | null } | null;
 };
 
 /** Vistas y piques de un pitch (solo agregados), para el perfil. */

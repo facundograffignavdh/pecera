@@ -10,7 +10,8 @@ import { EtiquetasPerfil } from "@/components/Etiquetas";
 import GrillaPitches from "@/components/GrillaPitches";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
-import { getMetricasPerfil, getPerfil, getSlugs } from "@/lib/datos";
+import BuildPublico from "@/components/build/BuildPublico";
+import { getBuildEmpresa, getMetricasPerfil, getPerfil, getSlugs } from "@/lib/datos";
 import { cargo } from "@/lib/etiquetas";
 import { ROLES, TIPOS } from "@/lib/rol";
 
@@ -55,6 +56,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
 
   const { perfil, pitches } = datos;
   const rol = ROLES[perfil.rol];
+  const build = perfil.empresa_id ? await getBuildEmpresa(perfil.empresa_id) : null;
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
@@ -127,6 +129,21 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
             </p>
           )}
         </section>
+
+        {build && perfil.empresa && (build.hitos.length > 0 || build.avances.length > 0) && (
+          <section aria-labelledby="build-titulo" className="mt-7">
+            <h2 id="build-titulo" className={SUBTITULO}>
+              Build in Public
+            </h2>
+            <BuildPublico
+              hitos={build.hitos}
+              avances={build.avances}
+              ahora={new Date()}
+              completo={false}
+              hrefEmpresa={`/e/${perfil.empresa.slug}`}
+            />
+          </section>
+        )}
 
         <CanalesPerfil perfil={perfil} />
 

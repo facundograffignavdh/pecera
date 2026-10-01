@@ -360,6 +360,8 @@ export default function Reel({
 
           <EtiquetasReel perfil={perfil} />
 
+          {item.construyendo && <Construyendo hito={item.construyendo} activo={activo} />}
+
           {/* La insignia va pegada a la descripción: se reconoce el formato al pasar. */}
           <p className="mt-3 max-w-prose text-sm leading-relaxed text-marfil/90">
             <InsigniaPitch grande activa={activo} className="mr-2 align-[0.1em]" />
@@ -379,6 +381,35 @@ export default function Reel({
 }
 
 type Corazon = { id: number; x: number; y: number; giro: number };
+
+/**
+ * Build in Public en el reel: el hito en curso de su empresa, con la barra del
+ * progreso que cargó el equipo. Ámbar, para no confundirse con la insignia del Pitch.
+ */
+function Construyendo({ hito, activo }: { hito: NonNullable<ItemFeed["construyendo"]>; activo: boolean }) {
+  return (
+    <p className="mt-2.5 flex min-w-0 items-center gap-2 text-xs text-marfil">
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-tinta/60 px-2 py-1 font-semibold uppercase tracking-wide">
+        <span aria-hidden className={`size-1.5 rounded-full bg-obra ${activo ? "punto-vivo" : ""}`} />
+        Construyendo
+      </span>
+      <span className="truncate font-medium">{hito.titulo}</span>
+      {hito.progreso !== null && (
+        <span className="flex shrink-0 items-center gap-1.5 tabular-nums">
+          <span aria-hidden className="h-1 w-10 overflow-hidden rounded-full bg-marfil/25">
+            {activo && (
+              <span
+                className="barra-progreso block h-full rounded-full bg-obra"
+                style={{ "--p": hito.progreso / 100 } as CSSProperties}
+              />
+            )}
+          </span>
+          {hito.progreso}%
+        </span>
+      )}
+    </p>
+  );
+}
 
 /** 0 muestra el nombre del gesto; desde 1000, "1,2 mil". */
 function formatoPiques(n: number): string {

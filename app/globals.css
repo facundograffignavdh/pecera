@@ -11,6 +11,10 @@
      Siempre de fondo con texto Tinta (11:1); nunca como color de texto. */
   --color-celeste: #8fd3f4;
   --color-celeste-suave: #dcf1fb;
+  /* Ámbar "obra" de Build in Public: fondo con texto Tinta (10:1) o acento sobre
+     video; como texto sobre Marfil se usa t-ocre. */
+  --color-obra: #f2c45f;
+  --color-obra-suave: #f8ebcb;
 
   /* Tonos de etiquetas (cargos, especialidades): fondo suave + texto fuerte, AA
      sobre marfil y sobre video. Se usan solo desde lib/etiquetas.ts. */
@@ -99,6 +103,49 @@ video {
 }
 @keyframes brillo-insignia {
   to { transform: translateX(120%); }
+}
+
+/* Contadores: el número sube de 0 a --valor al aparecer, sin JS (@property). Donde
+   no hay soporte se ve el número final. El texto real va aparte en sr-only. */
+@property --n {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+@keyframes contar {
+  from { --n: 0; }
+}
+.contador {
+  --n: var(--valor, 0);
+  counter-reset: n var(--n);
+  animation: contar 1200ms var(--ease-pecera) both;
+  animation-delay: var(--retraso, 150ms);
+  font-variant-numeric: tabular-nums;
+}
+.contador::after {
+  content: counter(n);
+}
+
+/* Llama de la racha: titila apenas, como una vela. Quieta con reducir movimiento. */
+@keyframes titilar {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(1.04, 0.97) rotate(-2deg); }
+  60% { transform: scale(0.97, 1.04) rotate(1.5deg); }
+}
+.llama {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: titilar 2.4s ease-in-out infinite;
+}
+
+/* Hito en curso: un punto que late (está pasando ahora). */
+@keyframes latir-punto {
+  0% { box-shadow: 0 0 0 0 rgb(242 196 95 / 0.7); }
+  70% { box-shadow: 0 0 0 8px rgb(242 196 95 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(242 196 95 / 0); }
+}
+.punto-vivo {
+  animation: latir-punto 2s ease-out infinite;
 }
 
 /* Entrada de elementos de estado (un check, un hito nuevo): pop chico. */
@@ -330,6 +377,10 @@ video {
 html[data-revelar] [data-revelar]:not([data-visible]) {
   opacity: 0;
   transform: translateY(14px);
+}
+/* Barras y contadores de un bloque esperan a que el bloque aparezca. */
+html[data-revelar] [data-revelar]:not([data-visible]) :is(.barra-progreso, .contador) {
+  animation-play-state: paused;
 }
 
 /* Títulos palabra por palabra, al revelarse su bloque. */
@@ -597,6 +648,8 @@ html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
   /* La regla general los dejaría en el último frame, corridos: mejor quietos.
      La escena queda en reposo: pez junto al anzuelo, caña recta. */
   .latido,
+  .llama,
+  .punto-vivo,
   .escena-pique *,
   .texto-pique,
   .popup-tarjeta,
