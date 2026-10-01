@@ -1,4 +1,5 @@
 import Link from "next/link";
+import "@/components/landing/titular.css";
 import BotonForm from "@/components/landing/BotonForm";
 import EcosistemaVivo from "@/components/landing/EcosistemaVivo";
 import { EVENTO_ACTUAL, momentoEvento } from "@/lib/eventos";
@@ -75,7 +76,15 @@ export default function Hero() {
             id="hero-titulo"
             className="mt-6 font-display text-[2.7rem] font-semibold leading-[1.02] tracking-[-0.02em] text-balance sm:text-6xl lg:text-[4.4rem]"
           >
-            Donde el ecosistema emprendedor <em className="font-semibold text-naranja">se encuentra</em>.
+            <span className="sr-only">Construí, fondeá e invertí en startups.</span>
+            <span aria-hidden>
+              <span className="rota-palabras text-naranja">
+                <span>Construí</span>
+                <span>Fondeá</span>
+                <span>Invertí en</span>
+              </span>{" "}
+              startups
+            </span>
           </h1>
           <p
             className="entrada mt-6 max-w-[34rem] text-lg leading-relaxed text-marfil/90 text-pretty sm:text-xl"

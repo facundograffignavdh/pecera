@@ -1,0 +1,26 @@
+/* Titular del hero: Construí / Fondeá / Invertí en, una palabra a la vez en el mismo
+   lugar (rejilla de una celda: el ancho lo da la más larga, sin saltos de layout).
+   Ciclo de 9 s, 3 s por palabra; los delays negativos arrancan cada una en su turno,
+   así la primera ya se ve en el primer pintado. Solo transform y opacity. */
+.rota-palabras {
+  display: inline-grid;
+  justify-items: start;
+}
+.rota-palabras > span {
+  grid-area: 1 / 1;
+  opacity: 0;
+  animation: palabra-rota 9s var(--ease-pecera) infinite;
+}
+.rota-palabras > span:nth-child(1) { animation-delay: 0s; }
+.rota-palabras > span:nth-child(2) { animation-delay: -6s; }
+.rota-palabras > span:nth-child(3) { animation-delay: -3s; }
+@keyframes palabra-rota {
+  0%, 30% { opacity: 1; transform: translateY(0); }
+  34% { opacity: 0; transform: translateY(-0.35em); }
+  35%, 95% { opacity: 0; transform: translateY(0.35em); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rota-palabras > span { animation: none; }
+  .rota-palabras > span:first-child { opacity: 1; }
+}
