@@ -14,7 +14,7 @@ import { BarraEtapa, Etiqueta } from "@/components/Etiquetas";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { conProtocolo, hrefInstagram } from "@/lib/contacto";
-import { getEmpresa } from "@/lib/datos";
+import { getDocumentosPublicos, getEmpresa } from "@/lib/datos";
 import { cargo, labelIndustria, labelRonda } from "@/lib/etiquetas";
 import { defDato } from "@/lib/transparencia";
 
@@ -58,7 +58,8 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
   const [principal, ...otros] = [...pitches].sort((a, b) => b.orden - a.orden);
   const hayBuild = hitos.length > 0 || avances.length > 0;
   const hayRonda = !!ronda || datos.datos.some((d) => defDato(d.clave)?.categoria === "Ronda");
-  const hayTransparencia = datos.datos.some((d) => defDato(d.clave)?.categoria !== "Ronda");
+  const documentos = await getDocumentosPublicos(empresa.id);
+  const hayTransparencia = documentos.length > 0 || datos.datos.some((d) => defDato(d.clave)?.categoria !== "Ronda");
 
   const canales = [
     empresa.web && { label: "Sitio web", href: conProtocolo(empresa.web) },
@@ -221,6 +222,20 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
             </h2>
             <p className="mt-1 text-sm text-tinta/70">Datos que el equipo eligió compartir. Pecera no los verifica.</p>
             <TransparenciaPublica datos={datos.datos} />
+            {documentos.length > 0 && (
+              <Link
+                href={`/e/${empresa.slug}/dataroom`}
+                className="mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-tinta px-4 py-3 text-marfil transition-opacity duration-200 ease-pecera hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+              >
+                <span>
+                  <span className="block font-medium">Ver el Dataroom</span>
+                  <span className="block text-sm text-marfil/75">
+                    {documentos.length} {documentos.length === 1 ? "documento transparente" : "documentos transparentes"}
+                  </span>
+                </span>
+                <span aria-hidden>&rarr;</span>
+              </Link>
+            )}
           </section>
         )}
 

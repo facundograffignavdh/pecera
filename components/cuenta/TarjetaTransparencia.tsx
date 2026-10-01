@@ -142,7 +142,7 @@ function FilaDato({
             aria-hidden
             className="relative h-6 w-10 shrink-0 rounded-full bg-tinta/20 transition-colors duration-200 ease-pecera peer-checked:bg-t-verde peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-arcilla after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-marfil after:transition-transform after:duration-200 after:ease-pecera peer-checked:after:translate-x-4"
           />
-          {visible ? "Compartido en la página" : "Privado"}
+          {visible ? "Transparente" : "Privado"}
         </label>
         <button
           type="submit"

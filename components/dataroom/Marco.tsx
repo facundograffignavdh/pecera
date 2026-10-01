@@ -20,9 +20,11 @@ export default function Marco({
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="cuenta" />
       <div className={`mx-auto w-full ${ancho} px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]`}>
-        <EnlaceVolver href={volver} texto={textoVolver} />
+        <div className="no-imprimir">
+          <EnlaceVolver href={volver} texto={textoVolver} />
+        </div>
         {children}
-        <PieLegal tono="claro" className="mt-10 pb-8" />
+        <PieLegal tono="claro" className="no-imprimir mt-10 pb-8" />
       </div>
     </main>
   );

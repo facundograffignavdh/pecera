@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { Avance, Hito, HitoActual } from "@/lib/build";
+import type { Documento } from "@/lib/dataroom";
 import { urlMedia } from "@/lib/media";
 import type { Edicion, Newsletter } from "@/lib/newsletter";
 import type { Producto } from "@/lib/producto";
@@ -170,6 +171,26 @@ export async function getMetricasPerfil(slug: string): Promise<Metricas> {
   const filas = (data ?? []) as Array<{ pitch_id: string; vistas: number; piques: number }>;
   return Object.fromEntries(filas.map((f) => [f.pitch_id, { vistas: f.vistas, piques: f.piques }]));
 }
+
+/**
+ * Documentos transparentes del Dataroom de una empresa visible (la RLS ya filtra lo
+ * privado y lo archivado; acá queda explícito). No lanza: sin la migración, vacío.
+ */
+export const getDocumentosPublicos = cache(async (empresaId: string): Promise<Documento[]> => {
+  const { data, error } = await supabase
+    .from("empresa_documentos")
+    .select("id, plantilla, categoria, tipo, titulo, campos, cuerpo, url, completo, visible, archivado, updated_at")
+    .eq("empresa_id", empresaId)
+    .eq("visible", true)
+    .eq("archivado", false)
+    .order("updated_at", { ascending: false })
+    .overrideTypes<Documento[], { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getDocumentosPublicos): ${error.message}`);
+    return [];
+  }
+  return data ?? [];
+});
 
 export type DatosNewsletter = { newsletter: Newsletter; ediciones: Edicion[]; suscriptores: number };
 

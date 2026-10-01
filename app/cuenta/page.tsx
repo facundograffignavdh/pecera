@@ -219,6 +219,20 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     )}
                   />
                 )}
+                {extras.empresa && extras.build && (
+                  <Link
+                    href="/cuenta/dataroom"
+                    className="flex min-h-16 items-center justify-between gap-3 rounded-3xl bg-tinta px-5 py-4 text-marfil transition-opacity duration-200 ease-pecera hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+                  >
+                    <span>
+                      <span className="block font-display text-xl font-semibold">Dataroom</span>
+                      <span className="block text-sm text-marfil/75">
+                        Templates, documentos y métricas, ordenados para un inversor. Exportalo en PDF.
+                      </span>
+                    </span>
+                    <span aria-hidden>&rarr;</span>
+                  </Link>
+                )}
                 {extras.empresa && (
                   <TarjetaTransparencia datos={extras.datos} slugEmpresa={extras.empresa.slug} />
                 )}
