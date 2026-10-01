@@ -2,13 +2,20 @@ import {
   APORTES,
   CARGOS,
   DEDICACIONES,
+  EDUCACION_MAX,
   ESPECIALIDADES,
   ETAPAS,
+  EXPERIENCIA_MAX,
   INDUSTRIAS,
   MAX_ESPECIALIDADES,
   MAX_INDUSTRIAS_INTERES,
   MAX_INDUSTRIAS_PROYECTO,
+  MAX_NECESIDADES,
+  MAX_SKILLS,
+  NECESIDADES,
   NOTA_COFUNDADOR_MAX,
+  SKILL_MAX,
+  UBICACION_MAX,
   RONDAS,
   RONDAS_INTERES,
   TICKETS,
@@ -137,10 +144,20 @@ export type CampoSimple =
   | "ticket"
   | "cofundador_aporta"
   | "cofundador_dedicacion"
-  | "cofundador_nota";
+  | "cofundador_nota"
+  | "ubicacion"
+  | "experiencia"
+  | "educacion";
 
-/** Campos de varias opciones (chips). */
-export type CampoLista = "industrias" | "especialidades" | "rondas_interes" | "cofundador_busca";
+/** Campos de varias opciones (chips o tags). */
+export type CampoLista =
+  | "industrias"
+  | "especialidades"
+  | "rondas_interes"
+  | "cofundador_busca"
+  | "skills"
+  | "busca"
+  | "ofrece";
 
 export type CampoPerfil = CampoSimple | CampoLista | "slug" | "consentimiento" | "busca_cofundador";
 
@@ -161,12 +178,18 @@ export const CAMPOS_SIMPLES: CampoSimple[] = [
   "cofundador_aporta",
   "cofundador_dedicacion",
   "cofundador_nota",
+  "ubicacion",
+  "experiencia",
+  "educacion",
 ];
 export const CAMPOS_LISTA: CampoLista[] = [
   "industrias",
   "especialidades",
   "rondas_interes",
   "cofundador_busca",
+  "skills",
+  "busca",
+  "ofrece",
 ];
 
 export type EntradaPerfil = Partial<Record<CampoSimple, string>> &
@@ -205,7 +228,17 @@ export type DatosCofundador = {
   cofundador_nota: string | null;
 };
 
-export type DatosEditables = DatosBase & DatosRol & DatosCofundador;
+/** Perfil profesional y preferencias (feria_pro). Todo opcional. */
+export type DatosProfesionales = {
+  ubicacion: string | null;
+  experiencia: string | null;
+  educacion: string | null;
+  skills: string[];
+  busca: string[];
+  ofrece: string[];
+};
+
+export type DatosEditables = DatosBase & DatosRol & DatosCofundador & DatosProfesionales;
 
 /**
  * WhatsApp: Argentina se guarda como 10 dígitos (área + número, sin 0 ni 15);
@@ -278,6 +311,7 @@ export function validarPerfil(entrada: EntradaPerfil): { datos: DatosEditables; 
 
   const rolDatos = validarRol(rol, entrada, errores);
   const cofundador = validarCofundador(entrada, errores);
+  const profesionales = validarProfesionales(entrada, errores);
 
   return {
     datos: {
@@ -292,8 +326,46 @@ export function validarPerfil(entrada: EntradaPerfil): { datos: DatosEditables; 
       web,
       ...rolDatos,
       ...cofundador,
+      ...profesionales,
     },
     errores,
+  };
+}
+
+/** Ubicación, experiencia, educación, skills y qué busca/ofrece: todo opcional. */
+function validarProfesionales(entrada: EntradaPerfil, errores: Errores): DatosProfesionales {
+  const texto = (campo: CampoSimple) => (entrada[campo] ?? "").trim();
+  const ubicacion = texto("ubicacion");
+  const experiencia = texto("experiencia");
+  const educacion = texto("educacion");
+  if (ubicacion.length > UBICACION_MAX) errores.ubicacion = `Hasta ${UBICACION_MAX} caracteres.`;
+  if (experiencia.length > EXPERIENCIA_MAX) errores.experiencia = `Hasta ${EXPERIENCIA_MAX} caracteres.`;
+  if (educacion.length > EDUCACION_MAX) errores.educacion = `Hasta ${EDUCACION_MAX} caracteres.`;
+
+  // Skills: sin repetidos (sin importar mayúsculas), cortas y hasta 10.
+  const vistas = new Set<string>();
+  const skills: string[] = [];
+  for (const crudo of entrada.skills ?? []) {
+    const skill = crudo.trim().replace(/\s+/g, " ").slice(0, SKILL_MAX);
+    const clave = skill.toLowerCase();
+    if (!skill || vistas.has(clave)) continue;
+    vistas.add(clave);
+    skills.push(skill);
+  }
+  if (skills.length > MAX_SKILLS) errores.skills = `Hasta ${MAX_SKILLS} skills.`;
+
+  const busca = limpiarLista(entrada.busca, NECESIDADES);
+  const ofrece = limpiarLista(entrada.ofrece, NECESIDADES);
+  if (busca.length > MAX_NECESIDADES) errores.busca = `Hasta ${MAX_NECESIDADES}.`;
+  if (ofrece.length > MAX_NECESIDADES) errores.ofrece = `Hasta ${MAX_NECESIDADES}.`;
+
+  return {
+    ubicacion: ubicacion || null,
+    experiencia: experiencia || null,
+    educacion: educacion || null,
+    skills: skills.slice(0, MAX_SKILLS),
+    busca,
+    ofrece,
   };
 }
 

@@ -174,6 +174,31 @@ export const DEDICACIONES = [
 export const NOTA_COFUNDADOR_MAX = 200;
 
 // ---------------------------------------------------------------------------
+// Qué busca y qué ofrece cada persona (todos los roles). Espejo de
+// perfiles_busca_valido / perfiles_ofrece_valido. Hasta 6 de cada uno.
+// ---------------------------------------------------------------------------
+export const NECESIDADES = [
+  { valor: "inversion", label: "Inversión", tono: "verde" },
+  { valor: "cofundador", label: "Cofundador/a", tono: "arcilla" },
+  { valor: "clientes", label: "Clientes", tono: "arcilla" },
+  { valor: "mentoria", label: "Mentoría", tono: "petroleo" },
+  { valor: "talento", label: "Talento y equipo", tono: "petroleo" },
+  { valor: "empleo", label: "Trabajo", tono: "petroleo" },
+  { valor: "alianzas", label: "Alianzas", tono: "ocre" },
+  { valor: "proveedores", label: "Proveedores", tono: "ocre" },
+  { valor: "networking", label: "Networking", tono: "ciruela" },
+  { valor: "prensa", label: "Prensa y difusión", tono: "ciruela" },
+] as const satisfies ReadonlyArray<Opcion & { tono: Tono }>;
+export const MAX_NECESIDADES = 6;
+
+/** Skills: texto libre corto, como en LinkedIn. */
+export const MAX_SKILLS = 10;
+export const SKILL_MAX = 30;
+export const UBICACION_MAX = 80;
+export const EXPERIENCIA_MAX = 400;
+export const EDUCACION_MAX = 200;
+
+// ---------------------------------------------------------------------------
 // Portafolio (los tres roles). Espejo de portafolio_tipo_check.
 // ---------------------------------------------------------------------------
 export const TIPOS_PORTAFOLIO = [
@@ -203,6 +228,7 @@ const M_ESPECIALIDADES = mapa(ESPECIALIDADES);
 const M_APORTES = mapa(APORTES);
 const M_DEDICACIONES = mapa(DEDICACIONES);
 const M_PORTAFOLIO = mapa(TIPOS_PORTAFOLIO);
+const M_NECESIDADES = mapa(NECESIDADES);
 
 export const labelEtapa = (v?: string | null) => (v && M_ETAPAS[v]?.label) || null;
 export const labelRonda = (v?: string | null) => (v && M_RONDAS[v]?.label) || null;
@@ -230,6 +256,11 @@ export function aporte(v?: string | null) {
 }
 
 export const labelDedicacion = (v?: string | null) => (v && M_DEDICACIONES[v]?.label) || null;
+
+export function necesidad(v: string) {
+  const n = M_NECESIDADES[v];
+  return n ? { label: n.label, clase: TONO[n.tono] } : { label: v, clase: TONO.tierra };
+}
 
 export function tipoPortafolio(v: string) {
   const t = M_PORTAFOLIO[v];

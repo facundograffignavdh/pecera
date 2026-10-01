@@ -174,6 +174,12 @@ function DatosEmpresa({ empresa }: { empresa: MiEmpresa }) {
         <CamposEmpresa inicial={empresa} conSlug={false} />
         <label className="flex flex-col gap-1.5 text-sm font-medium text-tinta">
           <span>
+            Ubicación <span className="font-normal text-tinta/55">(opcional)</span>
+          </span>
+          <input name="ubicacion" maxLength={80} defaultValue={empresa.ubicacion ?? ""} placeholder="Córdoba, Argentina" className={INPUT} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-medium text-tinta">
+          <span>
             Web <span className="font-normal text-tinta/55">(opcional)</span>
           </span>
           <input name="web" defaultValue={empresa.web ?? ""} placeholder="tuempresa.com.ar" className={INPUT} />

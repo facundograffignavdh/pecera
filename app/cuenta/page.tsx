@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 const COLUMNAS_BASE =
   "id, slug, nombre, tipo, rol, descripcion, avatar_url, whatsapp, email, linkedin, instagram, web, publicado, oculto";
 const COLUMNAS_LISTA = `${COLUMNAS_BASE}, etapa, ronda, industrias, cargo, especialidades, ticket, rondas_interes, empresa_id`;
-const COLUMNAS = `${COLUMNAS_LISTA}, busca_cofundador, cofundador_aporta, cofundador_busca, cofundador_dedicacion, cofundador_nota`;
+const COLUMNAS = `${COLUMNAS_LISTA}, busca_cofundador, cofundador_aporta, cofundador_busca, cofundador_dedicacion, cofundador_nota, ubicacion, experiencia, educacion, skills, busca, ofrece`;
 
 const BOTON_PRIMARIO =
   "inline-flex min-h-12 items-center justify-center rounded-full bg-tinta px-6 font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla";
@@ -159,7 +159,12 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               claseBoton={BOTON_PRIMARIO}
             />
 
-            <FormPerfil key={perfil?.id ?? "nuevo"} perfil={perfil} rolInicial={rolInicial} />
+            <FormPerfil
+              key={perfil?.id ?? "nuevo"}
+              perfil={perfil}
+              rolInicial={rolInicial}
+              empresa={extras?.empresa ? { slug: extras.empresa.slug, nombre: extras.empresa.nombre } : null}
+            />
 
             {perfil && extras?.disponible && (
               <>

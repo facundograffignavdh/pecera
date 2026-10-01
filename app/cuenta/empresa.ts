@@ -58,6 +58,7 @@ function datosEmpresa(formData: FormData) {
     industrias,
     etapa: esValor(ETAPAS, etapa) ? etapa : "",
     ronda: esValor(RONDAS, ronda) ? ronda : "",
+    ubicacion: texto(formData, "ubicacion"),
   };
 }
 
@@ -70,6 +71,7 @@ function validarEmpresa(d: ReturnType<typeof datosEmpresa>): string | null {
     return `Elegí hasta ${MAX_INDUSTRIAS_PROYECTO} industrias.`;
   }
   if (d.linkedin && !/linkedin\.com/i.test(d.linkedin)) return "El LinkedIn tiene que ser de linkedin.com.";
+  if (d.ubicacion.length > 80) return "La ubicación va hasta 80 caracteres.";
   return null;
 }
 
@@ -126,7 +128,7 @@ export async function editarEmpresa(_previo: Resultado, formData: FormData): Pro
   const invalido = validarEmpresa(d);
   if (invalido) return { ok: false, mensaje: invalido };
 
-  const { error } = await supabase.rpc("editar_empresa", {
+  const base = {
     p_nombre: d.nombre,
     p_descripcion: d.descripcion,
     p_web: d.web || null,
@@ -135,7 +137,10 @@ export async function editarEmpresa(_previo: Resultado, formData: FormData): Pro
     p_industrias: d.industrias,
     p_etapa: d.etapa || null,
     p_ronda: d.ronda || null,
-  });
+  };
+  // Con feria_pro, también la ubicación; sin ella, la función de siempre.
+  let { error } = await supabase.rpc("editar_empresa_v2", { ...base, p_ubicacion: d.ubicacion || null });
+  if (faltaMigracion(error)) ({ error } = await supabase.rpc("editar_empresa", base));
   if (error) return traducir(error, "editar_empresa");
 
   refrescar(texto(formData, "slug_actual") || undefined);

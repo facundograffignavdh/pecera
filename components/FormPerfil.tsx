@@ -1,21 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
-import { type ReactNode, useActionState, useEffect, useRef, useState } from "react";
-import { type EstadoGuardar, guardarPerfil, subirFoto } from "@/app/cuenta/acciones";
+import { type ReactNode, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { type EstadoGuardar, guardarPerfil } from "@/app/cuenta/acciones";
 import Avatar from "@/components/Avatar";
 import { ChipsMultiple, ChipsUnico, SelectorEtapa } from "@/components/Chips";
+import EditorFoto from "@/components/EditorFoto";
+import EntradaTags from "@/components/EntradaTags";
 import { EtiquetasPerfil } from "@/components/Etiquetas";
 import Info from "@/components/Info";
 import TelefonoPais from "@/components/TelefonoPais";
+import { completitud } from "@/lib/completitud";
 import {
   AYUDA_TIPO,
+  CAMPOS_LISTA,
+  CAMPOS_SIMPLES,
   CONSENTIMIENTO,
   type CampoLista,
   type CampoPerfil,
   type CampoSimple,
   DESCRIPCION_MAX,
   DESCRIPCION_ROL,
+  type EntradaPerfil,
   NOMBRE_MAX,
   TIPOS_POR_ROL,
   slugDesdeNombre,
@@ -27,21 +34,27 @@ import {
   APORTES,
   CARGOS,
   DEDICACIONES,
+  EDUCACION_MAX,
   ESPECIALIDADES,
   ETAPAS,
+  EXPERIENCIA_MAX,
   INDUSTRIAS,
   MAX_ESPECIALIDADES,
   MAX_INDUSTRIAS_INTERES,
   MAX_INDUSTRIAS_PROYECTO,
+  MAX_NECESIDADES,
+  MAX_SKILLS,
+  NECESIDADES,
   NOTA_COFUNDADOR_MAX,
   RONDAS,
   RONDAS_INTERES,
+  SKILL_MAX,
   TICKETS,
+  UBICACION_MAX,
   conTono,
 } from "@/lib/etiquetas";
-import { prepararImagen } from "@/lib/imagen";
 import { ROLES, TIPOS } from "@/lib/rol";
-import type { Perfil, Rol } from "@/types/pecera";
+import type { EmpresaResumen, Perfil, Rol } from "@/types/pecera";
 
 export type PerfilPropio = Perfil & { oculto: boolean };
 
@@ -50,11 +63,16 @@ type Listas = Record<CampoLista, string[]>;
 
 /** Sin respuesta en este tiempo, se ofrece recargar. */
 const ESPERA_MAXIMA_MS = 20_000;
+/** Al editar, se guarda solo después de esta pausa sin cambios. */
+const PAUSA_AUTOGUARDADO_MS = 1500;
+const CLAVE_BORRADOR = "pecera:borrador-perfil";
 
 const OPCIONES_INDUSTRIAS = conTono(INDUSTRIAS);
 const OPCIONES_CARGOS = conTono(CARGOS);
 const OPCIONES_ESPECIALIDADES = conTono(ESPECIALIDADES);
 const OPCIONES_APORTES = conTono(APORTES);
+const OPCIONES_NECESIDADES = conTono(NECESIDADES);
+const SUGERENCIAS_SKILLS = ["Ventas B2B", "Producto", "Marketing digital", "Finanzas", "Desarrollo web", "IA", "Diseño UX", "Liderazgo"];
 
 const CLASE_INPUT =
   "w-full rounded-xl border bg-marfil px-3.5 py-2.5 text-base text-tinta placeholder:text-tinta/50 transition-shadow duration-200 ease-pecera focus:outline-2 focus:outline-offset-2 focus:outline-arcilla";
@@ -64,7 +82,7 @@ function claseInput(error?: string) {
 }
 
 const BOTON =
-  "boton inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-60";
+  "boton inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-60";
 
 // ---------------------------------------------------------------------------
 // Piezas
@@ -126,48 +144,104 @@ function describir(id: string, error?: string, ayuda = false) {
 // Pasos
 // ---------------------------------------------------------------------------
 
-type Paso = { id: string; titulo: string; bajada: string; campos: CampoPerfil[] };
+type Paso = { id: string; titulo: string; corto: string; bajada: string; campos: CampoPerfil[] };
 
 function pasosPara(rol: Rol | null): Paso[] {
   const propio: Paso =
     rol === "inversor"
       ? {
-          id: "tesis",
-          titulo: "Tu tesis",
+          id: "propio",
+          titulo: "Tu tesis de inversión",
+          corto: "Tesis",
           bajada: "Así te llegan los proyectos que de verdad mirás.",
           campos: ["rondas_interes", "ticket", "industrias"],
         }
       : rol === "aliado"
         ? {
-            id: "especialidad",
+            id: "propio",
             titulo: "Tu especialidad",
+            corto: "Especialidad",
             bajada: "Los proyectos te buscan por lo que sabés hacer.",
-            campos: ["especialidades", "industrias", "busca_cofundador", "cofundador_aporta", "cofundador_busca", "cofundador_nota"],
+            campos: ["especialidades", "industrias"],
           }
         : {
-            id: "proyecto",
-            titulo: "Tu proyecto",
+            id: "propio",
+            titulo: "Tu emprendimiento",
+            corto: "Emprendimiento",
             bajada: "Con esto los inversores y aliados te encuentran por etapa e industria.",
-            campos: ["etapa", "industrias", "ronda", "cargo", "busca_cofundador", "cofundador_aporta", "cofundador_busca", "cofundador_nota"],
+            campos: ["etapa", "industrias", "ronda"],
           };
   return [
-    { id: "rol", titulo: "¿Cómo entrás?", bajada: "Elegí tu rol en el ecosistema.", campos: ["rol", "tipo"] },
     {
-      id: "perfil",
-      titulo: "Tu tarjeta",
-      bajada: "Es lo que ve quien toca tu pitch o tu tarjeta NFC.",
-      campos: ["nombre", "slug", "descripcion"],
+      id: "basico",
+      titulo: "Lo básico",
+      corto: "Básico",
+      bajada: "Es lo primero que ve quien toca tu tarjeta NFC.",
+      campos: ["rol", "tipo", "nombre", "slug", "ubicacion", "descripcion"],
+    },
+    {
+      id: "profesional",
+      titulo: "Lo profesional",
+      corto: "Profesional",
+      bajada: "Tu empresa, tu trayectoria y lo que sabés hacer. Todo opcional.",
+      campos: ["cargo", "experiencia", "educacion", "skills"],
+    },
+    {
+      id: "contacto",
+      titulo: "Redes y contacto",
+      corto: "Contacto",
+      bajada: "Todo es opcional. Con WhatsApp o email alcanza para que te escriban.",
+      campos: ["whatsapp", "email", "linkedin", "instagram", "web"],
     },
     propio,
     {
-      id: "contacto",
-      titulo: "Cómo te escriben",
-      bajada: "Todo es opcional. Con WhatsApp o email alcanza para empezar.",
-      campos: ["whatsapp", "email", "linkedin", "instagram", "web"],
+      id: "preferencias",
+      titulo: "Qué buscás y qué ofrecés",
+      corto: "Preferencias",
+      bajada: "Es lo que usamos para conectarte con quien te sirve.",
+      campos: ["busca", "ofrece", "busca_cofundador", "cofundador_aporta", "cofundador_busca", "cofundador_nota"],
     },
-    { id: "listo", titulo: "Revisá y listo", bajada: "Así se va a ver tu tarjeta.", campos: ["consentimiento"] },
+    {
+      id: "final",
+      titulo: "Revisá y guardá",
+      corto: "Final",
+      bajada: "Así se va a ver tu tarjeta.",
+      campos: ["consentimiento"],
+    },
   ];
 }
+
+/** Lo que trae el FormData, igual que en el servidor. */
+function entradaDesde(datos: FormData): EntradaPerfil {
+  return {
+    ...Object.fromEntries(CAMPOS_SIMPLES.map((c) => [c, String(datos.get(c) ?? "")])),
+    ...Object.fromEntries(CAMPOS_LISTA.map((c) => [c, datos.getAll(c).map(String)])),
+    busca_cofundador: datos.get("busca_cofundador") === "on",
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Borrador (perfil nuevo): queda en el celular para seguir después
+// ---------------------------------------------------------------------------
+
+type Borrador = { valores: Valores; listas: Listas; buscaCofundador: boolean; guardado: number };
+
+const sinCambios = () => () => {};
+function leerBorrador(): string | null {
+  try {
+    return localStorage.getItem(CLAVE_BORRADOR);
+  } catch {
+    return null;
+  }
+}
+
+type EstadoAutoguardado =
+  | { tipo: "quieto" }
+  | { tipo: "pendiente" }
+  | { tipo: "guardando" }
+  | { tipo: "ok"; en: number }
+  | { tipo: "revisar"; mensaje: string }
+  | { tipo: "error"; mensaje: string };
 
 // ---------------------------------------------------------------------------
 // Formulario
@@ -176,14 +250,18 @@ function pasosPara(rol: Rol | null): Paso[] {
 export default function FormPerfil({
   perfil,
   rolInicial,
+  empresa,
 }: {
   perfil: PerfilPropio | null;
   /** Desde la landing: el rol ya elegido. */
   rolInicial?: Rol;
+  /** La empresa del perfil, si tiene (paso Profesional). */
+  empresa?: EmpresaResumen | null;
 }) {
   const creando = perfil === null;
   const formRef = useRef<HTMLFormElement>(null);
   const tituloRef = useRef<HTMLHeadingElement>(null);
+  const temporizador = useRef<number | null>(null);
 
   const [valores, setValores] = useState<Valores>({
     nombre: perfil?.nombre ?? "",
@@ -202,39 +280,100 @@ export default function FormPerfil({
     cofundador_aporta: perfil?.cofundador_aporta ?? "",
     cofundador_dedicacion: perfil?.cofundador_dedicacion ?? "",
     cofundador_nota: perfil?.cofundador_nota ?? "",
+    ubicacion: perfil?.ubicacion ?? "",
+    experiencia: perfil?.experiencia ?? "",
+    educacion: perfil?.educacion ?? "",
   });
   const [listas, setListas] = useState<Listas>({
     industrias: perfil?.industrias ?? [],
     especialidades: perfil?.especialidades ?? [],
     rondas_interes: perfil?.rondas_interes ?? [],
     cofundador_busca: perfil?.cofundador_busca ?? [],
+    skills: perfil?.skills ?? [],
+    busca: perfil?.busca ?? [],
+    ofrece: perfil?.ofrece ?? [],
   });
   const [buscaCofundador, setBuscaCofundador] = useState(perfil?.busca_cofundador ?? false);
   const [slug, setSlug] = useState("");
   const [slugTocado, setSlugTocado] = useState(false);
   const [consentimiento, setConsentimiento] = useState(false);
   const [oculto, setOculto] = useState(perfil?.oculto ?? false);
-  const [foto, setFoto] = useState<{ blob: Blob; url: string } | null>(null);
-  const [avatarGuardado, setAvatarGuardado] = useState(perfil?.avatar_url ?? null);
-  const [estadoFoto, setEstadoFoto] = useState<{ subiendo: boolean; mensaje?: string; ok?: boolean }>({
-    subiendo: false,
-  });
+  const [foto, setFoto] = useState<{ url: string; blob: Blob | null } | null>(
+    perfil?.avatar_url ? { url: perfil.avatar_url, blob: null } : null
+  );
   const [tardando, setTardando] = useState(false);
-  const [paso, setPaso] = useState(creando && !rolInicial ? 0 : creando ? 1 : 0);
-  const [visitado, setVisitado] = useState(creando ? (rolInicial ? 1 : 0) : 4);
+  const [paso, setPaso] = useState(0);
+  const [visitado, setVisitado] = useState(creando ? 0 : 5);
   const [erroresPaso, setErroresPaso] = useState<Partial<Record<CampoPerfil, string>>>({});
+  const [autoguardado, setAutoguardado] = useState<EstadoAutoguardado>({ tipo: "quieto" });
+  const [ahora, setAhora] = useState(0);
+  const [borradorDescartado, setBorradorDescartado] = useState(false);
+
+  const borradorGuardado = useSyncExternalStore(sinCambios, leerBorrador, () => null);
+  const hayBorrador = creando && !!borradorGuardado && !borradorDescartado;
 
   const slugVisible = creando ? (slugTocado ? slug : slugDesdeNombre(valores.nombre)) : perfil.slug;
   const rol = (valores.rol || null) as Rol | null;
   const pasos = pasosPara(rol);
   const actual = pasos[paso];
   const ultimo = paso === pasos.length - 1;
+  const conCofundador = rol === "emprendedor" || rol === "aliado";
 
-  const entrada = () => ({ ...valores, ...listas, busca_cofundador: buscaCofundador });
+  const { porcentaje, items } = completitud({
+    rol,
+    foto: !!foto,
+    nombre: valores.nombre,
+    descripcion: valores.descripcion,
+    ubicacion: valores.ubicacion,
+    experiencia: valores.experiencia,
+    educacion: valores.educacion,
+    skills: listas.skills,
+    whatsapp: valores.whatsapp,
+    email: valores.email,
+    linkedin: valores.linkedin,
+    instagram: valores.instagram,
+    web: valores.web,
+    etapa: valores.etapa,
+    industrias: listas.industrias,
+    rondas_interes: listas.rondas_interes,
+    especialidades: listas.especialidades,
+    busca: listas.busca,
+    ofrece: listas.ofrece,
+  });
 
-  /** Mismas reglas que el servidor: los errores de un paso, o de todos. */
+  // Perfil nuevo: el borrador se guarda solo en el celular (salir y seguir después).
+  useEffect(() => {
+    if (!creando) return;
+    const espera = window.setTimeout(() => {
+      const vacio = !valores.nombre && !valores.descripcion && !valores.rol;
+      try {
+        if (vacio) return;
+        const borrador: Borrador = { valores, listas, buscaCofundador, guardado: Date.now() };
+        localStorage.setItem(CLAVE_BORRADOR, JSON.stringify(borrador));
+      } catch {
+        // Sin localStorage, no hay borrador: el form anda igual.
+      }
+    }, 600);
+    return () => clearTimeout(espera);
+  }, [creando, valores, listas, buscaCofundador]);
+
+  // "Guardado hace un momento" se actualiza solo.
+  useEffect(() => {
+    if (autoguardado.tipo !== "ok") return;
+    const reloj = window.setInterval(() => setAhora(Date.now()), 20_000);
+    return () => clearInterval(reloj);
+  }, [autoguardado]);
+
+  useEffect(
+    () => () => {
+      if (temporizador.current !== null) clearTimeout(temporizador.current);
+    },
+    []
+  );
+
+  /** Mismas reglas que el servidor: los errores de los pasos pedidos. */
   function erroresDe(indices: number[]) {
-    const { errores } = validarPerfil(entrada());
+    const { errores } = validarPerfil({ ...valores, ...listas, busca_cofundador: buscaCofundador });
     if (creando) {
       const errorSlug = validarSlug(slugVisible);
       if (errorSlug) errores.slug = errorSlug;
@@ -259,6 +398,40 @@ export default function FormPerfil({
     if (indice >= 0) irA(indice);
   }
 
+  /** Al editar: guarda solo, después de una pausa, si todo está bien. */
+  function programarAutoguardado() {
+    if (creando) return;
+    if (temporizador.current !== null) clearTimeout(temporizador.current);
+    setAutoguardado({ tipo: "pendiente" });
+    temporizador.current = window.setTimeout(async () => {
+      temporizador.current = null;
+      const form = formRef.current;
+      if (!form) return;
+      const datos = new FormData(form);
+      const { errores } = validarPerfil(entradaDesde(datos));
+      const primero = Object.values(errores)[0];
+      if (primero) {
+        setAutoguardado({ tipo: "revisar", mensaje: primero });
+        return;
+      }
+      setAutoguardado({ tipo: "guardando" });
+      try {
+        const r = await guardarPerfil({ errores: {} }, datos);
+        if (r.guardado) {
+          setAutoguardado({ tipo: "ok", en: Date.now() });
+          setAhora(Date.now());
+        } else {
+          setAutoguardado({
+            tipo: "error",
+            mensaje: r.general ?? Object.values(r.errores)[0] ?? "No pudimos guardar.",
+          });
+        }
+      } catch {
+        setAutoguardado({ tipo: "error", mensaje: "Sin conexión: tus cambios todavía no se guardaron." });
+      }
+    }, PAUSA_AUTOGUARDADO_MS);
+  }
+
   const [estado, accion, guardando] = useActionState(
     async (previo: EstadoGuardar, formData: FormData): Promise<EstadoGuardar> => {
       setTardando(false);
@@ -267,11 +440,15 @@ export default function FormPerfil({
         irAlPrimerError(errores);
         return { errores };
       }
-
       // Al crear, la foto viaja con el resto: la action la sube antes de redirigir.
-      if (creando && foto) formData.set("foto", foto.blob, "foto.jpg");
+      if (creando && foto?.blob) formData.set("foto", foto.blob, "foto.jpg");
       let resultado: EstadoGuardar;
       try {
+        if (creando) {
+          try {
+            localStorage.removeItem(CLAVE_BORRADOR);
+          } catch {}
+        }
         resultado = await guardarPerfil(previo, formData);
       } catch (e) {
         // Al crear, la action redirige y eso llega acá como error: lo maneja Next.
@@ -279,6 +456,7 @@ export default function FormPerfil({
         return { errores: {}, general: "No pudimos guardar. Revisá tu conexión y probá de nuevo." };
       }
       if (Object.keys(resultado.errores).length) irAlPrimerError(resultado.errores);
+      if (resultado.guardado) setAutoguardado({ tipo: "ok", en: Date.now() });
       return resultado;
     },
     { errores: {} }
@@ -314,51 +492,50 @@ export default function FormPerfil({
     }));
   }
 
-  async function elegirFoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const archivo = e.target.files?.[0];
-    e.target.value = "";
-    if (!archivo) return;
-    let blob: Blob;
+  function continuarBorrador() {
     try {
-      blob = await prepararImagen(archivo, "cubrir");
+      const b = JSON.parse(borradorGuardado ?? "") as Borrador;
+      setValores((v) => ({ ...v, ...b.valores }));
+      setListas((l) => ({ ...l, ...b.listas }));
+      setBuscaCofundador(!!b.buscaCofundador);
     } catch {
-      setEstadoFoto({ subiendo: false, ok: false, mensaje: "No pudimos leer esa foto. Probá con otra (JPG o PNG)." });
-      return;
+      // Borrador roto: se descarta.
     }
-    if (foto) URL.revokeObjectURL(foto.url);
-    const url = URL.createObjectURL(blob);
-    setFoto({ blob, url });
+    setBorradorDescartado(true);
+  }
 
-    // Con el perfil ya creado, se sube al toque: no depende de "Guardar".
-    if (!creando) {
-      setEstadoFoto({ subiendo: true });
-      const datos = new FormData();
-      datos.set("foto", blob, "foto.jpg");
-      try {
-        const r = await subirFoto(datos);
-        if (r.ok) {
-          if (r.url) setAvatarGuardado(r.url);
-          setEstadoFoto({ subiendo: false, ok: true, mensaje: "Foto actualizada." });
-        } else {
-          setEstadoFoto({ subiendo: false, ok: false, mensaje: r.mensaje });
-        }
-      } catch {
-        setEstadoFoto({ subiendo: false, ok: false, mensaje: "No pudimos subir la foto. Revisá tu conexión." });
-      }
-    } else {
-      setEstadoFoto({ subiendo: false, ok: true, mensaje: "Se sube cuando crees tu perfil." });
-    }
+  function descartarBorrador() {
+    try {
+      localStorage.removeItem(CLAVE_BORRADOR);
+    } catch {}
+    setBorradorDescartado(true);
   }
 
   const rolAvatar = rol ?? "emprendedor";
-  const avatar = foto?.url ?? avatarGuardado;
-  const conCofundador = rol === "emprendedor" || rol === "aliado";
+
+  const textoEstado =
+    autoguardado.tipo === "guardando"
+      ? "Guardando…"
+      : autoguardado.tipo === "pendiente"
+        ? "Cambios sin guardar…"
+        : autoguardado.tipo === "ok"
+          ? ahora - autoguardado.en < 45_000
+            ? "Guardado hace un momento"
+            : `Guardado hace ${Math.max(1, Math.round((ahora - autoguardado.en) / 60_000))} min`
+          : autoguardado.tipo === "revisar"
+            ? `Para guardar, revisá: ${autoguardado.mensaje}`
+            : autoguardado.tipo === "error"
+              ? autoguardado.mensaje
+              : creando
+                ? "Tu borrador se guarda en este celular"
+                : "Los cambios se guardan solos";
 
   return (
     <form
       ref={formRef}
       action={accion}
       noValidate
+      onChange={programarAutoguardado}
       onKeyDown={(e) => {
         // Enter en un campo de texto avanza de paso en vez de enviar a medias.
         const t = e.target as HTMLElement;
@@ -367,17 +544,31 @@ export default function FormPerfil({
           siguiente();
         }
       }}
-      className="scroll-mt-24 flex flex-col gap-5"
+      className="flex scroll-mt-24 flex-col gap-5"
     >
-      {/* Progreso: en edición se puede saltar a cualquier paso. */}
-      <nav aria-label="Pasos del formulario" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-tinta">
-            Paso {paso + 1} de {pasos.length}
-          </span>
-          <span className="text-tinta/60">{actual.titulo}</span>
+      {hayBorrador && (
+        <div role="status" className="aparecer flex flex-col gap-3 rounded-3xl border-2 border-dashed border-arcilla/50 bg-t-arcilla-suave/40 px-4 py-4">
+          <p className="text-sm font-medium text-tinta">Tenés un perfil a medio hacer en este celular.</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={continuarBorrador} className={`${BOTON} min-h-11 bg-tinta text-marfil`}>
+              Seguir donde lo dejé
+            </button>
+            <button type="button" onClick={descartarBorrador} className={`${BOTON} min-h-11 border border-tinta/30 text-tinta`}>
+              Empezar de cero
+            </button>
+          </div>
         </div>
-        <ol className="grid grid-cols-5 gap-1.5">
+      )}
+
+      {/* Progreso: Paso X de Y, completitud y estado del guardado. */}
+      <nav aria-label="Pasos del formulario" className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-3 text-sm">
+          <span className="font-semibold text-tinta">
+            Paso {paso + 1} de {pasos.length} · <span className="font-normal text-tinta/70">{actual.titulo}</span>
+          </span>
+          <span className="shrink-0 tabular-nums text-tinta/60">{porcentaje}% completo</span>
+        </div>
+        <ol className="grid grid-cols-6 gap-1.5">
           {pasos.map((p, i) => {
             const accesible = !creando || i <= visitado;
             return (
@@ -400,13 +591,31 @@ export default function FormPerfil({
                       i === paso ? "font-semibold text-tinta" : "text-tinta/55 group-enabled:group-hover:text-tinta"
                     }`}
                   >
-                    {p.titulo}
+                    {p.corto}
                   </span>
                 </button>
               </li>
             );
           })}
         </ol>
+        <p
+          role="status"
+          aria-live="polite"
+          className={`flex items-center gap-2 text-xs ${
+            autoguardado.tipo === "error" || autoguardado.tipo === "revisar"
+              ? "font-medium text-t-arcilla"
+              : autoguardado.tipo === "ok"
+                ? "text-t-verde"
+                : "text-tinta/60"
+          }`}
+        >
+          {autoguardado.tipo === "guardando" ? (
+            <span className="girando size-3 rounded-full border-2 border-current border-t-transparent" />
+          ) : autoguardado.tipo === "ok" ? (
+            <span aria-hidden>✓</span>
+          ) : null}
+          {textoEstado}
+        </p>
       </nav>
 
       <section
@@ -426,36 +635,38 @@ export default function FormPerfil({
           <p className="text-sm text-tinta/70">{actual.bajada}</p>
         </header>
 
-        {/* ---- 1 · Rol ---- */}
-        <div hidden={actual.id !== "rol"} className="flex flex-col gap-5">
-          <fieldset className="flex flex-col gap-2.5" aria-describedby={errores.rol ? "rol-error" : undefined}>
-            <legend className="sr-only">Tu rol en el ecosistema</legend>
-            {(Object.keys(ROLES) as Rol[]).map((r) => {
-              const elegido = rol === r;
-              return (
-                <label
-                  key={r}
-                  className={`tarjeta-opcion flex cursor-pointer items-start gap-3 rounded-2xl border-2 bg-marfil px-4 py-3.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-arcilla ${
-                    elegido ? "border-tinta shadow-[0_6px_20px_rgb(28_27_22/0.10)]" : "border-tinta/15 hover:border-tinta/40"
-                  }`}
-                >
-                  <input type="radio" name="rol" value={r} checked={elegido} onChange={() => elegirRol(r)} className="sr-only" />
-                  <span aria-hidden className={`mt-1.5 size-3 shrink-0 rounded-full ${ROLES[r].bg}`} />
-                  <span className="flex flex-col gap-0.5">
-                    <span className="font-display text-lg font-semibold leading-tight text-tinta">{ROLES[r].label}</span>
-                    <span className="text-sm text-tinta/75">{DESCRIPCION_ROL[r]}</span>
-                  </span>
-                  <span
-                    aria-hidden
-                    className={`ml-auto mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-200 ${
-                      elegido ? "border-tinta bg-tinta" : "border-tinta/30"
+        {/* ---- 1 · Lo básico ---- */}
+        <div hidden={actual.id !== "basico"} className="flex flex-col gap-5">
+          <EditorFoto
+            nombre={valores.nombre}
+            rol={rolAvatar}
+            foto={foto?.url ?? null}
+            guardarEnElActo={!creando}
+            onCambio={setFoto}
+          />
+
+          <fieldset className="flex flex-col gap-2" aria-describedby={errores.rol ? "rol-error" : undefined}>
+            <legend className="mb-2 text-sm font-medium text-tinta">¿Cómo entrás a Pecera?</legend>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(Object.keys(ROLES) as Rol[]).map((r) => {
+                const elegido = rol === r;
+                return (
+                  <label
+                    key={r}
+                    className={`tarjeta-opcion flex cursor-pointer items-start gap-3 rounded-2xl border-2 bg-marfil px-3.5 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-arcilla sm:flex-col sm:gap-1.5 ${
+                      elegido ? "border-tinta shadow-[0_6px_20px_rgb(28_27_22/0.10)]" : "border-tinta/15 hover:border-tinta/40"
                     }`}
                   >
-                    {elegido && <span className="size-2 rounded-full bg-marfil" />}
-                  </span>
-                </label>
-              );
-            })}
+                    <input type="radio" name="rol" value={r} checked={elegido} onChange={() => elegirRol(r)} className="sr-only" />
+                    <span aria-hidden className={`mt-1.5 size-3 shrink-0 rounded-full sm:mt-0 ${ROLES[r].bg}`} />
+                    <span className="flex flex-col gap-0.5">
+                      <span className="font-display text-lg font-semibold leading-tight text-tinta">{ROLES[r].label}</span>
+                      <span className="text-xs leading-snug text-tinta/70">{DESCRIPCION_ROL[r]}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
             {errores.rol && <MensajeError id="rol-error">{errores.rol}</MensajeError>}
           </fieldset>
 
@@ -468,8 +679,7 @@ export default function FormPerfil({
                 <span className="flex flex-col gap-1.5">
                   {TIPOS_POR_ROL[rol].map((t) => (
                     <span key={t}>
-                      <strong className="font-semibold">{t === "fondo" ? "Fondo de inversión" : TIPOS[t]}:</strong>{" "}
-                      {AYUDA_TIPO[t]}
+                      <strong className="font-semibold">{t === "fondo" ? "Fondo de inversión" : TIPOS[t]}:</strong> {AYUDA_TIPO[t]}
                     </span>
                   ))}
                 </span>
@@ -480,36 +690,10 @@ export default function FormPerfil({
               error={errores.tipo}
             />
           )}
-        </div>
-
-        {/* ---- 2 · Tarjeta ---- */}
-        <div hidden={actual.id !== "perfil"} className="flex flex-col gap-5">
-          <div className="flex items-center gap-4">
-            <span className="relative">
-              <Avatar perfil={{ nombre: valores.nombre || "?", rol: rolAvatar, avatar_url: avatar }} size={80} />
-              {estadoFoto.subiendo && (
-                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-tinta/55">
-                  <span className="girando size-6 rounded-full border-2 border-marfil border-t-transparent" />
-                </span>
-              )}
-            </span>
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="foto"
-                className="boton inline-flex min-h-11 cursor-pointer items-center self-start rounded-full border border-tinta/40 px-4 text-sm font-medium text-tinta focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-arcilla hover:border-tinta"
-              >
-                {avatar ? "Cambiar foto o logo" : "Subir foto o logo"}
-                <input id="foto" type="file" accept="image/*" onChange={elegirFoto} className="sr-only" />
-              </label>
-              <p className="text-xs text-tinta/65" role="status">
-                {estadoFoto.subiendo ? "Subiendo…" : (estadoFoto.mensaje ?? "Cuadrada, sin datos de ubicación.")}
-              </p>
-            </div>
-          </div>
 
           <Campo
             id="nombre"
-            label={rol === "emprendedor" ? "Nombre del proyecto o el tuyo" : "Tu nombre o el de tu organización"}
+            label={rol === "emprendedor" ? "Tu nombre o el del proyecto" : "Tu nombre o el de tu organización"}
             error={errores.nombre}
           >
             <input
@@ -517,7 +701,7 @@ export default function FormPerfil({
               name="nombre"
               type="text"
               maxLength={NOMBRE_MAX}
-              autoComplete="off"
+              autoComplete="name"
               value={valores.nombre}
               onChange={cambiar("nombre")}
               aria-invalid={!!errores.nombre}
@@ -559,11 +743,25 @@ export default function FormPerfil({
             </div>
           )}
 
+          <Campo id="ubicacion" label="Ubicación" opcional error={errores.ubicacion}>
+            <input
+              id="ubicacion"
+              name="ubicacion"
+              type="text"
+              maxLength={UBICACION_MAX}
+              autoComplete="address-level2"
+              placeholder="Córdoba, Argentina"
+              value={valores.ubicacion}
+              onChange={cambiar("ubicacion")}
+              className={claseInput(errores.ubicacion)}
+            />
+          </Campo>
+
           <Campo
             id="descripcion"
-            label="Qué hacés, en una línea"
+            label="Bio en una línea"
             error={errores.descripcion}
-            info="Una frase que se entienda sin contexto: qué resolvés y para quién. Es lo primero que se lee debajo de tu nombre."
+            info="Una frase que se entienda sin contexto: qué hacés y para quién. Es lo primero que se lee debajo de tu nombre. Podés sumar hashtags como #feria21."
             ayuda={`${valores.descripcion.length}/${DESCRIPCION_MAX}`}
           >
             <textarea
@@ -587,8 +785,172 @@ export default function FormPerfil({
           </Campo>
         </div>
 
-        {/* ---- 3 · Lo propio de cada rol ---- */}
-        <div hidden={!["proyecto", "tesis", "especialidad"].includes(actual.id)} className="flex flex-col gap-6">
+        {/* ---- 2 · Lo profesional ---- */}
+        <div hidden={actual.id !== "profesional"} className="flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-tinta/15 bg-marfil px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-tinta/55">Empresa</p>
+              <p className="truncate font-display text-lg font-semibold text-tinta">
+                {empresa ? empresa.nombre : creando ? "La sumás después de crear tu perfil" : "Todavía no estás en una empresa"}
+              </p>
+            </div>
+            {!creando && (
+              <Link href="/cuenta/empresa" className={`${BOTON} min-h-10 shrink-0 border border-tinta/30 text-sm text-tinta`}>
+                {empresa ? "Administrar" : "Crear o unirme"}
+              </Link>
+            )}
+          </div>
+
+          {rol === "emprendedor" && (
+            <ChipsUnico
+              id="cargo"
+              nombre="cargo"
+              legend="Tu cargo"
+              opciones={OPCIONES_CARGOS}
+              valor={valores.cargo}
+              onCambiar={poner("cargo")}
+              permitirNinguno
+              ayuda="Opcional."
+              info="CEO: rumbo, equipo y plata. CTO: tecnología. CFO: finanzas. COO: operaciones. CMO: marketing. CPO: producto. En la página de la empresa, cada miembro muestra el suyo."
+              error={errores.cargo}
+            />
+          )}
+
+          <Campo
+            id="experiencia"
+            label="Experiencia"
+            opcional
+            error={errores.experiencia}
+            ayuda={`${valores.experiencia.length}/${EXPERIENCIA_MAX}`}
+          >
+            <textarea
+              id="experiencia"
+              name="experiencia"
+              rows={3}
+              maxLength={EXPERIENCIA_MAX}
+              placeholder="8 años en ventas B2B. Antes, cofundé una agtech que llegó a 40 clientes."
+              value={valores.experiencia}
+              onChange={cambiar("experiencia")}
+              className={`${claseInput(errores.experiencia)} resize-none`}
+            />
+          </Campo>
+
+          <Campo id="educacion" label="Educación" opcional error={errores.educacion}>
+            <input
+              id="educacion"
+              name="educacion"
+              type="text"
+              maxLength={EDUCACION_MAX}
+              placeholder="Lic. en Administración, Universidad Siglo 21"
+              value={valores.educacion}
+              onChange={cambiar("educacion")}
+              className={claseInput(errores.educacion)}
+            />
+          </Campo>
+
+          <Campo id="skills" label="Skills" opcional error={errores.skills} info="Lo que sabés hacer, en pocas palabras. Escribí y tocá Enter (o coma) para sumar cada una.">
+            <EntradaTags
+              id="skills"
+              nombre="skills"
+              valores={listas.skills}
+              onCambiar={(v) => {
+                ponerLista("skills")(v);
+                programarAutoguardado();
+              }}
+              max={MAX_SKILLS}
+              largoMax={SKILL_MAX}
+              placeholder="Ventas, Python, Diseño…"
+              sugerencias={SUGERENCIAS_SKILLS}
+            />
+          </Campo>
+        </div>
+
+        {/* ---- 3 · Redes y contacto ---- */}
+        <div hidden={actual.id !== "contacto"} className="flex flex-col gap-5">
+          <Campo
+            id="whatsapp"
+            label="WhatsApp"
+            opcional
+            error={errores.whatsapp}
+            info="Es el botón más usado del perfil: te escriben con un toque y el mensaje ya dice que te vieron en Pecera. Elegí el país con la bandera."
+          >
+            <TelefonoPais
+              id="whatsapp"
+              nombre="whatsapp"
+              valorInicial={valores.whatsapp}
+              onCambiar={poner("whatsapp")}
+              invalido={!!errores.whatsapp}
+              describedBy={describir("whatsapp", errores.whatsapp)}
+            />
+          </Campo>
+
+          <Campo id="email" label="Email de contacto" opcional error={errores.email} ayuda="Puede ser distinto al de tu cuenta de Google.">
+            <input
+              id="email"
+              name="email"
+              type="email"
+              inputMode="email"
+              autoCapitalize="none"
+              maxLength={200}
+              value={valores.email}
+              onChange={cambiar("email")}
+              aria-invalid={!!errores.email}
+              aria-describedby={describir("email", errores.email, true)}
+              className={claseInput(errores.email)}
+            />
+          </Campo>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Campo id="linkedin" label="LinkedIn" opcional error={errores.linkedin}>
+              <input
+                id="linkedin"
+                name="linkedin"
+                type="text"
+                inputMode="url"
+                autoCapitalize="none"
+                maxLength={200}
+                placeholder="linkedin.com/in/tuusuario"
+                value={valores.linkedin}
+                onChange={cambiar("linkedin")}
+                aria-invalid={!!errores.linkedin}
+                className={claseInput(errores.linkedin)}
+              />
+            </Campo>
+            <Campo id="instagram" label="Instagram" opcional error={errores.instagram}>
+              <input
+                id="instagram"
+                name="instagram"
+                type="text"
+                autoCapitalize="none"
+                maxLength={100}
+                placeholder="@tuusuario"
+                value={valores.instagram}
+                onChange={cambiar("instagram")}
+                aria-invalid={!!errores.instagram}
+                className={claseInput(errores.instagram)}
+              />
+            </Campo>
+          </div>
+          <Campo id="web" label="Web" opcional error={errores.web}>
+            <input
+              id="web"
+              name="web"
+              type="text"
+              inputMode="url"
+              autoCapitalize="none"
+              maxLength={200}
+              placeholder="tuweb.com.ar"
+              value={valores.web}
+              onChange={cambiar("web")}
+              aria-invalid={!!errores.web}
+              className={claseInput(errores.web)}
+            />
+          </Campo>
+        </div>
+
+        {/* ---- 4 · Emprendimiento / tesis / especialidad ---- */}
+        <div hidden={actual.id !== "propio"} className="flex flex-col gap-6">
+          {!rol && <p className="text-sm text-tinta/70">Elegí tu rol en el paso 1 para ver esta parte.</p>}
           {rol === "emprendedor" && (
             <>
               <SelectorEtapa
@@ -624,21 +986,8 @@ export default function FormPerfil({
                 info="Pre-seed: la primera plata de afuera para validar (USD 50-500 mil). Seed: para validar el negocio (USD 500 mil-3 M). Serie A: para escalar lo que ya funciona."
                 error={errores.ronda}
               />
-              <ChipsUnico
-                id="cargo"
-                nombre="cargo"
-                legend="Tu cargo en el equipo"
-                opciones={OPCIONES_CARGOS}
-                valor={valores.cargo}
-                onCambiar={poner("cargo")}
-                permitirNinguno
-                ayuda="Opcional."
-                info="CEO: rumbo, equipo y plata. CTO: tecnología. CFO: finanzas. COO: operaciones. CMO: marketing. CPO: producto. Si tu equipo arma la página de empresa, cada uno muestra el suyo."
-                error={errores.cargo}
-              />
             </>
           )}
-
           {rol === "inversor" && (
             <>
               <ChipsMultiple
@@ -675,7 +1024,6 @@ export default function FormPerfil({
               />
             </>
           )}
-
           {rol === "aliado" && (
             <>
               <ChipsMultiple
@@ -702,6 +1050,31 @@ export default function FormPerfil({
               />
             </>
           )}
+        </div>
+
+        {/* ---- 5 · Preferencias ---- */}
+        <div hidden={actual.id !== "preferencias"} className="flex flex-col gap-6">
+          <ChipsMultiple
+            id="busca"
+            nombre="busca"
+            legend="¿Qué buscás?"
+            opciones={OPCIONES_NECESIDADES}
+            valores={listas.busca}
+            onCambiar={ponerLista("busca")}
+            max={MAX_NECESIDADES}
+            info="Se muestra en tu perfil y sirve para el matching: quien ofrece lo que buscás te encuentra más fácil."
+            error={errores.busca}
+          />
+          <ChipsMultiple
+            id="ofrece"
+            nombre="ofrece"
+            legend="¿Qué ofrecés?"
+            opciones={OPCIONES_NECESIDADES}
+            valores={listas.ofrece}
+            onCambiar={ponerLista("ofrece")}
+            max={MAX_NECESIDADES}
+            error={errores.ofrece}
+          />
 
           {conCofundador && (
             <div className="flex flex-col gap-4 rounded-2xl border border-tinta/15 bg-marfil px-4 py-4">
@@ -710,8 +1083,8 @@ export default function FormPerfil({
                   <span className="flex items-center gap-2 font-medium text-tinta">
                     Busco cofundador/a
                     <Info titulo="Qué es el cofounder match">
-                      Como el Co-Founder Matching de Y Combinator: aparecés en la sección Cofundadores con lo que
-                      aportás y lo que buscás, y quien encaje te escribe.
+                      Como el Co-Founder Matching de Y Combinator: aparecés en la sección Cofundadores con lo que aportás y lo
+                      que buscás, y quien encaje te escribe.
                     </Info>
                   </span>
                   <span className="text-sm text-tinta/65">Aparecés en la sección Cofundadores.</span>
@@ -781,112 +1154,22 @@ export default function FormPerfil({
           )}
         </div>
 
-        {/* ---- 4 · Contacto ---- */}
-        <div hidden={actual.id !== "contacto"} className="flex flex-col gap-5">
-          <Campo
-            id="whatsapp"
-            label="WhatsApp"
-            opcional
-            error={errores.whatsapp}
-            info="Es el botón más usado del perfil: te escriben con un toque y el mensaje ya dice que te vieron en Pecera. Elegí el país con la bandera."
-          >
-            <TelefonoPais
-              id="whatsapp"
-              nombre="whatsapp"
-              valorInicial={valores.whatsapp}
-              onCambiar={poner("whatsapp")}
-              invalido={!!errores.whatsapp}
-              describedBy={describir("whatsapp", errores.whatsapp)}
-            />
-          </Campo>
+        {/* ---- 6 · Final ---- */}
+        <div hidden={actual.id !== "final"} className="flex flex-col gap-5">
+          <Completitud porcentaje={porcentaje} items={items} onIr={irA} />
 
-          <Campo id="email" label="Email de contacto" opcional error={errores.email} ayuda="Puede ser distinto al de tu cuenta de Google.">
-            <input
-              id="email"
-              name="email"
-              type="email"
-              inputMode="email"
-              autoCapitalize="none"
-              maxLength={200}
-              value={valores.email}
-              onChange={cambiar("email")}
-              aria-invalid={!!errores.email}
-              aria-describedby={describir("email", errores.email, true)}
-              className={claseInput(errores.email)}
-            />
-          </Campo>
-
-          <details className="group rounded-2xl border border-tinta/15" open={!!(valores.linkedin || valores.instagram || valores.web)}>
-            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 font-medium text-tinta [&::-webkit-details-marker]:hidden">
-              <span>
-                Redes y web <span className="font-normal text-tinta/55">(opcional)</span>
-              </span>
-              <span aria-hidden className="text-xl transition-transform duration-300 ease-pecera group-open:rotate-45">
-                +
-              </span>
-            </summary>
-            <div className="flex flex-col gap-4 px-4 pb-4">
-              <Campo id="linkedin" label="LinkedIn" opcional error={errores.linkedin}>
-                <input
-                  id="linkedin"
-                  name="linkedin"
-                  type="text"
-                  inputMode="url"
-                  autoCapitalize="none"
-                  maxLength={200}
-                  placeholder="linkedin.com/in/tuusuario"
-                  value={valores.linkedin}
-                  onChange={cambiar("linkedin")}
-                  aria-invalid={!!errores.linkedin}
-                  className={claseInput(errores.linkedin)}
-                />
-              </Campo>
-              <Campo id="instagram" label="Instagram" opcional error={errores.instagram}>
-                <input
-                  id="instagram"
-                  name="instagram"
-                  type="text"
-                  autoCapitalize="none"
-                  maxLength={100}
-                  placeholder="@tuusuario"
-                  value={valores.instagram}
-                  onChange={cambiar("instagram")}
-                  aria-invalid={!!errores.instagram}
-                  className={claseInput(errores.instagram)}
-                />
-              </Campo>
-              <Campo id="web" label="Web" opcional error={errores.web}>
-                <input
-                  id="web"
-                  name="web"
-                  type="text"
-                  inputMode="url"
-                  autoCapitalize="none"
-                  maxLength={200}
-                  placeholder="tuweb.com.ar"
-                  value={valores.web}
-                  onChange={cambiar("web")}
-                  aria-invalid={!!errores.web}
-                  className={claseInput(errores.web)}
-                />
-              </Campo>
-            </div>
-          </details>
-        </div>
-
-        {/* ---- 5 · Revisar ---- */}
-        <div hidden={actual.id !== "listo"} className="flex flex-col gap-5">
           <div className="overflow-hidden rounded-3xl border border-tinta/10 bg-marfil shadow-[0_10px_30px_rgb(28_27_22/0.08)]">
             <div className={`h-16 ${rol ? ROLES[rol].bg : "bg-tinta"} opacity-90`} />
             <div className="relative -mt-10 flex flex-col gap-3 px-4 pb-5">
               <span className="self-start rounded-full ring-4 ring-marfil">
-                <Avatar perfil={{ nombre: valores.nombre || "?", rol: rolAvatar, avatar_url: avatar }} size={72} />
+                <Avatar perfil={{ nombre: valores.nombre || "?", rol: rolAvatar, avatar_url: foto?.url ?? null }} size={72} />
               </span>
               <div>
                 <p className="font-display text-xl font-semibold leading-tight text-tinta">{valores.nombre || "Tu nombre"}</p>
                 <p className="text-sm text-tinta/65">
                   {rol ? ROLES[rol].label : "Tu rol"}
                   {valores.tipo ? ` · ${TIPOS[valores.tipo as keyof typeof TIPOS] ?? ""}` : ""}
+                  {valores.ubicacion ? ` · ${valores.ubicacion}` : ""}
                 </p>
               </div>
               {rol && (
@@ -903,7 +1186,7 @@ export default function FormPerfil({
                   }}
                 />
               )}
-              <p className="text-sm leading-relaxed text-tinta/85">{valores.descripcion || "Tu descripción en una línea."}</p>
+              <p className="text-sm leading-relaxed text-tinta/85">{valores.descripcion || "Tu bio en una línea."}</p>
             </div>
           </div>
 
@@ -984,28 +1267,88 @@ export default function FormPerfil({
               ) : creando ? (
                 "Crear mi perfil"
               ) : (
-                "Guardar cambios"
+                "Guardar"
               )}
             </button>
           )}
         </div>
-        {guardando && tardando ? (
+        {guardando && tardando && (
           <div role="alert" className="flex flex-col items-center gap-2 rounded-2xl bg-marfil p-3 text-center">
             <p className="text-sm text-tinta">Está tardando más de lo normal. Recargá la página: si tu perfil se guardó, lo vas a ver.</p>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className={`${BOTON} min-h-11 border border-tinta/40 text-sm text-tinta`}
-            >
+            <button type="button" onClick={() => window.location.reload()} className={`${BOTON} min-h-11 border border-tinta/40 text-sm text-tinta`}>
               Recargar la página
             </button>
           </div>
-        ) : (
-          <p role="status" className="min-h-5 text-center text-sm text-tinta">
-            {!guardando && estado.guardado ? (estado.aviso ?? "Listo, guardado.") : ""}
+        )}
+        {creando && (
+          <p className="text-center text-xs text-tinta/55">
+            ¿Te tenés que ir? Tu borrador queda guardado en este celular y seguís cuando vuelvas.
           </p>
         )}
       </div>
     </form>
+  );
+}
+
+/** Puntaje de completitud con lo que falta, cada ítem lleva a su paso. */
+function Completitud({
+  porcentaje,
+  items,
+  onIr,
+}: {
+  porcentaje: number;
+  items: ReturnType<typeof completitud>["items"];
+  onIr: (paso: number) => void;
+}) {
+  const faltan = items.filter((i) => !i.hecho);
+  const radio = 34;
+  const circ = 2 * Math.PI * radio;
+  return (
+    <section aria-label="Qué tan completo está tu perfil" className="flex flex-col gap-4 rounded-3xl border border-tinta/10 bg-marfil px-4 py-4 sm:flex-row sm:items-start">
+      <div className="flex items-center gap-4 sm:flex-col sm:items-center">
+        <svg viewBox="0 0 80 80" className="size-20 shrink-0 -rotate-90" aria-hidden>
+          <circle cx="40" cy="40" r={radio} fill="none" stroke="currentColor" strokeWidth="8" className="text-tinta/10" />
+          <circle
+            cx="40"
+            cy="40"
+            r={radio}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={circ * (1 - porcentaje / 100)}
+            className={`transition-[stroke-dashoffset] duration-700 ease-pecera ${porcentaje >= 80 ? "text-t-verde" : "text-arcilla"}`}
+          />
+        </svg>
+        <p className="sm:text-center">
+          <span className="block font-display text-3xl font-semibold tabular-nums text-tinta">{porcentaje}%</span>
+          <span className="text-sm text-tinta/65">{porcentaje >= 80 ? "¡Perfil sólido!" : "de tu perfil"}</span>
+        </p>
+      </div>
+      <div className="min-w-0 flex-1">
+        {faltan.length === 0 ? (
+          <p className="text-sm text-tinta">Está todo. Solo falta tu pitch, que subís después de guardar.</p>
+        ) : (
+          <>
+            <p className="text-sm font-medium text-tinta">Te falta para destacar:</p>
+            <ul className="mt-2 flex flex-col gap-1.5">
+              {faltan.map((i) => (
+                <li key={i.clave}>
+                  <button
+                    type="button"
+                    onClick={() => onIr(i.paso)}
+                    className="boton flex w-full items-center justify-between gap-2 rounded-xl bg-tinta/[0.04] px-3 py-2 text-left text-sm text-tinta hover:bg-tinta/[0.08]"
+                  >
+                    <span>{i.label}</span>
+                    <span className="shrink-0 text-xs text-tinta/55">+{i.peso}% · Completar →</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    </section>
   );
 }

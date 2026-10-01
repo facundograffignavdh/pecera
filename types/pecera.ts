@@ -43,6 +43,13 @@ export type Perfil = {
   cofundador_busca?: string[];
   cofundador_dedicacion?: string | null;
   cofundador_nota?: string | null;
+  // Perfil profesional y preferencias (feria_pro).
+  ubicacion?: string | null;
+  experiencia?: string | null;
+  educacion?: string | null;
+  skills?: string[];
+  busca?: string[];
+  ofrece?: string[];
   /** Solo en las consultas que lo piden (perfil público, feed). */
   empresa?: EmpresaResumen | null;
 };
@@ -63,6 +70,7 @@ export type Empresa = {
   ronda: string | null;
   /** Clave de R2 (o URL ya armada en lib/datos). Opcional: feria_pro. */
   logo_url?: string | null;
+  ubicacion?: string | null;
 };
 
 /** Un ítem del portafolio de un perfil (inversión, caso, servicio, logro…). */

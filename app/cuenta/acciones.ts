@@ -246,3 +246,21 @@ export async function subirFoto(formData: FormData): Promise<{ ok: boolean; mens
   revalidar(actual.slug);
   return { ok: true, url: nuevo?.avatar_url ? urlMedia(nuevo.avatar_url) : undefined };
 }
+
+/** Saca la foto del perfil. La vieja la manda a r2_borrar el trigger de la base. */
+export async function quitarFoto(): Promise<{ ok: boolean; mensaje?: string }> {
+  const supabase = await supabaseConSesion();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, mensaje: "Se cerró tu sesión. Volvé a entrar." };
+  const { data: actual } = await supabase.from("perfiles").select("id, slug").eq("usuario_id", user.id).maybeSingle();
+  if (!actual) return { ok: false, mensaje: "Primero creá tu perfil." };
+  const { error } = await supabase.from("perfiles").update({ avatar_url: null }).eq("id", actual.id);
+  if (error) {
+    console.error(`Supabase (quitarFoto): ${error.code} ${error.message}`);
+    return { ok: false, mensaje: "No pudimos sacar la foto. Probá de nuevo." };
+  }
+  revalidar(actual.slug);
+  return { ok: true };
+}

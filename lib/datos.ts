@@ -32,9 +32,9 @@ const COLUMNAS_PERFIL_BASE =
 const COLUMNAS_PERFIL_NUEVAS =
   "etapa, ronda, industrias, cargo, especialidades, ticket, rondas_interes, empresa_id";
 const COLUMNAS_COFUNDADOR =
-  "busca_cofundador, cofundador_aporta, cofundador_busca, cofundador_dedicacion, cofundador_nota";
+  "busca_cofundador, cofundador_aporta, cofundador_busca, cofundador_dedicacion, cofundador_nota, ubicacion, experiencia, educacion, skills, busca, ofrece";
 const COLUMNAS_PERFIL_LISTA = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, empresa:empresas(slug, nombre)`;
-const COLUMNAS_PERFIL = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, ${COLUMNAS_COFUNDADOR}, empresa:empresas(slug, nombre, logo_url)`;
+const COLUMNAS_PERFIL = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, ${COLUMNAS_COFUNDADOR}, empresa:empresas(slug, nombre, logo_url, ubicacion)`;
 
 /**
  * Columnas por migración, de la más nueva a la más vieja: feria_pro → feria_lista →
@@ -63,7 +63,7 @@ const COLUMNAS_PITCH_FEED = `${COLUMNAS_PITCH}, subtitulos`;
 
 const COLUMNAS_EMPRESA_LISTA =
   "id, slug, nombre, descripcion, web, linkedin, instagram, industrias, etapa, ronda";
-const COLUMNAS_EMPRESA = `${COLUMNAS_EMPRESA_LISTA}, logo_url`;
+const COLUMNAS_EMPRESA = `${COLUMNAS_EMPRESA_LISTA}, logo_url, ubicacion`;
 
 /**
  * Códigos de "eso todavía no existe en la base": columna (42703), tabla (42P01),

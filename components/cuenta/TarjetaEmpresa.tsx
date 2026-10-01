@@ -30,6 +30,7 @@ export type MiEmpresa = {
   ronda: string | null;
   /** URL ya armada (mi_empresa_v2); null sin logo o sin la migración feria_pro. */
   logo_url?: string | null;
+  ubicacion?: string | null;
   codigo: string | null;
   es_dueno: boolean;
   visible: boolean;
