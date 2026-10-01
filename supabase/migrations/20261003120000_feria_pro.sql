@@ -180,6 +180,8 @@ $$;
 -- 4) Logo de la empresa y gestión del equipo
 -- ---------------------------------------------------------------------------
 alter table public.empresas add column logo_url text;
+alter table public.empresas add column ubicacion text
+  check (ubicacion is null or char_length(ubicacion) <= 80);
 alter table public.empresas
   add constraint empresas_logo_valido check (
     logo_url is null or logo_url ~ '^empresa-[0-9a-f-]{36}-[0-9a-f]{8}\.jpg$'
@@ -233,6 +235,7 @@ returns table (
   etapa       text,
   ronda       text,
   logo_url    text,
+  ubicacion   text,
   codigo      text,
   es_dueno    boolean,
   visible     boolean,
@@ -245,7 +248,7 @@ set search_path = ''
 as $$
   select
     e.id, e.slug, e.nombre, e.descripcion, e.web, e.linkedin, e.instagram,
-    e.industrias, e.etapa, e.ronda, e.logo_url, c.codigo,
+    e.industrias, e.etapa, e.ronda, e.logo_url, e.ubicacion, c.codigo,
     e.dueno_id = auth.uid(),
     public.empresa_visible(e.id),
     (select count(*)::integer from public.perfiles m where m.empresa_id = e.id)
@@ -493,3 +496,98 @@ revoke execute on function public.seguidores_de(text) from public;
 grant execute on function public.seguir(uuid, uuid) to anon, authenticated;
 grant execute on function public.dejar_de_seguir(uuid, uuid) to anon, authenticated;
 grant execute on function public.seguidores_de(text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 7) Perfil profesional y preferencias (alta en 6 pasos)
+-- ---------------------------------------------------------------------------
+-- Ubicación, experiencia, educación y skills (texto libre corto), y qué busca y
+-- qué ofrece cada persona (vocabulario fijo, espejo de NECESIDADES en
+-- lib/etiquetas.ts). Todo opcional.
+alter table public.perfiles
+  add column ubicacion   text,
+  add column experiencia text,
+  add column educacion   text,
+  add column skills      text[] not null default '{}',
+  add column busca       text[] not null default '{}',
+  add column ofrece      text[] not null default '{}';
+
+alter table public.perfiles
+  add constraint perfiles_ubicacion_valida check (ubicacion is null or char_length(ubicacion) <= 80),
+  add constraint perfiles_experiencia_valida check (experiencia is null or char_length(experiencia) <= 400),
+  add constraint perfiles_educacion_valida check (educacion is null or char_length(educacion) <= 200),
+  add constraint perfiles_skills_validas check (
+    cardinality(skills) <= 10 and char_length(array_to_string(skills, '')) <= 300
+  ),
+  add constraint perfiles_busca_valido check (
+    cardinality(busca) <= 6 and busca <@ array[
+      'inversion', 'cofundador', 'mentoria', 'clientes', 'talento', 'alianzas',
+      'proveedores', 'networking', 'prensa', 'empleo'
+    ]::text[]
+  ),
+  add constraint perfiles_ofrece_valido check (
+    cardinality(ofrece) <= 6 and ofrece <@ array[
+      'inversion', 'cofundador', 'mentoria', 'clientes', 'talento', 'alianzas',
+      'proveedores', 'networking', 'prensa', 'empleo'
+    ]::text[]
+  );
+
+-- Editar la empresa con ubicación. Igual que editar_empresa (que sigue para main).
+create function public.editar_empresa_v2(
+  p_nombre      text,
+  p_descripcion text,
+  p_web         text default null,
+  p_linkedin    text default null,
+  p_instagram   text default null,
+  p_industrias  text[] default '{}',
+  p_etapa       text default null,
+  p_ronda       text default null,
+  p_ubicacion   text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_perfil public.perfiles := public.perfil_de_sesion();
+begin
+  update public.empresas
+  set nombre      = btrim(p_nombre),
+      descripcion = btrim(p_descripcion),
+      web         = nullif(btrim(p_web), ''),
+      linkedin    = nullif(btrim(p_linkedin), ''),
+      instagram   = nullif(btrim(p_instagram), ''),
+      industrias  = coalesce(p_industrias, '{}'),
+      etapa       = nullif(p_etapa, ''),
+      ronda       = nullif(p_ronda, ''),
+      ubicacion   = nullif(btrim(p_ubicacion), ''),
+      updated_at  = now()
+  where id = v_perfil.empresa_id
+    and dueno_id = auth.uid();
+
+  if not found then
+    raise exception 'solo el dueño edita la empresa' using errcode = '42501';
+  end if;
+end;
+$$;
+
+revoke execute on function public.editar_empresa_v2(text, text, text, text, text, text[], text, text, text) from public, anon;
+grant execute on function public.editar_empresa_v2(text, text, text, text, text, text[], text, text, text) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 8) Realtime: cambios de perfiles en vivo (otra pestaña o el celular)
+-- ---------------------------------------------------------------------------
+-- La app escucha solo la fila propia (/cuenta) y los miembros de la empresa
+-- (/cuenta/empresa). La RLS decide qué llega: nada que no se pueda leer igual.
+-- Solo si existe la publicación de Supabase (en las pruebas locales no está).
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (
+       select 1 from pg_publication_tables
+       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'perfiles'
+     ) then
+    execute 'alter publication supabase_realtime add table public.perfiles';
+  end if;
+end;
+$$;

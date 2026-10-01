@@ -293,6 +293,42 @@ async function main() {
   for (let i = 0; i < 28; i++) await como("anon", null, `select public.seguir($1, $2)`, [ana, D1]);
   await espera("el seguir 31 del minuto se corta", () => como("anon", null, `select public.seguir($1, $2)`, [ana, D1]), "demasiadas acciones");
 
+  console.log("\n7) Perfil profesional, preferencias y empresa con ubicación");
+  await como(
+    "authenticated",
+    U.ana,
+    `update public.perfiles set ubicacion = 'Córdoba, Argentina', experiencia = '5 años en agro',
+       educacion = 'Ing. Agrónoma, UNC', skills = '{ventas,agronomia}', busca = '{inversion,cofundador}',
+       ofrece = '{mentoria}' where id = $1`,
+    [ana]
+  );
+  const prof = (await como("anon", null, `select ubicacion, skills, busca from public.perfiles where id = $1`, [ana])).rows[0];
+  prof?.ubicacion && prof.skills.length === 2 && prof.busca.length === 2
+    ? bien("ubicación, skills y qué busca se guardan y se leen")
+    : mal(`perfil: ${JSON.stringify(prof)}`);
+  await espera(
+    "qué busca con un valor inventado no vale",
+    () => como("authenticated", U.ana, `update public.perfiles set busca = '{magia}' where id = $1`, [ana]),
+    "perfiles_busca_valido"
+  );
+  await espera(
+    "más de 10 skills no vale",
+    () => como("authenticated", U.ana, `update public.perfiles set skills = '{a,b,c,d,e,f,g,h,i,j,k}' where id = $1`, [ana]),
+    "perfiles_skills_validas"
+  );
+  await como(
+    "authenticated",
+    U.ana,
+    `select public.editar_empresa_v2('Raíz Verde', 'Sustrato de café', null, null, null, '{agtech}', 'mvp', 'seed', 'Córdoba')`
+  );
+  const ubic = (await como("authenticated", U.ana, `select ubicacion from public.mi_empresa_v2()`)).rows[0]?.ubicacion;
+  ubic === "Córdoba" ? bien("editar_empresa_v2 guarda la ubicación") : mal(`ubicacion: ${ubic}`);
+  await espera(
+    "quien no es dueño no edita con v2",
+    () => como("authenticated", U.caro, `select public.editar_empresa_v2('X', 'Y')`),
+    "solo el dueño"
+  );
+
   console.log(`\n${ok} ok · ${fallas} fallas`);
   process.exit(fallas ? 1 : 0);
 }
