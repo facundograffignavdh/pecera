@@ -44,7 +44,7 @@ export default async function NewsletterPage({ params }: PageProps<"/p/[slug]/ne
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
       <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
-        <EnlaceVolver href={`/p/${slug}`} />
+        <EnlaceVolver href={`/p/${slug}`} texto="Volver al perfil" />
 
         <header className="mt-6 flex flex-col gap-3">
           <span className="self-start rounded-full bg-tinta px-2.5 py-0.5 text-xs font-medium text-marfil">Newsletter</span>

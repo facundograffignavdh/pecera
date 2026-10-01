@@ -98,8 +98,8 @@ export type Documento = {
 
 const HACE = new Intl.RelativeTimeFormat("es-AR", { numeric: "auto" });
 
-/** "hace 5 minutos", "ayer"… desde `ahora` (lo pasa quien renderiza). */
-export function haceCuanto(iso: string, ahora: number): string {
+/** "hace 5 minutos", "ayer"… (en el servidor, al renderizar). */
+export function haceCuanto(iso: string, ahora: number = Date.now()): string {
   const seg = Math.round((new Date(iso).getTime() - ahora) / 1000);
   const abs = Math.abs(seg);
   if (abs < 60) return "recién";
