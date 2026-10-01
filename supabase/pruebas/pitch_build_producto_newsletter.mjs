@@ -1,4 +1,4 @@
-// Harness de la migración pitch_build_producto_newsletter sobre PGlite (Postgres en
+// Harness de las migraciones pitch_build_producto_newsletter y dataroom sobre PGlite (Postgres en
 // WASM), con roles y JWT simulados como PostgREST de Supabase. No toca ninguna base.
 //
 // PGlite no es dependencia de la app: se instala en una carpeta aparte.
@@ -45,6 +45,7 @@ const MIGRACIONES = [
   "20261001120000_feria_lista.sql",
   "20261002120000_medicion.sql",
   "20261003120000_pitch_build_producto_newsletter.sql",
+  "20261004120000_dataroom.sql",
 ];
 
 let ok = 0;
@@ -227,6 +228,44 @@ async function main() {
   chequear(ocultas === 0, "perfil oculto: su newsletter deja de verse", ocultas);
   const propias = (await como("authenticated", U.ana, `select count(*)::int n from public.newsletter_ediciones`)).rows[0].n;
   chequear(propias === 3, "la dueña sigue viendo sus ediciones con el perfil oculto", propias);
+
+  console.log("\n5) Dataroom");
+  await como("authenticated", U.ana, `update public.perfiles set oculto = false where id = $1`, [ana]);
+  const guardar = (uid, id, plantilla, tipo, titulo, campos = {}, cuerpo = null, url = null, completo = false) =>
+    como("authenticated", uid, `select public.guardar_documento($1, $2, 'mercado', $3, $4, $5::jsonb, $6, $7, $8) id`,
+      [id, plantilla, tipo, titulo, JSON.stringify(campos), cuerpo, url, completo]);
+  await espera("sin empresa no hay Dataroom", () => guardar(U.caro, null, "tam-sam-som", "plantilla", "TAM"), "primero sumate");
+  const doc = (await guardar(U.ana, null, "tam-sam-som", "plantilla", "TAM, SAM y SOM", { metodo: "bottom_up" })).rows[0].id;
+  const mismo = (await guardar(U.beto, null, "tam-sam-som", "plantilla", "TAM, SAM y SOM", { metodo: "bottom_up", supuestos: "x" }, null, null, true)).rows[0].id;
+  chequear(doc === mismo, "el autosave de un template sin id actualiza el mismo documento (no duplica)", { doc, mismo });
+  const docsAnon = (await como("anon", null, `select count(*)::int n from public.empresa_documentos`)).rows[0].n;
+  chequear(docsAnon === 0, "nace privado: anon no lo ve", docsAnon);
+  const docsBeto = (await como("authenticated", U.beto, `select campos->>'supuestos' s, completo from public.empresa_documentos where id = $1`, [doc])).rows[0];
+  chequear(docsBeto?.s === "x" && docsBeto.completo === true, "los miembros lo leen con lo último guardado", docsBeto);
+  const docsCaro = (await como("authenticated", U.caro, `select count(*)::int n from public.empresa_documentos`)).rows[0].n;
+  chequear(docsCaro === 0, "alguien de afuera (caro) no lo ve", docsCaro);
+  await como("authenticated", U.ana, `select public.visibilidad_documento($1, true)`, [doc]);
+  const visibleAnon = (await como("anon", null, `select titulo from public.empresa_documentos`)).rows;
+  chequear(visibleAnon.length === 1, "transparente: anon lo ve", visibleAnon);
+  await como("authenticated", U.ana, `select public.visibilidad_documento($1, false)`, [doc]);
+  const revocado = (await como("anon", null, `select count(*)::int n from public.empresa_documentos`)).rows[0].n;
+  chequear(revocado === 0, "volver a privado revoca la visibilidad", revocado);
+  await espera("caro no cambia la visibilidad", () => como("authenticated", U.caro, `select public.visibilidad_documento($1, true)`, [doc]), "primero sumate");
+  await espera("link sin url", () => guardar(U.ana, null, null, "link", "Deck"), "link_con_url");
+  await espera("link http", () => guardar(U.ana, null, null, "link", "Deck", {}, null, "http://x.com"), "url_valida");
+  await espera("plantilla en un escrito", () => guardar(U.ana, null, "tam-sam-som", "escrito", "X"), "plantilla_valida");
+  const link = (await guardar(U.ana, null, null, "link", "Pitch deck", {}, null, "https://drive.google.com/x")).rows[0].id;
+  await como("authenticated", U.ana, `select public.visibilidad_documento($1, true)`, [link]);
+  await como("authenticated", U.ana, `select public.archivar_documento($1, true)`, [link]);
+  const archivado = (await como("anon", null, `select count(*)::int n from public.empresa_documentos`)).rows[0].n;
+  const filaDoc = (await db.query(`select visible, archivado from public.empresa_documentos where id = $1`, [link])).rows[0];
+  chequear(archivado === 0 && filaDoc.visible === false && filaDoc.archivado === true, "archivar lo saca de lo público y lo deja privado", filaDoc);
+  await como("authenticated", U.ana, `select public.archivar_documento($1, true)`, [doc]);
+  const nuevo = (await guardar(U.ana, null, "tam-sam-som", "plantilla", "TAM, SAM y SOM")).rows[0].id;
+  chequear(nuevo !== doc, "con el template archivado, empezar de nuevo crea otro", { nuevo, doc });
+  await espera("restaurar el archivado con otro activo", () => como("authenticated", U.ana, `select public.archivar_documento($1, false)`, [doc]), "ya hay otro documento");
+  await espera("anon no escribe documentos directo", () => como("anon", null, `update public.empresa_documentos set visible = true`), "permission denied");
+  await espera("un miembro no escribe directo (solo por función)", () => como("authenticated", U.ana, `update public.empresa_documentos set visible = true`), "permission denied");
 
   console.log(`\n${ok} ok · ${fallas} fallas`);
   process.exit(fallas ? 1 : 0);

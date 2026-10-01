@@ -34,6 +34,9 @@ const MENSAJES: Record<string, string> = {
   "esa edición no es tuya": "Esa edición no es tuya.",
   "newsletter inexistente": "Esa newsletter ya no está disponible.",
   "es tu newsletter": "Es tu propia newsletter.",
+  "demasiados documentos": "Llegaste a 100 documentos. Archivá alguno viejo para sumar otro.",
+  "ese documento no es de tu empresa": "Ese documento no es de tu empresa.",
+  "ya hay otro documento de ese template": "Ya tenés otro documento de ese template. Archivalo primero.",
 };
 
 /** Error de Supabase → Resultado con un mensaje que se entiende. Nunca tira. */
