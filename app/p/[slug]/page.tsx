@@ -21,8 +21,20 @@ import {
 } from "@/components/perfil/Bloques";
 import { IconoUbicacion } from "@/components/perfil/IconosMarca";
 import DescripcionConTags from "@/components/DescripcionConTags";
+import BuildPublico from "@/components/build/BuildPublico";
+import NewsletterPerfil from "@/components/newsletter/NewsletterPerfil";
+import PortfolioPublico from "@/components/portfolio/PortfolioPublico";
 import { urlPerfil } from "@/lib/cuenta";
-import { getMetricasPerfil, getPerfil, getSeguidores, getSlugs } from "@/lib/datos";
+import {
+  getBuildEmpresa,
+  getLogos,
+  getMetricasPerfil,
+  getNewsletter,
+  getPerfil,
+  getPortfolio,
+  getSeguidores,
+  getSlugs,
+} from "@/lib/datos";
 import { cargo } from "@/lib/etiquetas";
 import { ROLES, TIPOS } from "@/lib/rol";
 
@@ -72,8 +84,21 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
   ]);
   if (!datos) notFound();
 
-  const { perfil, pitches, portafolio, racha } = datos;
-  const rol = ROLES[perfil.rol];
+  const { perfil: leido, pitches, portafolio, racha } = datos;
+  const rol = ROLES[leido.rol];
+  // Portfolio (inversiones y clientes), Build in Public y newsletter: extras del ecosistema.
+  const conPortfolio = leido.rol === "inversor" || leido.rol === "aliado";
+  const [build, newsletter, portfolio] = await Promise.all([
+    leido.empresa_id ? getBuildEmpresa(leido.empresa_id) : null,
+    getNewsletter(leido.id),
+    conPortfolio ? getPortfolio(leido.id) : null,
+  ]);
+  const logos = await getLogos([leido.empresa_id ?? "", ...(portfolio?.entradas.map((e) => e.empresa_id ?? "") ?? [])]);
+  // El logo de la empresa: el de empresa_logos y, si no hay, el de feria_pro.
+  const perfil =
+    leido.empresa && leido.empresa_id
+      ? { ...leido, empresa: { ...leido.empresa, logo_url: logos.get(leido.empresa_id) ?? leido.empresa.logo_url } }
+      : leido;
   const c = cargo(perfil.cargo);
   const detalle = perfil.empresa ? `${c?.label ?? "Equipo"} en ${perfil.empresa.nombre}` : null;
 
@@ -162,7 +187,30 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
             <BloqueRacha racha={racha} />
             <BloqueTrayectoria perfil={perfil} />
             <BloqueCofundador perfil={perfil} />
-            <BloquePortafolio items={portafolio} rol={perfil.rol} />
+            {portfolio && <PortfolioPublico rol={perfil.rol} perfilId={perfil.id} datos={portfolio} logos={logos} />}
+            {build && perfil.empresa && (build.hitos.length > 0 || build.avances.length > 0) && (
+              <section aria-labelledby="build-titulo">
+                <h2 id="build-titulo" className={SUBTITULO}>
+                  Build in Public
+                </h2>
+                <BuildPublico
+                  hitos={build.hitos}
+                  avances={build.avances}
+                  ahora={new Date()}
+                  completo={false}
+                  hrefEmpresa={`/e/${perfil.empresa.slug}`}
+                />
+              </section>
+            )}
+            {newsletter && (
+              <section aria-labelledby="newsletter-titulo">
+                <h2 id="newsletter-titulo" className={SUBTITULO}>
+                  Newsletter
+                </h2>
+                <NewsletterPerfil newsletter={newsletter} />
+              </section>
+            )}
+            <BloquePortafolio items={portafolio} />
           </div>
         </div>
 

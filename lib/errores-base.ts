@@ -22,6 +22,22 @@ const MENSAJES: Record<string, string> = {
   "evento inexistente": "Ese evento no está activo.",
   "sin sesión": SIN_SESION,
   "no autorizado": "Esta acción es solo para el equipo de Pecera.",
+  "ese pitch no es tuyo": "Ese pitch no es de tu perfil.",
+  "ya hay un hito en curso": "Ya hay un hito en curso. Marcalo como logrado o pasalo a próximo primero.",
+  "demasiados hitos": "Llegaste a 40 hitos. Borrá alguno viejo para sumar otro.",
+  "ese hito no es de tu empresa": "Ese hito no es de tu empresa.",
+  "demasiados avances": "Ya publicaste 5 avances hoy. Mañana podés sumar más.",
+  "primero guardá el producto": "Primero guardá el producto; después sumá las imágenes.",
+  "imagen inválida": "Esa imagen no es válida. Probá subirla de nuevo.",
+  "demasiados documentos": "Llegaste a 100 documentos. Archivá alguno viejo para sumar otro.",
+  "ese documento no es de tu empresa": "Ese documento no es de tu empresa.",
+  "ya hay otro documento de ese template": "Ya tenés otro documento de ese template. Archivalo primero.",
+  "empresa inexistente": "Esa empresa ya no está en Pecera. Cargala a mano.",
+  "esa entrada no es tuya": "Esa entrada no es de tu portfolio.",
+  "demasiadas entradas": "Llegaste a 60 entradas. Borrá alguna para sumar otra.",
+  "esa relación no espera tu respuesta": "Esa relación ya fue respondida o no nombra a tu empresa.",
+  "demasiados servicios": "Llegaste a 12 servicios. Borrá alguno para sumar otro.",
+  "ese servicio no es tuyo": "Ese servicio no es tuyo.",
 };
 
 /** Error de Supabase → Resultado con un mensaje que se entiende. Nunca tira. */
@@ -29,7 +45,14 @@ export function traducir(error: PostgrestError, donde: string): Resultado {
   if (faltaMigracion(error)) return { ok: false, mensaje: NO_DISPONIBLE };
   const conocido = MENSAJES[error.message];
   if (conocido) return { ok: false, mensaje: conocido };
-  if (error.code === "23505") return { ok: false, mensaje: "Esa dirección ya está tomada, probá otra." };
+  if (error.code === "23505") {
+    return {
+      ok: false,
+      mensaje: error.message.includes("portfolio_sin_duplicados")
+        ? "Ya tenés esa relación con esa empresa en tu portfolio."
+        : "Esa dirección ya está tomada, probá otra.",
+    };
+  }
   if (error.code === "23514") return { ok: false, mensaje: "Revisá los datos: alguno no es válido." };
   console.error(`Supabase (${donde}): ${error.code} ${error.message}`);
   return { ok: false, mensaje: "No pudimos guardar. Probá de nuevo en un rato." };

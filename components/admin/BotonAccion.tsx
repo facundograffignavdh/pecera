@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import type { Resultado } from "@/lib/errores-base";
 
 const ESTILOS = {
-  primario: "bg-tinta text-marfil",
+  primario: "bg-naranja text-tinta hover:bg-pecera",
   secundario: "border border-tinta/30 text-tinta hover:border-tinta",
   peligro: "border-2 border-arcilla text-tinta",
 } as const;

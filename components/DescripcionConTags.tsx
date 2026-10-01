@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { fragmentar } from "@/lib/hashtags";
 
@@ -9,13 +10,17 @@ export default function DescripcionConTags({
   texto,
   className = "",
   claro = false,
+  prefijo,
 }: {
   texto: string;
   className?: string;
   claro?: boolean;
+  /** Algo antes del texto, en la misma línea (la insignia PITCH del reel). */
+  prefijo?: ReactNode;
 }) {
   return (
     <p className={className}>
+      {prefijo}
       {fragmentar(texto).map((f, i) =>
         f.tipo === "tag" ? (
           <Link

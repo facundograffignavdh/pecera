@@ -1,5 +1,10 @@
 import { cache } from "react";
+import type { Avance, Hito, HitoActual } from "@/lib/build";
+import type { Documento } from "@/lib/dataroom";
 import { urlMedia } from "@/lib/media";
+import type { NewsletterLink } from "@/lib/newsletter";
+import { COLUMNAS_PORTFOLIO, type EntradaPortfolio, type Servicio, type Tesis } from "@/lib/portfolio";
+import type { Producto } from "@/lib/producto";
 import { supabase } from "@/lib/supabase";
 import { hashtagsDe, normalizarTag } from "@/lib/hashtags";
 import { calcularRacha, type Racha } from "@/lib/racha";
@@ -112,7 +117,11 @@ export async function getFeed(): Promise<ItemFeed[]> {
       .order("id")
       .overrideTypes<Array<Pitch & { perfil: Perfil }>, { merge: false }>();
 
-  const [feed, conteos] = await Promise.all([enCascada(NIVELES_PERFIL, consulta), getConteoPiques()]);
+  const [feed, conteos, construyendo] = await Promise.all([
+    enCascada(NIVELES_PERFIL, consulta),
+    getConteoPiques(),
+    getHitosActuales(),
+  ]);
   if (feed.error) fallo("getFeed", feed.error);
 
   // Racha de cada perfil con las fechas de todos sus pitches publicados.
@@ -127,6 +136,7 @@ export async function getFeed(): Promise<ItemFeed[]> {
     perfil: conUrlsPerfil(perfil),
     piques: conteos.get(pitch.id) ?? 0,
     racha: rachas.get(pitch.perfil_id) ?? 0,
+    construyendo: (perfil.empresa_id && construyendo.get(perfil.empresa_id)) || null,
   }));
 }
 
@@ -145,6 +155,23 @@ export async function getTags(): Promise<Array<{ tag: string; total: number }>> 
 export async function getPitchesDeTag(tag: string): Promise<ItemFeed[]> {
   const buscado = normalizarTag(tag);
   return (await getFeed()).filter(({ pitch }) => hashtagsDe(pitch.descripcion).includes(buscado));
+}
+
+/**
+ * Hito en curso de cada empresa visible (Build in Public), para el reel. Como los
+ * piques, no lanza: sin la migración o con un error, el feed sale sin el chip.
+ */
+async function getHitosActuales(): Promise<Map<string, HitoActual>> {
+  const { data, error } = await supabase
+    .from("empresa_hitos")
+    .select("empresa_id, titulo, progreso, etapa")
+    .eq("estado", "en_curso")
+    .overrideTypes<Array<HitoActual & { empresa_id: string }>, { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getHitosActuales): ${error.message}`);
+    return new Map();
+  }
+  return new Map(data.map(({ empresa_id, ...hito }) => [empresa_id, hito]));
 }
 
 /**
@@ -266,6 +293,122 @@ export async function getMetricasPerfil(slug: string): Promise<Metricas> {
   return Object.fromEntries(filas.map((f) => [f.pitch_id, { vistas: f.vistas, piques: f.piques }]));
 }
 
+/**
+ * Documentos transparentes del Dataroom de una empresa visible (la RLS ya filtra lo
+ * privado y lo archivado; acá queda explícito). No lanza: sin la migración, vacío.
+ */
+export const getDocumentosPublicos = cache(async (empresaId: string): Promise<Documento[]> => {
+  const { data, error } = await supabase
+    .from("empresa_documentos")
+    .select("id, plantilla, categoria, tipo, titulo, campos, cuerpo, url, completo, visible, archivado, updated_at")
+    .eq("empresa_id", empresaId)
+    .eq("visible", true)
+    .eq("archivado", false)
+    .order("updated_at", { ascending: false })
+    .overrideTypes<Documento[], { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getDocumentosPublicos): ${error.message}`);
+    return [];
+  }
+  return data ?? [];
+});
+
+/** Link a la newsletter de un perfil visible, o null. No lanza. */
+export const getNewsletter = cache(async (perfilId: string): Promise<NewsletterLink | null> => {
+  const { data, error } = await supabase
+    .from("perfil_newsletter")
+    .select("url, titulo")
+    .eq("perfil_id", perfilId)
+    .maybeSingle()
+    .overrideTypes<NewsletterLink | null, { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getNewsletter): ${error.message}`);
+    return null;
+  }
+  return data;
+});
+
+export type PortfolioPublico = { entradas: EntradaPortfolio[]; servicios: Servicio[]; tesis: Tesis | null };
+
+/**
+ * Lo público del portfolio de un perfil visible: entradas públicas, servicios y
+ * tesis. Lo de "solo cuentas" lo pide el navegador con sesión. No lanza.
+ */
+export const getPortfolio = cache(async (perfilId: string): Promise<PortfolioPublico | null> => {
+  const [entradas, servicios, tesis] = await Promise.all([
+    supabase
+      .from("portfolio")
+      .select(`${COLUMNAS_PORTFOLIO}, empresa:empresas(slug, nombre)`)
+      .eq("perfil_id", perfilId)
+      .eq("visibilidad", "publico")
+      .order("created_at", { ascending: false })
+      .limit(60)
+      .overrideTypes<EntradaPortfolio[], { merge: false }>(),
+    supabase
+      .from("perfil_servicios")
+      .select("id, nombre, categoria, descripcion, modalidad, precio")
+      .eq("perfil_id", perfilId)
+      .order("orden")
+      .overrideTypes<Servicio[], { merge: false }>(),
+    supabase
+      .from("perfil_tesis")
+      .select("texto, geografias, modelos, busca")
+      .eq("perfil_id", perfilId)
+      .maybeSingle()
+      .overrideTypes<Tesis | null, { merge: false }>(),
+  ]);
+  const error = entradas.error ?? servicios.error ?? tesis.error;
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getPortfolio): ${error.message}`);
+    return null;
+  }
+  return { entradas: entradas.data ?? [], servicios: servicios.data ?? [], tesis: tesis.data };
+});
+
+export type Apoyo = Pick<EntradaPortfolio, "id" | "tipo" | "estado" | "rol" | "confirmacion"> & {
+  perfil: Pick<Perfil, "slug" | "nombre" | "rol" | "tipo" | "avatar_url">;
+};
+
+/**
+ * Inversores y aliados que muestran públicamente una relación con esta empresa (las
+ * que la empresa rechazó, no). Confirmadas primero. No lanza.
+ */
+export const getApoyos = cache(async (empresaId: string): Promise<Apoyo[]> => {
+  const { data, error } = await supabase
+    .from("portfolio")
+    .select("id, tipo, estado, rol, confirmacion, perfil:perfiles!inner(slug, nombre, rol, tipo, avatar_url)")
+    .eq("empresa_id", empresaId)
+    .eq("visibilidad", "publico")
+    .neq("confirmacion", "rechazada")
+    .overrideTypes<Apoyo[], { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getApoyos): ${error.message}`);
+    return [];
+  }
+  return (data ?? [])
+    .map((a) => ({ ...a, perfil: { ...a.perfil, avatar_url: a.perfil.avatar_url && urlMedia(a.perfil.avatar_url) } }))
+    .sort((a, b) => Number(b.confirmacion === "confirmada") - Number(a.confirmacion === "confirmada"));
+});
+
+/**
+ * URL del logo de cada empresa (las visibles), por id. Tabla aparte: si la
+ * migración no corrió o falla, vacío y se ven las iniciales. No lanza.
+ */
+export async function getLogos(empresaIds: string[]): Promise<Map<string, string>> {
+  const ids = [...new Set(empresaIds)].filter(Boolean);
+  if (ids.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from("empresa_logos")
+    .select("empresa_id, clave")
+    .in("empresa_id", ids)
+    .overrideTypes<Array<{ empresa_id: string; clave: string }>, { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getLogos): ${error.message}`);
+    return new Map();
+  }
+  return new Map((data ?? []).map((l) => [l.empresa_id, urlMedia(l.clave)]));
+}
+
 /** Slugs publicados, para `generateStaticParams`. */
 export async function getSlugs(): Promise<string[]> {
   const { data, error } = await supabase
@@ -289,7 +432,57 @@ export type PaginaEmpresa = {
   miembros: Perfil[];
   pitches: Array<Pitch & { autor: Pick<Perfil, "slug" | "nombre"> }>;
   datos: DatoEmpresa[];
-};
+  producto: Producto | null;
+} & BuildEmpresa;
+
+/** Build in Public de una empresa. Vacío si la base no tiene la migración. */
+export type BuildEmpresa = { hitos: Hito[]; avances: Avance[] };
+
+const COLUMNAS_HITO = "id, titulo, detalle, etapa, estado, progreso, fecha, created_at";
+const COLUMNAS_PRODUCTO =
+  "tipo, nombre, propuesta, problema, solucion, para_quien, caracteristicas, como_usar, demo_url, imagenes";
+
+/**
+ * Hitos y los últimos avances (los suficientes para la racha de un año). No lanza:
+ * es una sección más de la página, no la página.
+ */
+export async function getBuildEmpresa(empresaId: string): Promise<BuildEmpresa> {
+  const [hitos, avances] = await Promise.all([
+    supabase
+      .from("empresa_hitos")
+      .select(COLUMNAS_HITO)
+      .eq("empresa_id", empresaId)
+      .overrideTypes<Hito[], { merge: false }>(),
+    supabase
+      .from("empresa_avances")
+      .select("id, texto, hito_id, created_at")
+      .eq("empresa_id", empresaId)
+      .order("created_at", { ascending: false })
+      .limit(120)
+      .overrideTypes<Avance[], { merge: false }>(),
+  ]);
+  const error = hitos.error ?? avances.error;
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getBuildEmpresa): ${error.message}`);
+    return { hitos: [], avances: [] };
+  }
+  return { hitos: hitos.data ?? [], avances: avances.data ?? [] };
+}
+
+/** Producto de la empresa con las URLs de las imágenes listas. No lanza. */
+async function getProducto(empresaId: string): Promise<Producto | null> {
+  const { data, error } = await supabase
+    .from("empresa_productos")
+    .select(COLUMNAS_PRODUCTO)
+    .eq("empresa_id", empresaId)
+    .maybeSingle()
+    .overrideTypes<Producto | null, { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getProducto): ${error.message}`);
+    return null;
+  }
+  return data && { ...data, imagenes: data.imagenes.map(urlMedia) };
+}
 
 /**
  * Empresa visible con sus miembros visibles, los pitches de todos ellos y los
@@ -311,7 +504,7 @@ export const getEmpresa = cache(async (slug: string): Promise<PaginaEmpresa | nu
   if (!fila) return null;
   const empresa: Empresa = { ...fila, logo_url: fila.logo_url && urlMedia(fila.logo_url) };
 
-  const [miembrosRes, datosRes] = await Promise.all([
+  const [miembrosRes, datosRes, build, producto] = await Promise.all([
     supabase
       .from("perfiles")
       .select(`${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, pitches(${COLUMNAS_PITCH})`)
@@ -328,6 +521,8 @@ export const getEmpresa = cache(async (slug: string): Promise<PaginaEmpresa | nu
       .eq("empresa_id", empresa.id)
       .eq("visible", true)
       .overrideTypes<DatoEmpresa[], { merge: false }>(),
+    getBuildEmpresa(empresa.id),
+    getProducto(empresa.id),
   ]);
 
   if (miembrosRes.error) fallo("getEmpresa (miembros)", miembrosRes.error);
@@ -340,7 +535,7 @@ export const getEmpresa = cache(async (slug: string): Promise<PaginaEmpresa | nu
     lista.map((p) => ({ ...conUrlsPitch(p), autor: { slug: s, nombre } }))
   );
 
-  return { empresa, miembros, pitches, datos: datosRes.data ?? [] };
+  return { empresa, miembros, pitches, datos: datosRes.data ?? [], producto, ...build };
 });
 
 // ---------------------------------------------------------------------------
@@ -421,5 +616,98 @@ export async function getEstadoEvento(evento: string): Promise<EstadoEvento> {
     participantes: lista,
     totalVotos: typeof total.data === "number" ? total.data : 0,
     resultados: Object.fromEntries(filas.map((f) => [f.perfil_id, Number(f.votos)])),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Landing
+// ---------------------------------------------------------------------------
+
+/** Un pitch reciente para la vitrina de la landing. */
+export type PitchVitrina = {
+  slug: string;
+  nombre: string;
+  rol: Perfil["rol"];
+  tipo: Perfil["tipo"];
+  poster: string;
+};
+
+/**
+ * Lo que la landing puede mostrar como prueba: conteos reales de lo visible y los
+ * pitches más recientes con poster. Deja afuera los perfiles `test-*` (los de
+ * prueba de supabase/test-50.sql). Nunca lanza: sin datos, la landing muestra sus
+ * principios y no inventa números.
+ */
+export type PulsoEcosistema = {
+  emprendedores: number;
+  inversores: number;
+  aliados: number;
+  empresas: number;
+  pitches: number;
+  vitrina: PitchVitrina[];
+};
+
+const ES_PRUEBA = (slug: string) => slug.startsWith("test-");
+
+export async function getPulsoEcosistema(): Promise<PulsoEcosistema | null> {
+  try {
+    return await pulso();
+  } catch (e) {
+    console.error(`getPulsoEcosistema: ${e instanceof Error ? e.message : "error"}`);
+    return null;
+  }
+}
+
+async function pulso(): Promise<PulsoEcosistema | null> {
+  const [perfiles, empresas, pitches] = await Promise.all([
+    supabase
+      .from("perfiles")
+      .select("slug, rol")
+      .eq("publicado", true)
+      .eq("oculto", false)
+      .limit(5000)
+      .overrideTypes<Array<{ slug: string; rol: Perfil["rol"] }>, { merge: false }>(),
+    supabase.from("empresas").select("id").limit(5000),
+    supabase
+      .from("pitches")
+      .select("poster_url, created_at, perfil:perfiles!inner(slug, nombre, rol, tipo)")
+      .eq("publicado", true)
+      .eq("perfil.publicado", true)
+      .eq("perfil.oculto", false)
+      .order("created_at", { ascending: false })
+      .limit(1000)
+      .overrideTypes<
+        Array<{ poster_url: string | null; perfil: Pick<Perfil, "slug" | "nombre" | "rol" | "tipo"> }>,
+        { merge: false }
+      >(),
+  ]);
+  if (perfiles.error || pitches.error) {
+    const error = perfiles.error ?? pitches.error;
+    if (error && !faltaMigracion(error)) console.error(`Supabase (getPulsoEcosistema): ${error.message}`);
+    return null;
+  }
+
+  const reales = perfiles.data.filter((p) => !ES_PRUEBA(p.slug));
+  const deRol = (rol: Perfil["rol"]) => reales.filter((p) => p.rol === rol).length;
+  const pitchesReales = pitches.data.filter((p) => !ES_PRUEBA(p.perfil.slug));
+
+  // Un pitch por perfil: la vitrina muestra gente distinta.
+  const vistos = new Set<string>();
+  const vitrina: PitchVitrina[] = [];
+  for (const { poster_url, perfil } of pitchesReales) {
+    if (!poster_url || vistos.has(perfil.slug)) continue;
+    vistos.add(perfil.slug);
+    vitrina.push({ ...perfil, poster: urlMedia(poster_url) });
+    if (vitrina.length === 8) break;
+  }
+
+  return {
+    emprendedores: deRol("emprendedor"),
+    inversores: deRol("inversor"),
+    aliados: deRol("aliado"),
+    // Sin la migración de empresas no hay número que mostrar.
+    empresas: empresas.error ? 0 : empresas.data.length,
+    pitches: pitchesReales.length,
+    vitrina,
   };
 }

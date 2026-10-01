@@ -47,13 +47,20 @@ export const formatoCodigo = (c: string) => `${c.slice(0, 4)}-${c.slice(4)}`;
 /** Dirección pública de la empresa. */
 const urlEmpresa = (slug: string) => urlSitio(`/e/${slug}`);
 
-export default function TarjetaEmpresa({ empresa }: { empresa: MiEmpresa | null }) {
+export default function TarjetaEmpresa({
+  empresa,
+  logo,
+}: {
+  empresa: MiEmpresa | null;
+  /** Logo vigente (empresa_logos o, si no hay, el de feria_pro). Se edita en /cuenta/empresa. */
+  logo?: string | null;
+}) {
   return (
     <Tarjeta
       titulo="Tu empresa"
       bajada="Una página con todo tu equipo, cada uno con su cargo, y todos sus pitches juntos."
     >
-      {empresa ? <ConEmpresa empresa={empresa} /> : <SinEmpresa />}
+      {empresa ? <ConEmpresa empresa={empresa} logo={logo ?? empresa.logo_url ?? null} /> : <SinEmpresa />}
     </Tarjeta>
   );
 }
@@ -76,7 +83,7 @@ function SinEmpresa() {
             aria-selected={modo === valor}
             onClick={() => setModo(valor)}
             className={`min-h-11 rounded-full text-sm font-medium transition-colors duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
-              modo === valor ? "bg-tinta text-marfil" : "text-tinta/75 hover:text-tinta"
+              modo === valor ? "bg-naranja text-tinta" : "text-tinta/75 hover:text-tinta"
             }`}
           >
             {label}
@@ -241,11 +248,11 @@ function FormUnirme() {
 }
 
 /** Con empresa: un resumen. Todo lo demás se administra en /cuenta/empresa. */
-function ConEmpresa({ empresa }: { empresa: MiEmpresa }) {
+function ConEmpresa({ empresa, logo }: { empresa: MiEmpresa; logo: string | null }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <LogoEmpresa nombre={empresa.nombre} logo={empresa.logo_url ?? null} size={56} />
+        <LogoEmpresa nombre={empresa.nombre} logo={logo} size={56} />
         <div className="min-w-0">
           <p className="truncate font-display text-2xl font-semibold leading-tight text-tinta">{empresa.nombre}</p>
           <p className="text-sm text-tinta/70">
@@ -254,7 +261,7 @@ function ConEmpresa({ empresa }: { empresa: MiEmpresa }) {
           </p>
         </div>
       </div>
-      {!empresa.logo_url && (
+      {!logo && (
         <p className="rounded-2xl bg-t-ocre-suave px-4 py-3 text-sm text-t-ocre">
           Sumale el logo: la página de la empresa se ve mucho mejor.
         </p>

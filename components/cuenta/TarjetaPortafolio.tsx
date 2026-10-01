@@ -13,18 +13,18 @@ const INICIAL: Resultado = { ok: false };
 
 const TEXTOS: Record<Rol, { titulo: string; bajada: string; ejemplo: string }> = {
   emprendedor: {
-    titulo: "Logros y documentos",
-    bajada: "Premios, notas de prensa, clientes y documentos que suman confianza.",
+    titulo: "Tus links y documentos",
+    bajada: "Premios, notas de prensa y documentos que suman confianza.",
     ejemplo: "Ganadores de Impulso 21 · 2026",
   },
   inversor: {
-    titulo: "Tu portafolio",
-    bajada: "En qué invertiste, tu tesis y notas de prensa. Es lo primero que mira un founder.",
+    titulo: "Tus links y documentos",
+    bajada: "Tu tesis, notas y material. En qué invertiste va en tu Portfolio, que confirma cada empresa.",
     ejemplo: "Raíz Verde · pre-seed 2025",
   },
   aliado: {
-    titulo: "Casos y servicios",
-    bajada: "Clientes, casos de éxito, servicios que ofrecés y material para descargar.",
+    titulo: "Tus links y documentos",
+    bajada: "Casos, presentaciones y material para descargar. Con quién trabajaste va en tu Portfolio.",
     ejemplo: "Lanzamiento de Raíz Verde: de 0 a 300 clientes",
   },
 };
@@ -36,7 +36,7 @@ export default function TarjetaPortafolio({ items, rol }: { items: ItemPortafoli
   const t = TEXTOS[rol];
 
   return (
-    <Tarjeta titulo={t.titulo} etiqueta="Portafolio" bajada={t.bajada}>
+    <Tarjeta titulo={t.titulo} etiqueta="Links" bajada={t.bajada}>
       {items.length > 0 && (
         <ul className="flex flex-col gap-2">
           {items.map((item) =>
@@ -163,7 +163,7 @@ function FormItem({
       {estado.mensaje && <Aviso ok={estado.ok}>{estado.mensaje}</Aviso>}
       <div className="flex gap-2">
         <button type="submit" disabled={guardando} className={`${BOTON_PRIMARIO} boton flex-1`}>
-          {guardando ? "Guardando…" : item ? "Guardar" : "Sumar al portafolio"}
+          {guardando ? "Guardando…" : item ? "Guardar" : "Sumar link"}
         </button>
         {item && (
           <button type="button" onClick={onListo} className="boton min-h-12 rounded-full border border-tinta/30 px-5 font-medium text-tinta">

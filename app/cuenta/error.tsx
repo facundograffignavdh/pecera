@@ -31,7 +31,7 @@ export default function ErrorCuenta({
           <button
             type="button"
             onClick={() => retry()}
-            className="inline-flex min-h-12 items-center justify-center rounded-full bg-tinta px-6 font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+            className="inline-flex min-h-12 items-center justify-center rounded-full bg-naranja px-6 font-semibold text-tinta transition-[background-color,transform] duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:bg-pecera active:scale-[0.98]"
           >
             Probar de nuevo
           </button>

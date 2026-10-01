@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "Pecera: construí tu startup en público. Subí tu pitch de 90 segundos.";
+export const alt = "Pecera: donde el ecosistema emprendedor se encuentra. Startups, inversores y aliados de Latinoamérica.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const dynamic = "force-static";
@@ -13,9 +13,9 @@ async function dataUrl(archivo: string, tipo: string) {
 }
 
 export default async function Image() {
-  const [logo, pez] = await Promise.all([
+  const [logo, isotipo] = await Promise.all([
     dataUrl("logo-combinado-tinta.png", "image/png"),
-    dataUrl("pez.svg", "image/svg+xml"),
+    dataUrl("isotipo-naranja.png", "image/png"),
   ]);
 
   return new ImageResponse(
@@ -31,22 +31,14 @@ export default async function Image() {
           position: "relative",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={pez}
-          alt=""
-          width={400}
-          height={358}
-          style={{ position: "absolute", right: 56, bottom: 110, transform: "scaleX(-1) rotate(-8deg)" }}
-        />
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 640 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={isotipo} alt="" width={380} height={246} style={{ position: "absolute", right: 72, top: 190 }} />
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 660 }}>
           <img src={logo} alt="" width={262} height={56} />
-          <div style={{ display: "flex", fontSize: 68, fontWeight: 700, lineHeight: 1.05, letterSpacing: -1 }}>
-            Construí tu startup en público.
+          <div style={{ display: "flex", fontSize: 66, fontWeight: 700, lineHeight: 1.04, letterSpacing: -1 }}>
+            Donde el ecosistema emprendedor se encuentra.
           </div>
-          <div style={{ display: "flex", fontSize: 30, color: "#D95A22", fontWeight: 700 }}>
-            Subí tu pitch de 90 segundos →
+          <div style={{ display: "flex", fontSize: 28, color: "#A9441A", fontWeight: 700 }}>
+            Startups · Inversores · Aliados — Latinoamérica
           </div>
         </div>
       </div>

@@ -12,9 +12,9 @@ const GRUPOS = [
     titulo: "Descubrir",
     enlaces: [
       { href: "/", label: "Feed", bajada: "Para vos y Stakeholding" },
-      { href: "/explorar", label: "Explorar", bajada: "Hashtags y secciones" },
+      { href: "/explorar", label: "Explorar", bajada: "Startups, inversores, aliados y hashtags" },
       { href: "/eventos", label: "Eventos", bajada: "Ferias, networking, pitch events y más" },
-      { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "En curso · programa y votación", sub: true },
+      { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "Programa y votación", sub: true },
       { href: "/cofundadores", label: "Cofundadores", bajada: "Encontrá socio/a, como en YC" },
     ],
   },
@@ -22,13 +22,13 @@ const GRUPOS = [
     titulo: "Lo tuyo",
     enlaces: [
       { href: "/red", label: "Mi red", bajada: "Los perfiles que seguís y guardaste" },
-      { href: "/cuenta", label: "Mi perfil", bajada: "Tu tarjeta, tu empresa y tu pitch" },
+      { href: "/cuenta", label: "Mi perfil", bajada: "Tu perfil, tu empresa y tus datos" },
     ],
   },
   {
     titulo: "Pecera",
     enlaces: [
-      { href: "/docs", label: "Docs", bajada: "Conceptos y documentos legales" },
+      { href: "/academy", label: "Academy", bajada: "Aprendé y prepará tu startup" },
       { href: "/sumate", label: "Landing", bajada: "Qué es Pecera y cómo sumarte" },
     ],
   },
@@ -81,8 +81,13 @@ export default function MenuPrincipal() {
                 <p className="px-4 text-xs font-semibold uppercase tracking-[0.12em] text-tinta/50">{grupo.titulo}</p>
                 <ul className="flex flex-col gap-0.5">
                   {grupo.enlaces.map((e) => {
+                    // /eventos solo marca el índice (la feria tiene su entrada); /docs es parte de Academy.
                     const actual =
-                      e.href === "/" ? ruta === "/" : e.href === "/eventos" ? ruta === "/eventos" : ruta.startsWith(e.href);
+                      e.href === "/"
+                        ? ruta === "/"
+                        : e.href === "/eventos"
+                          ? ruta === "/eventos"
+                          : ruta.startsWith(e.href) || (e.href === "/academy" && ruta.startsWith("/docs"));
                     const sub = "sub" in e && e.sub;
                     return (
                       <li key={e.href} className={sub ? "ml-4 border-l-2 border-tinta/10 pl-2" : undefined}>
@@ -90,12 +95,14 @@ export default function MenuPrincipal() {
                           href={e.href}
                           onClick={cerrar}
                           aria-current={actual ? "page" : undefined}
-                          className={`boton flex min-h-13 flex-col justify-center rounded-2xl px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
-                            actual ? "bg-tinta text-marfil" : "text-tinta hover:bg-tinta/5"
+                          className={`boton relative flex min-h-13 flex-col justify-center rounded-2xl py-2 pl-5 pr-4 text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
+                            actual ? "bg-naranja-suave" : "hover:bg-tinta/5"
                           }`}
                         >
-                          <span className="font-medium">{e.label}</span>
-                          <span className={`text-sm ${actual ? "text-marfil/75" : "text-tinta/60"}`}>{e.bajada}</span>
+                          {/* La sección actual: una barra naranja a la izquierda, sin pintar todo. */}
+                          {actual && <span aria-hidden className="absolute inset-y-3 left-1.5 w-1 rounded-full bg-naranja" />}
+                          <span className={actual ? "font-semibold" : "font-medium"}>{e.label}</span>
+                          <span className="text-sm text-tinta/65">{e.bajada}</span>
                         </Link>
                       </li>
                     );

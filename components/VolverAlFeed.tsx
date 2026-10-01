@@ -12,13 +12,13 @@ export default function VolverAlFeed() {
   return <EnlaceVolver href={desde ? `/#${desde}` : "/"} />;
 }
 
-export function EnlaceVolver({ href }: { href: string }) {
+export function EnlaceVolver({ href, texto = "Volver al feed" }: { href: string; texto?: string }) {
   return (
     <Link
       href={href}
       className="inline-flex items-center gap-2 text-sm text-tinta/70 transition-colors duration-200 ease-pecera hover:text-arcilla"
     >
-      <span aria-hidden>&larr;</span> Volver al feed
+      <span aria-hidden>&larr;</span> {texto}
     </Link>
   );
 }

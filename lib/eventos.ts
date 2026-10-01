@@ -155,3 +155,18 @@ export const CATEGORIAS_EVENTO: CategoriaEvento[] = [
   { id: "demo-days", nombre: "Demo Days", bajada: "Cierres de programas con pitches ante el jurado.", eventos: [] },
   { id: "otros", nombre: "Otros eventos", bajada: "Hackathons, charlas y todo lo que se sume.", eventos: [] },
 ];
+/**
+ * Dónde está el evento en el tiempo (hora de Argentina): antes de la primera
+ * jornada, durante (hasta el final del día de la última) o terminado. La landing
+ * lo anuncia solo mientras sirve.
+ */
+export function momentoEvento(evento: Evento, ahora = Date.now()): "proximo" | "en_curso" | "terminado" {
+  const primera = evento.agenda[0];
+  const ultima = evento.agenda.at(-1);
+  if (!primera || !ultima) return "terminado";
+  const fin = new Date(`${ultima.inicio.slice(0, 10)}T23:59:59-03:00`).getTime();
+  if (ahora > fin) return "terminado";
+  return ahora < new Date(primera.inicio).getTime() ? "proximo" : "en_curso";
+}
+
+export const eventoVigente = (evento: Evento) => momentoEvento(evento) !== "terminado";
