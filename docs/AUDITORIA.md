@@ -158,3 +158,36 @@ y el Demo Day para tener la curva.
 - Antes de cada merge: `npm run build`, `npm run lint` y QA en 390 px de las páginas tocadas.
 - Revisiones con los skills del equipo: `/review` para el código, `/qa` para el flujo en el
   navegador, `/cso` para seguridad antes de abrir funciones nuevas al público.
+
+---
+
+## 8. Rama del ecosistema (claude/lucid-pascal-6wxt7j): estado y decisiones pendientes
+
+**Qué agrega.** Pitch del dueño (editar descripción y ocultar), Build in Public (hitos, avances
+y racha semanal), producto o servicio con imágenes y One Pager, link de newsletter, Academy
+(Startup Essentials + templates guiados), Dataroom (privado ↔ transparente de a un documento,
+export a PDF), Portfolio de inversores y aliados con confirmación de la empresa, servicios y
+tesis, `/explorar`, logos de empresa, el sistema de diseño naranja + editorial y la landing
+nueva de `/sumate`. Todo con migraciones aditivas (20261003 → 20261006, en ese orden) y
+pruebas en PGlite (`supabase/pruebas/pitch_build_producto_newsletter.mjs`).
+
+**Antes de mergear.**
+1. Correr las cuatro migraciones en orden en el SQL editor.
+2. `npm run build`, `npm run lint` y las tres pruebas de `supabase/pruebas/`.
+3. QA en el celular de lo que no se puede probar sin pantalla real: el scroll de la landing
+   (la escena del problema, el CTA fijo), el switch del Dataroom con el dedo, el editor de
+   templates por pasos y el PDF del One Pager y del Dataroom.
+4. Revisión legal de `/privacidad` (se sumaron producto, Build in Public, Dataroom,
+   portfolio, servicios, tesis, newsletter y logos).
+
+**Decisiones pendientes (no se construyeron a propósito).**
+- Subir archivos al Dataroom: hoy son links o documentos escritos. R2 es público; subir
+  archivos privados necesita URLs firmadas o un bucket aparte.
+- Links privados del Dataroom para un inversor puntual (con vencimiento): requiere tabla de
+  accesos y una página que no indexe.
+- Dark mode: no existe; los tokens están listos para sumarlo.
+- Matching de cofundadores, notificaciones, tarjetas NFC, score de riesgo y analítica de la
+  landing: no existen y la landing no los promete. Si se suma analítica, los eventos
+  naturales son `hero_cta_click`, `role_selected` (en `ElegirRol`) y `signup_completed`.
+- Rol "profesional" (sin startup, sin inversión): hoy no hay rol para eso; la landing ofrece
+  "Solo quiero mirar".

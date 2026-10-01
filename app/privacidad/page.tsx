@@ -33,12 +33,12 @@ export default function PrivacidadPage() {
   return (
     <PaginaLegal
       titulo="Política de privacidad"
-      actualizado="30 de septiembre de 2026"
-      actualizadoIso="2026-09-30"
+      actualizado="1 de octubre de 2026"
+      actualizadoIso="2026-10-01"
       intro={
         <p>
-          Pecera muestra pitches en video de emprendedores, inversores y aliados para que se
-          conozcan y se contacten. Acá te contamos qué datos guardamos, para qué, quién más los
+          Pecera muestra pitches en video y perfiles de emprendedores, empresas, inversores y
+          aliados para que se conozcan y se contacten. Acá te contamos qué datos guardamos, para qué, quién más los
           procesa y cómo pedir que los corrijamos o los borremos. Aplica la Ley 25.326 de
           Protección de los Datos Personales.
         </p>
@@ -66,20 +66,45 @@ export default function PrivacidadPage() {
             dirección de tu perfil (por ejemplo, /p/tu-nombre). Según tu rol, también las
             etiquetas que elijas: etapa, industrias, ronda y cargo; rondas, ticket e industrias
             de interés; o tus especialidades. También guardamos la fecha
-            en que aceptaste publicarlo. La foto se achica y se recorta en tu celular antes de
+            en que aceptaste publicarlo y, si lo cargás, el link a tu newsletter (por ejemplo, de
+            Substack) con su título. La foto se achica y se recorta en tu celular antes de
             subirla; en ese paso se borran sus datos internos, incluida la ubicación.
           </li>
           <li>
+            <strong className="font-semibold text-tinta">Portfolio, servicios y tesis.</strong> Si
+            sos inversor o aliado: las relaciones que cargues con empresas (inversión, mentoría,
+            aceleración, directorio, clientes y otras), con su estado, año, ronda, tu rol, una
+            descripción y, si querés, el caso de éxito (desafío, qué hicieron y resultados), y
+            quién puede ver cada una (cualquiera, solo personas con cuenta o solo vos). También
+            tus servicios y tu tesis de inversión. Si la relación nombra a una empresa que está en
+            Pecera, su equipo la ve y puede confirmarla o rechazarla; guardamos esa respuesta.
+          </li>
+          <li>
             <strong className="font-semibold text-tinta">Tus pitches.</strong> El video
-            comprimido, una imagen de portada sacada del video, la descripción y los subtítulos.
+            comprimido, una imagen de portada sacada del video, la descripción, los subtítulos y
+            si lo ocultaste.
             Al comprimir el video le borramos los datos internos (fecha, equipo, ubicación). Los
             subtítulos se generan automáticamente a partir del audio.
           </li>
           <li>
             <strong className="font-semibold text-tinta">Tu empresa.</strong> Si creás una
             empresa o te sumás a una: su nombre, descripción, redes, etapa, industrias y ronda,
-            quiénes son parte del equipo y el cargo de cada uno. El código de invitación es
-            privado del equipo.
+            quiénes son parte del equipo y el cargo de cada uno, y su logo. El código de
+            invitación es privado del equipo.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Producto y Build in Public.</strong> Lo
+            que el equipo cargue de su producto o servicio (nombre, propuesta, problema, solución,
+            para quién es, características, cómo se usa, link de demo e imágenes), sus hitos (con
+            etapa, estado, progreso y fecha) y los avances que publique, con su fecha. La racha
+            semanal se calcula de esas fechas.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Dataroom.</strong> Los templates que el
+            equipo complete, los documentos que escriba y los links a documentos que agregue, con
+            su categoría y si están archivados. Nacen privados: solo los ve el equipo hasta que
+            alguien marca cada uno como transparente. El PDF para inversores se arma en tu
+            navegador con lo que elegís; no lo guardamos.
           </li>
           <li>
             <strong className="font-semibold text-tinta">Transparencia.</strong> Las métricas y
@@ -120,7 +145,9 @@ export default function PrivacidadPage() {
             cuenta, usamos cookies de sesión para saber que sos vos. Además guardamos en tu
             navegador (no en nuestros servidores) si querés ver subtítulos, qué piques diste, qué
             pitches viste en las últimas 12 horas, el identificador al azar y un resumen público de tu perfil (nombre, foto y
-            dirección) para mostrar tu foto arriba de la pantalla. No usamos cookies de
+            dirección) para mostrar tu foto arriba de la pantalla. Mientras completás tu perfil o
+            un template, guardamos un borrador en tu navegador para que no se pierda si se corta
+            la conexión. No usamos cookies de
             publicidad ni de seguimiento.
           </li>
         </ul>
@@ -137,7 +164,11 @@ export default function PrivacidadPage() {
           <li>Saber a qué perfil corresponde cada video que llega por el formulario.</li>
           <li>Contar los piques y las vistas de cada pitch.</li>
           <li>Medir cuántas veces se toca cada canal de contacto, para saber si Pecera sirve para conectar.</li>
-          <li>Armar la página de cada empresa con su equipo y lo que decida compartir.</li>
+          <li>Armar la página de cada empresa con su equipo, su producto, su recorrido (Build in
+            Public) y lo que decida compartir.</li>
+          <li>Mostrar el portfolio, los servicios y la tesis de inversores y aliados, y pedirle a
+            cada empresa que confirme las relaciones que la nombran.</li>
+          <li>Que encuentres perfiles y empresas en Explorar.</li>
           <li>Organizar los eventos y contar los votos del público.</li>
           <li>Mantener tu sesión abierta y cuidar el servicio de abusos.</li>
         </ul>
@@ -151,7 +182,11 @@ export default function PrivacidadPage() {
           persona puede ver</strong> tu nombre, tipo, rol, descripción, foto, los canales de contacto
           que cargaste, tus etiquetas y tus pitches (video, portada, descripción y subtítulos), sin
           necesidad de tener cuenta. Si sos parte de una empresa, también su página, con tu cargo
-          y los datos de transparencia que el equipo compartió. Tené en cuenta que quien lo vea puede copiar esos datos o guardarse el
+          y lo que el equipo publicó o compartió: logo, producto e imágenes, hitos y avances, y
+          los datos y documentos marcados como transparentes. También tu link de newsletter, tus
+          servicios, tu tesis y las relaciones de tu portfolio que marcaste como visibles para
+          cualquiera (las marcadas &quot;solo con cuenta&quot; las ve quien entra con su
+          cuenta). Tené en cuenta que quien lo vea puede copiar esos datos o guardarse el
           video, y eso queda fuera de nuestro control.
         </p>
         <p>
@@ -159,8 +194,9 @@ export default function PrivacidadPage() {
           cuenta ni los emails del formulario. Tampoco mostramos quién dio cada pique ni a quién
           votó cada persona: solo los totales. En cada pitch mostramos cuántas vistas y
           cuántos piques tiene; los contactos no se muestran: los ve solo el equipo de Pecera,
-          contados por perfil. Los datos de transparencia que no se comparten
-          los ve solo el equipo de la empresa.
+          contados por perfil. Los datos de transparencia y los documentos del Dataroom que no
+          se comparten los ve solo el equipo de la empresa, y las relaciones de portfolio
+          privadas, solo vos.
         </p>
       </Seccion>
 
@@ -168,7 +204,7 @@ export default function PrivacidadPage() {
         <p>Usamos estos servicios para que Pecera funcione:</p>
         <ul>
           <li><strong className="font-semibold text-tinta">Supabase</strong>: la base de datos y las cuentas.</li>
-          <li><strong className="font-semibold text-tinta">Cloudflare R2</strong>: los videos, las portadas y las fotos.</li>
+          <li><strong className="font-semibold text-tinta">Cloudflare R2</strong>: los videos, las portadas, las fotos, los logos y las imágenes de productos.</li>
           <li><strong className="font-semibold text-tinta">Vercel</strong>: aloja el sitio.</li>
           <li><strong className="font-semibold text-tinta">Google</strong>: el login, el formulario de carga (Forms) y los videos originales (Drive).</li>
           <li>
@@ -188,8 +224,9 @@ export default function PrivacidadPage() {
       <Seccion id="conservacion" titulo="Cuánto tiempo los guardamos">
         <p>
           Guardamos tus datos mientras tu cuenta exista o hasta que nos pidas borrarlos. Cuando
-          cambiás tu foto o se reemplaza un video, la versión anterior se borra sola en
-          aproximadamente una hora. Los piques, las vistas y los contactos se guardan mientras
+          cambiás tu foto, el logo o las imágenes de un producto, o se reemplaza un video, la
+          versión anterior se borra sola en aproximadamente una hora. Los documentos archivados
+          del Dataroom quedan guardados, sin mostrarse, hasta que nos pidas borrarlos. Los piques, las vistas y los contactos se guardan mientras
           exista el pitch o el perfil al que corresponden. El identificador al azar se queda en
           tu navegador hasta que borres los datos del sitio.
         </p>
@@ -211,7 +248,9 @@ export default function PrivacidadPage() {
             <strong className="font-semibold text-tinta">Pedir tus datos o borrar todo:</strong>{" "}
             escribinos a <Email /> desde el email de tu cuenta. Podés pedir una copia de tus datos
             o que borremos tu cuenta y todo lo asociado: perfil, foto, pitches, subtítulos, votos,
-            registros del formulario y los videos originales. Salir de una empresa lo podés hacer
+            portfolio, servicios, tesis, registros del formulario y los videos originales. Lo que
+            es de una empresa (producto, hitos, avances, documentos) se borra cuando lo pide su
+            equipo. Salir de una empresa lo podés hacer
             vos desde Mi perfil.
           </li>
         </ul>

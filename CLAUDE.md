@@ -133,6 +133,38 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `lib/legales.ts`, programa del evento en `lib/eventos.ts` (Feria 21: 7 y 8/10 de 9 a
   17 h y 9/10 a la mañana en la Carpa Feria; Demo Day 9/10 14 h en el Auditorio, Urquía).
   La votación se abre y cierra a mano en /admin; `votacion` es el cronograma que se muestra.
+- Ecosistema (rama claude/lucid-pascal-6wxt7j). Migraciones
+  aditivas, a correr EN ORDEN: `20261003120000_pitch_build_producto_newsletter.sql`,
+  `20261004120000_dataroom.sql`, `20261005120000_portfolio.sql`, `20261006120000_logos.sql`.
+  Pruebas sin tocar ninguna base: `supabase/pruebas/pitch_build_producto_newsletter.mjs`
+  (PGlite). Sin la migración, cada parte cae a vacío con `faltaMigracion()`.
+  - Pitch del dueño: `pitches.oculto` + `editar_mi_pitch`/`ocultar_mi_pitch`/
+    `mis_pitches_detalle` (`components/cuenta/AccionesPitch.tsx`). Insignia celeste
+    `InsigniaPitch` igual en feed, perfil, empresa y cuenta. El pitch completa el perfil
+    (`CompletarPerfil`).
+  - Build in Public (`lib/build.ts`): hitos (uno solo en curso) y avances (5 por día); la
+    racha es semanal y se calcula de las fechas de los avances (hora de Buenos Aires). El
+    feed muestra el hito en curso (`ItemFeed.construyendo`).
+  - Producto o servicio de la empresa (`lib/producto.ts`) con imágenes en R2 y One Pager
+    imprimible (`/e/[slug]/one-pager`). Logo de empresa en `empresa_logos`
+    (`poner_logo_empresa`); se dibuja con `LogoEntidad` (inicial si no hay logo).
+  - Newsletter = un link (Substack u otra plataforma) en `perfil_newsletter`; nada de
+    envíos ni suscripciones propias.
+  - Academy (`/academy`): Startup Essentials (`lib/essentials.ts`, ejemplos siempre
+    hipotéticos) y templates (`lib/plantillas.ts`) que se completan por pasos en
+    `/cuenta/dataroom/plantilla/[id]` con borrador local (`lib/borrador.ts`). Los campos con
+    `dato` se espejan en Transparencia.
+  - Dataroom (`lib/dataroom.ts`, `empresa_documentos`): templates, documentos escritos y
+    links, por categoría; privados por defecto, el switch `SwitchTransparencia` los hace
+    transparentes de a uno; Realtime solo si la publicación existe. Exportar = página
+    imprimible (PDF desde el navegador), sin dependencias. Subir archivos queda pendiente
+    (R2 es público).
+  - Portfolio (`lib/portfolio.ts`): relaciones perfil → organización (inversión, asesoría,
+    directorio, mentoría…), visibilidad público/miembros/privado y confirmación de la
+    empresa (declarada → pendiente → confirmada/rechazada). Track record calculado, nunca
+    declarado. Servicios (aliados) y tesis (inversores). `/explorar` filtra por portfolio real.
+- Landing `/sumate`: ver Rutas. Solo datos reales (`getPulsoEcosistema`, sin `test-*`, no
+  muestra números < 5); todo lo de ejemplo va rotulado "ejemplo".
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
@@ -186,14 +218,27 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   transparencia compartidos (ISR, se genera en la primera visita)
 - `/eventos` y `/eventos/[slug]` → Feria 21: programa, cómo votar y votación
   (`components/eventos/Votacion.tsx` pide el estado de la sesión al montar)
-- `/docs`, `/docs/conceptos`, `/docs/legales` → glosario y guía de documentos (estáticas)
+- `/docs` → redirige a `/academy/docs`; `/docs/conceptos` y `/docs/legales` siguen estáticas
+- `/academy`, `/academy/docs`, `/academy/essentials/[slug]` → Academy (estáticas)
+- `/explorar` → directorio con búsqueda (`?q=`) y vistas (`?ver=startups|inversores|aliados`);
+  estática, los filtros viven en el cliente (`useSearchParams` con Suspense)
+- `/e/[slug]/one-pager` y `/e/[slug]/dataroom` → One Pager y Dataroom público (ISR)
+- `/cuenta/dataroom` (+ `plantilla/[id]`, `nuevo`, `doc/[id]`, `exportar`) → Dataroom del
+  equipo (dinámicas, con sesión)
+- `/sitemap.xml` y `/robots.txt` → `app/sitemap.ts` y `app/robots.ts` (no indexa cuenta,
+  admin, auth ni subir)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
-- `/sumate` → landing de captación, basada en la landing anterior (`pecera-vc`). Los CTA
-  abren `ElegirRol` y llevan a `/cuenta?rol=…` (un solo alta, con Google). Hero
-  con video de acuario (`public/landing/`), que se pausa fuera de pantalla y con
-  reducir movimiento. `MaquetaReel` dibuja un reel en un celular a partir de un
-  `EjemploPitch`. La capa de movimiento (reveals, contadores, tilt, imán, progreso) es
-  `components/landing/Movimiento.tsx` sobre atributos `data-*`.
+- `/sumate` → landing de adquisición (ISR 60 s), armada en `components/landing/`: Hero
+  (con `EcosistemaVivo`: tarjetas de ejemplo unidas por corrientes y los dos peces del
+  isotipo que se encuentran, la firma), Desparramado (problema → solución), demo,
+  SegunQuienSos (pestañas por rol), MapaEcosistema (Descubrir/Construir/Conectar/Fondear/
+  Aprender), BuildEnPublico, CaminoInversion, AcademyDataroom, ExplorarBusqueda (form real a
+  `/explorar`), Confianza (datos en vivo), Diferencia, Preguntas (también JSON-LD), Cierre
+  (video del acuario apagado) y PieLanding. Todos los CTA abren `ElegirRol` ("¿Qué te trae
+  a Pecera?") y llevan a `/cuenta?rol=…`; "Solo quiero mirar" va al feed. CTA fijo
+  `#cta-fijo` que se esconde donde hay otro CTA (`data-cta-zona`). Movimiento solo CSS +
+  `Movimiento.tsx` (`data-revelar`, `data-escena`, `data-profundidad`, `data-magnetic`,
+  barra de lectura); con reducir movimiento todo aparece ya armado.
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,
@@ -238,13 +283,28 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   su empresa. Resultados visibles solo si el equipo los muestra (o para admins).
 - `admins` (email en minúsculas, solo SQL editor): `es_admin()` y las `admin_*` lo exigen;
   para publicar pasan el guardián limpiando los claims del JWT solo en esa transacción.
+- Ecosistema (todo por RPC `security definer`; la app no escribe estas tablas directo):
+  `pitches.oculto`; `empresa_hitos`, `empresa_avances`; `empresa_productos` (imagenes =
+  claves R2 de la empresa); `perfil_newsletter` (url, titulo); `empresa_documentos`
+  (tipo plantilla/escrito/link, campos jsonb, visible=false por defecto, archivado; uno por
+  empresa y plantilla); `portfolio` (tipo, estado, ronda/lider solo en inversión, caso de
+  éxito, visibilidad, confirmacion; sin duplicados por `portfolio_sin_duplicados`),
+  `perfil_servicios`, `perfil_tesis`; `empresa_logos` (clave `<empresaId>-<hash8>.png|jpg`).
+  Imágenes y logos viejos van a `r2_borrar` con una hora de gracia.
 
 ## Marca (resumen del manual)
-- Colores: fondo Marfil #F5F4EC · texto Tinta #1C1B16 · naranja Pecera #F87C43 (solo
-  acentos, nunca texto chico) · Arcilla #D95A22 (botones/texto naranja) ·
-  inversor #0C6AA8 · aliados #1F7A52 · emprendedor → Arcilla
+- Colores: fondo Marfil #F5F4EC · texto Tinta #1C1B16 · Naranja #F47C3C = acción
+  primaria (botones con texto Tinta, 6,4:1) · Pecera #F87C43 = hover y acentos · nunca
+  naranja como texto sobre Marfil: para texto naranja, `naranja-texto` #A9441A (5,4:1) ·
+  Arcilla #D95A22 (foco, emprendedor) · inversor #0C6AA8 · aliados #1F7A52 · Pitch en
+  celeste #8FD3F4 y Build in Public en ámbar `obra` #F2C45F (siempre de fondo, texto Tinta).
+  Botones desde `lib/ui.ts` (`boton(variante, tamano)`), no a mano.
+- Texto chico: mínimo `text-tinta/65` sobre Marfil (AA); `/55` o `/60` no llegan.
 - Nunca blanco puro #FFFFFF de fondo. Naranja ≤ 10% de la pantalla.
-- Fuentes: Fraunces (titulares) + Familjen Grotesk (texto/UI), vía next/font
+- Fuentes: Fraunces (marca y titulares) + Familjen Grotesk (texto/UI), vía next/font;
+  `font-editorial` (Georgia, del sistema) para lectura larga (lecciones, descripciones)
+- Movimiento: tres duraciones (`--duracion-rapida` 140 ms, `--duracion` 220 ms,
+  `--duracion-enfasis` 420 ms); solo transform/opacity
 - Easing único: cubic-bezier(0.22, 1, 0.36, 1) · respetar prefers-reduced-motion
 - Tono: rioplatense, de "vos", sin humo
 - Pie legal obligatorio: "Pecera es una capa de descubrimiento y conexión. No capta
