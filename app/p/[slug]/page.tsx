@@ -60,7 +60,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
   const rol = ROLES[perfil.rol];
   const [build, newsletter] = await Promise.all([
     perfil.empresa_id ? getBuildEmpresa(perfil.empresa_id) : null,
-    getNewsletter(perfil.id, perfil.slug),
+    getNewsletter(perfil.id),
   ]);
 
   return (
@@ -156,7 +156,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
             <h2 id="newsletter-titulo" className={SUBTITULO}>
               Newsletter
             </h2>
-            <NewsletterPerfil slug={perfil.slug} datos={newsletter} />
+            <NewsletterPerfil newsletter={newsletter} />
           </section>
         )}
 

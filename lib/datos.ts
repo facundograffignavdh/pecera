@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Avance, Hito, HitoActual } from "@/lib/build";
 import type { Documento } from "@/lib/dataroom";
 import { urlMedia } from "@/lib/media";
-import type { Edicion, Newsletter } from "@/lib/newsletter";
+import type { NewsletterLink } from "@/lib/newsletter";
 import type { Producto } from "@/lib/producto";
 import { supabase } from "@/lib/supabase";
 import type { DatoEmpresa, Empresa, ItemFeed, Metricas, Perfil, Pitch } from "@/types/pecera";
@@ -192,43 +192,20 @@ export const getDocumentosPublicos = cache(async (empresaId: string): Promise<Do
   return data ?? [];
 });
 
-export type DatosNewsletter = { newsletter: Newsletter; ediciones: Edicion[]; suscriptores: number };
-
-/**
- * Newsletter de un perfil visible con sus últimas ediciones y el total de
- * suscripciones. `null` si no tiene (o la base no tiene la migración). No lanza.
- */
-export const getNewsletter = cache(
-  async (perfilId: string, slug: string, limite = 30): Promise<DatosNewsletter | null> => {
-    const [newsletter, ediciones, suscriptores] = await Promise.all([
-      supabase
-        .from("newsletters")
-        .select("titulo, descripcion")
-        .eq("perfil_id", perfilId)
-        .maybeSingle()
-        .overrideTypes<Newsletter | null, { merge: false }>(),
-      supabase
-        .from("newsletter_ediciones")
-        .select("id, titulo, cuerpo, publicada_at")
-        .eq("perfil_id", perfilId)
-        .order("publicada_at", { ascending: false })
-        .limit(limite)
-        .overrideTypes<Edicion[], { merge: false }>(),
-      supabase.rpc("suscriptores_newsletter", { p_slug: slug }),
-    ]);
-    const error = newsletter.error ?? ediciones.error;
-    if (error) {
-      if (!faltaMigracion(error)) console.error(`Supabase (getNewsletter): ${error.message}`);
-      return null;
-    }
-    if (!newsletter.data) return null;
-    return {
-      newsletter: newsletter.data,
-      ediciones: ediciones.data ?? [],
-      suscriptores: typeof suscriptores.data === "number" ? suscriptores.data : 0,
-    };
+/** Link a la newsletter de un perfil visible, o null. No lanza. */
+export const getNewsletter = cache(async (perfilId: string): Promise<NewsletterLink | null> => {
+  const { data, error } = await supabase
+    .from("perfil_newsletter")
+    .select("url, titulo")
+    .eq("perfil_id", perfilId)
+    .maybeSingle()
+    .overrideTypes<NewsletterLink | null, { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getNewsletter): ${error.message}`);
+    return null;
   }
-);
+  return data;
+});
 
 /** Slugs publicados, para `generateStaticParams`. */
 export async function getSlugs(): Promise<string[]> {

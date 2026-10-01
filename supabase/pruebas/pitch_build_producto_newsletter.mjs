@@ -190,45 +190,24 @@ async function main() {
   chequear(aBorrar.length === 1 && aBorrar[0] === img1, "la imagen que sale queda en r2_borrar", aBorrar);
   await espera("anon no escribe el producto directo", () => como("anon", null, `update public.empresa_productos set nombre = 'hack'`), "permission denied");
 
-  console.log("\n4) Newsletter");
-  await espera("publicar sin abrir la newsletter", () => como("authenticated", U.ana, `select public.guardar_edicion(null, 'Hola', 'Primera')`), "primero abrí");
-  await como("authenticated", U.ana, `select public.guardar_newsletter('Diario de una huerta', 'Cómo construimos Raíz Verde')`);
-  const ed = (await como("authenticated", U.ana, `select public.guardar_edicion(null, 'Edición 1', 'Arrancamos la beta') id`)).rows[0].id;
-  await como("authenticated", U.ana, `select public.guardar_edicion(null, 'Edición 2', 'Segunda')`);
-  await como("authenticated", U.ana, `select public.guardar_edicion(null, 'Edición 3', 'Tercera')`);
-  await espera("la cuarta edición del día", () => como("authenticated", U.ana, `select public.guardar_edicion(null, 'Edición 4', 'Cuarta')`), "demasiadas ediciones");
-  await como("authenticated", U.ana, `select public.guardar_edicion($1, 'Edición 1 (corregida)', 'Arrancamos la beta pública')`, [ed]);
-  await como("authenticated", U.beto, `select public.guardar_newsletter('Notas de Beto', null)`);
-  await espera("beto no corrige la edición de ana", () => como("authenticated", U.beto, `select public.guardar_edicion($1, 'Hack', 'Hack')`, [ed]), "no es tuya");
-
-  const edAnon = (await como("anon", null, `select titulo from public.newsletter_ediciones where perfil_id = $1 order by publicada_at`, [ana])).rows;
-  chequear(edAnon.length === 3 && edAnon[0].titulo === "Edición 1 (corregida)", "anon lee las ediciones de un perfil visible", edAnon);
-
-  await espera("anon no se suscribe", () => como("anon", null, `select public.suscribirme('ana-startup', true)`), "permission denied");
-  await espera("ana no se suscribe a la suya", () => como("authenticated", U.ana, `select public.suscribirme('ana-startup', true)`), "es tu newsletter");
-  await espera("suscribirse a quien no tiene newsletter", () => como("authenticated", U.beto, `select public.suscribirme('caro-inversora', true)`), "newsletter inexistente");
-  const t1 = (await como("authenticated", U.caro, `select public.suscribirme('ana-startup', true) t`)).rows[0].t;
-  const t2 = (await como("authenticated", U.caro, `select public.suscribirme('ana-startup', true) t`)).rows[0].t;
-  const t3 = (await como("authenticated", U.dani, `select public.suscribirme('ana-startup', true) t`)).rows[0].t;
-  chequear(t1 === 1 && t2 === 1 && t3 === 2, "suscribirse dos veces no suma; dani (sin perfil) también puede", { t1, t2, t3 });
-  const publico = (await como("anon", null, `select public.suscriptores_newsletter('ana-startup') t`)).rows[0].t;
-  chequear(publico === 2, "el total es público", publico);
-  await espera("anon no lee quiénes se suscribieron", () => como("anon", null, `select * from public.newsletter_suscripciones`), "permission denied");
-  await espera("ana tampoco lee las identidades", () => como("authenticated", U.ana, `select * from public.newsletter_suscripciones`), "permission denied");
-  const mia = (await como("authenticated", U.ana, `select * from public.mi_newsletter()`)).rows[0];
-  chequear(mia?.suscriptores === 2 && mia.ediciones === 3, "mi_newsletter devuelve total y ediciones", mia);
-  const suscripta = (await como("authenticated", U.caro, `select public.mi_suscripcion('ana-startup') s`)).rows[0].s;
-  chequear(suscripta === true, "mi_suscripcion: caro está suscripta", suscripta);
-  const nov = (await como("authenticated", U.caro, `select * from public.novedades_suscripciones()`)).rows;
-  chequear(nov.length === 3 && nov[0].slug === "ana-startup", "novedades: caro ve las 3 ediciones de ana", nov.length);
-  const baja = (await como("authenticated", U.caro, `select public.suscribirme('ana-startup', false) t`)).rows[0].t;
-  chequear(baja === 1, "darse de baja resta una", baja);
-
+  console.log("\n4) Newsletter (link a Substack)");
+  await como("authenticated", U.ana, `select public.guardar_newsletter('https://raizverde.substack.com', 'Diario de una huerta')`);
+  const linkAnon = (await como("anon", null, `select url, titulo from public.perfil_newsletter`)).rows;
+  chequear(linkAnon.length === 1 && linkAnon[0].url === "https://raizverde.substack.com", "anon ve el link de la newsletter de un perfil visible", linkAnon);
+  await espera("link sin https", () => como("authenticated", U.ana, `select public.guardar_newsletter('http://raizverde.substack.com', null)`), "url_valida");
+  await espera("anon no guarda links", () => como("anon", null, `select public.guardar_newsletter('https://x.substack.com', null)`), "permission denied");
+  await espera("anon no escribe la tabla directo", () => como("anon", null, `update public.perfil_newsletter set url = 'https://hack.com'`), "permission denied");
+  await como("authenticated", U.beto, `select public.guardar_newsletter('https://beto.substack.com', null)`);
+  const deAna = (await db.query(`select url from public.perfil_newsletter where perfil_id = $1`, [ana])).rows[0].url;
+  chequear(deAna === "https://raizverde.substack.com", "beto guarda la suya sin tocar la de ana", deAna);
   await como("authenticated", U.ana, `update public.perfiles set oculto = true where id = $1`, [ana]);
-  const ocultas = (await como("anon", null, `select count(*)::int n from public.newsletter_ediciones`)).rows[0].n;
-  chequear(ocultas === 0, "perfil oculto: su newsletter deja de verse", ocultas);
-  const propias = (await como("authenticated", U.ana, `select count(*)::int n from public.newsletter_ediciones`)).rows[0].n;
-  chequear(propias === 3, "la dueña sigue viendo sus ediciones con el perfil oculto", propias);
+  const oculto = (await como("anon", null, `select count(*)::int n from public.perfil_newsletter where perfil_id = $1`, [ana])).rows[0].n;
+  chequear(oculto === 0, "perfil oculto: su link deja de verse", oculto);
+  const linkPropio = (await como("authenticated", U.ana, `select count(*)::int n from public.perfil_newsletter where perfil_id = $1`, [ana])).rows[0].n;
+  chequear(linkPropio === 1, "la dueña lo sigue viendo con el perfil oculto", linkPropio);
+  await como("authenticated", U.beto, `select public.guardar_newsletter('', null)`);
+  const sinLink = (await db.query(`select count(*)::int n from public.perfil_newsletter where perfil_id = $1`, [beto])).rows[0].n;
+  chequear(sinLink === 0, "guardar vacío saca el link", sinLink);
 
   console.log("\n5) Dataroom");
   await como("authenticated", U.ana, `update public.perfiles set oculto = false where id = $1`, [ana]);

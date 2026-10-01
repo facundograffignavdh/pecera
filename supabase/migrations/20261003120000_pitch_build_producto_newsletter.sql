@@ -13,8 +13,8 @@
 --      avances cortos de la empresa. Lo edita cualquier miembro; es público si la
 --      empresa es visible.
 --   3. Producto / Servicio: qué ofrece la empresa, con brief e imágenes (R2).
---   4. Newsletter: cada perfil abre la suya, publica ediciones y otras cuentas se
---      suscriben. Las suscripciones son privadas: el dueño solo ve cuántas hay.
+--   4. Newsletter: el link a la newsletter del perfil (Substack u otra plataforma).
+--      Pecera no la aloja ni guarda suscripciones.
 --
 -- Toda escritura pasa por funciones `security definer` con `search_path` vacío. La
 -- app nunca escribe estas tablas directo.
@@ -541,51 +541,11 @@ grant execute on function public.guardar_producto(text, text, text, text, text, 
 grant execute on function public.poner_imagenes_producto(text[]) to authenticated;
 
 -- ---------------------------------------------------------------------------
--- 4) Newsletter
+-- 4) Newsletter: un link a la newsletter del perfil (Substack u otra)
 -- ---------------------------------------------------------------------------
-create table public.newsletters (
-  perfil_id   uuid primary key references public.perfiles (id) on delete cascade,
-  titulo      text not null,
-  descripcion text,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
-
-  constraint newsletters_titulo_valido check (char_length(btrim(titulo)) between 1 and 80),
-  constraint newsletters_descripcion_valida check (descripcion is null or char_length(btrim(descripcion)) between 1 and 280)
-);
-
-create table public.newsletter_ediciones (
-  id           uuid primary key default gen_random_uuid(),
-  perfil_id    uuid not null references public.newsletters (perfil_id) on delete cascade,
-  titulo       text not null,
-  cuerpo       text not null,
-  publicada_at timestamptz not null default now(),
-  updated_at   timestamptz not null default now(),
-
-  constraint newsletter_ediciones_titulo_valido check (char_length(btrim(titulo)) between 1 and 120),
-  constraint newsletter_ediciones_cuerpo_valido check (char_length(btrim(cuerpo)) between 1 and 6000)
-);
-
-create index newsletter_ediciones_perfil_idx on public.newsletter_ediciones (perfil_id, publicada_at desc);
-
--- Privada: nadie la lee directo. El dueño solo ve el total.
-create table public.newsletter_suscripciones (
-  perfil_id  uuid not null references public.newsletters (perfil_id) on delete cascade,
-  usuario_id uuid not null references auth.users (id) on delete cascade,
-  created_at timestamptz not null default now(),
-  primary key (perfil_id, usuario_id)
-);
-
-create index newsletter_suscripciones_usuario_idx on public.newsletter_suscripciones (usuario_id);
-
-alter table public.newsletters              enable row level security;
-alter table public.newsletter_ediciones     enable row level security;
-alter table public.newsletter_suscripciones enable row level security;
-revoke all on public.newsletters              from anon, authenticated;
-revoke all on public.newsletter_ediciones     from anon, authenticated;
-revoke all on public.newsletter_suscripciones from anon, authenticated;
-grant select on public.newsletters          to anon, authenticated;
-grant select on public.newsletter_ediciones to anon, authenticated;
+-- Pecera no aloja la newsletter: la persona la escribe y la manda desde Substack
+-- (o su plataforma) y acá queda el link. Tabla aparte de `perfiles` para no tocar
+-- el formulario del perfil ni su guardián.
 
 -- Perfil visible = publicado y no oculto (como en "anon lee perfiles publicados").
 create function public.perfil_visible(p_perfil uuid)
@@ -619,25 +579,31 @@ $$;
 revoke execute on function public.es_mi_perfil(uuid) from public, anon;
 grant execute on function public.es_mi_perfil(uuid) to authenticated;
 
-create policy "todos leen newsletters de perfiles visibles"
-  on public.newsletters for select
+create table public.perfil_newsletter (
+  perfil_id  uuid primary key references public.perfiles (id) on delete cascade,
+  url        text not null,
+  titulo     text,
+  updated_at timestamptz not null default now(),
+
+  constraint perfil_newsletter_url_valida check (char_length(url) <= 300 and url ~* '^https://\S+$'),
+  constraint perfil_newsletter_titulo_valido check (titulo is null or char_length(btrim(titulo)) between 1 and 80)
+);
+
+alter table public.perfil_newsletter enable row level security;
+revoke all on public.perfil_newsletter from anon, authenticated;
+grant select on public.perfil_newsletter to anon, authenticated;
+
+create policy "todos leen la newsletter de perfiles visibles"
+  on public.perfil_newsletter for select
   to anon, authenticated
   using (public.perfil_visible(perfil_id));
 create policy "el dueño lee su newsletter"
-  on public.newsletters for select
-  to authenticated
-  using (public.es_mi_perfil(perfil_id));
-create policy "todos leen ediciones de perfiles visibles"
-  on public.newsletter_ediciones for select
-  to anon, authenticated
-  using (public.perfil_visible(perfil_id));
-create policy "el dueño lee sus ediciones"
-  on public.newsletter_ediciones for select
+  on public.perfil_newsletter for select
   to authenticated
   using (public.es_mi_perfil(perfil_id));
 
--- Abre o edita la newsletter del perfil de la sesión.
-create function public.guardar_newsletter(p_titulo text, p_descripcion text)
+-- Guarda el link (vacío = sacarlo) de la newsletter del perfil de la sesión.
+create function public.guardar_newsletter(p_url text, p_titulo text)
 returns void
 language plpgsql
 security definer
@@ -646,191 +612,16 @@ as $$
 declare
   v_perfil public.perfiles := public.perfil_de_sesion();
 begin
-  insert into public.newsletters (perfil_id, titulo, descripcion)
-  values (v_perfil.id, btrim(p_titulo), nullif(btrim(p_descripcion), ''))
+  if nullif(btrim(p_url), '') is null then
+    delete from public.perfil_newsletter where perfil_id = v_perfil.id;
+    return;
+  end if;
+  insert into public.perfil_newsletter (perfil_id, url, titulo)
+  values (v_perfil.id, btrim(p_url), nullif(btrim(p_titulo), ''))
   on conflict (perfil_id) do update set
-    titulo      = excluded.titulo,
-    descripcion = excluded.descripcion,
-    updated_at  = now();
+    url = excluded.url, titulo = excluded.titulo, updated_at = now();
 end;
-$$;
-
--- Publica (p_id null) o corrige una edición. Hasta 3 nuevas cada 24 h.
-create function public.guardar_edicion(p_id uuid, p_titulo text, p_cuerpo text)
-returns uuid
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_perfil public.perfiles := public.perfil_de_sesion();
-  v_id     uuid;
-begin
-  if not exists (select 1 from public.newsletters where perfil_id = v_perfil.id) then
-    raise exception 'primero abrí tu newsletter' using errcode = '22023';
-  end if;
-
-  if p_id is null then
-    if (
-      select count(*) from public.newsletter_ediciones
-      where perfil_id = v_perfil.id and publicada_at > now() - interval '24 hours'
-    ) >= 3 then
-      raise exception 'demasiadas ediciones' using errcode = '22023';
-    end if;
-    insert into public.newsletter_ediciones (perfil_id, titulo, cuerpo)
-    values (v_perfil.id, btrim(p_titulo), btrim(p_cuerpo))
-    returning id into v_id;
-    return v_id;
-  end if;
-
-  update public.newsletter_ediciones
-  set titulo = btrim(p_titulo), cuerpo = btrim(p_cuerpo), updated_at = now()
-  where id = p_id and perfil_id = v_perfil.id
-  returning id into v_id;
-  if v_id is null then
-    raise exception 'esa edición no es tuya' using errcode = '42501';
-  end if;
-  return v_id;
-end;
-$$;
-
-create function public.borrar_edicion(p_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_perfil public.perfiles := public.perfil_de_sesion();
-begin
-  delete from public.newsletter_ediciones where id = p_id and perfil_id = v_perfil.id;
-end;
-$$;
-
--- Suscribirse (p_activa) o darse de baja de la newsletter de un perfil visible.
--- Devuelve el total de suscripciones. No hace falta tener perfil para suscribirse.
-create function public.suscribirme(p_slug text, p_activa boolean)
-returns integer
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_perfil uuid;
-  v_dueno  uuid;
-begin
-  if auth.uid() is null then
-    raise exception 'sin sesión' using errcode = '42501';
-  end if;
-  select p.id, p.usuario_id into v_perfil, v_dueno
-  from public.perfiles p
-  join public.newsletters n on n.perfil_id = p.id
-  where p.slug = p_slug and p.publicado and not p.oculto;
-  if v_perfil is null then
-    raise exception 'newsletter inexistente' using errcode = '22023';
-  end if;
-  if v_dueno = auth.uid() then
-    raise exception 'es tu newsletter' using errcode = '22023';
-  end if;
-
-  if coalesce(p_activa, true) then
-    insert into public.newsletter_suscripciones (perfil_id, usuario_id)
-    values (v_perfil, auth.uid())
-    on conflict do nothing;
-  else
-    delete from public.newsletter_suscripciones
-    where perfil_id = v_perfil and usuario_id = auth.uid();
-  end if;
-
-  return (select count(*)::integer from public.newsletter_suscripciones where perfil_id = v_perfil);
-end;
-$$;
-
--- Total público de suscripciones (sin identidades).
-create function public.suscriptores_newsletter(p_slug text)
-returns integer
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select count(s.*)::integer
-  from public.perfiles p
-  join public.newsletter_suscripciones s on s.perfil_id = p.id
-  where p.slug = p_slug and p.publicado and not p.oculto;
-$$;
-
-create function public.mi_suscripcion(p_slug text)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1
-    from public.perfiles p
-    join public.newsletter_suscripciones s on s.perfil_id = p.id
-    where p.slug = p_slug and s.usuario_id = auth.uid()
-  );
-$$;
-
--- La newsletter propia con su total (aunque el perfil no esté publicado todavía).
-create function public.mi_newsletter()
-returns table (titulo text, descripcion text, suscriptores integer, ediciones integer)
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select
-    n.titulo,
-    n.descripcion,
-    (select count(*)::integer from public.newsletter_suscripciones s where s.perfil_id = n.perfil_id),
-    (select count(*)::integer from public.newsletter_ediciones e where e.perfil_id = n.perfil_id)
-  from public.newsletters n
-  join public.perfiles p on p.id = n.perfil_id
-  where p.usuario_id = auth.uid();
-$$;
-
--- Últimas ediciones de las newsletters a las que la sesión está suscripta.
-create function public.novedades_suscripciones()
-returns table (
-  id           uuid,
-  slug         text,
-  nombre       text,
-  newsletter   text,
-  titulo       text,
-  publicada_at timestamptz
-)
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select e.id, p.slug, p.nombre, n.titulo, e.titulo, e.publicada_at
-  from public.newsletter_suscripciones s
-  join public.newsletters n on n.perfil_id = s.perfil_id
-  join public.perfiles p on p.id = n.perfil_id and p.publicado and not p.oculto
-  join public.newsletter_ediciones e on e.perfil_id = n.perfil_id
-  where s.usuario_id = auth.uid()
-  order by e.publicada_at desc
-  limit 20;
 $$;
 
 revoke execute on function public.guardar_newsletter(text, text) from public, anon;
-revoke execute on function public.guardar_edicion(uuid, text, text) from public, anon;
-revoke execute on function public.borrar_edicion(uuid) from public, anon;
-revoke execute on function public.suscribirme(text, boolean) from public, anon;
-revoke execute on function public.suscriptores_newsletter(text) from public;
-revoke execute on function public.mi_suscripcion(text) from public, anon;
-revoke execute on function public.mi_newsletter() from public, anon;
-revoke execute on function public.novedades_suscripciones() from public, anon;
 grant execute on function public.guardar_newsletter(text, text) to authenticated;
-grant execute on function public.guardar_edicion(uuid, text, text) to authenticated;
-grant execute on function public.borrar_edicion(uuid) to authenticated;
-grant execute on function public.suscribirme(text, boolean) to authenticated;
-grant execute on function public.suscriptores_newsletter(text) to anon, authenticated;
-grant execute on function public.mi_suscripcion(text) to authenticated;
-grant execute on function public.mi_newsletter() to authenticated;
-grant execute on function public.novedades_suscripciones() to authenticated;
