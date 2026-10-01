@@ -11,7 +11,9 @@ import GrillaPitches from "@/components/GrillaPitches";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
 import BuildPublico from "@/components/build/BuildPublico";
-import { getBuildEmpresa, getMetricasPerfil, getPerfil, getSlugs } from "@/lib/datos";
+import NewsletterPerfil from "@/components/newsletter/NewsletterPerfil";
+import Revelar from "@/components/Revelar";
+import { getBuildEmpresa, getMetricasPerfil, getNewsletter, getPerfil, getSlugs } from "@/lib/datos";
 import { cargo } from "@/lib/etiquetas";
 import { ROLES, TIPOS } from "@/lib/rol";
 
@@ -56,10 +58,14 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
 
   const { perfil, pitches } = datos;
   const rol = ROLES[perfil.rol];
-  const build = perfil.empresa_id ? await getBuildEmpresa(perfil.empresa_id) : null;
+  const [build, newsletter] = await Promise.all([
+    perfil.empresa_id ? getBuildEmpresa(perfil.empresa_id) : null,
+    getNewsletter(perfil.id, perfil.slug),
+  ]);
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
+      <Revelar />
       <Encabezado variante="perfil" />
       {/* El padding de arriba deja "Volver" debajo de la píldora fija. */}
       <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
@@ -142,6 +148,15 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
               completo={false}
               hrefEmpresa={`/e/${perfil.empresa.slug}`}
             />
+          </section>
+        )}
+
+        {newsletter && (
+          <section aria-labelledby="newsletter-titulo" className="mt-7">
+            <h2 id="newsletter-titulo" className={SUBTITULO}>
+              Newsletter
+            </h2>
+            <NewsletterPerfil slug={perfil.slug} datos={newsletter} />
           </section>
         )}
 

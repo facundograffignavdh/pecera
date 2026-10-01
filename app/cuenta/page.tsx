@@ -13,6 +13,8 @@ import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
 import TarjetaBuild from "@/components/cuenta/TarjetaBuild";
 import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
+import Novedades, { type Novedad } from "@/components/cuenta/Novedades";
+import TarjetaNewsletter, { type MiNewsletter } from "@/components/cuenta/TarjetaNewsletter";
 import TarjetaProducto, { type ImagenPropia } from "@/components/cuenta/TarjetaProducto";
 import TarjetaTransparencia from "@/components/cuenta/TarjetaTransparencia";
 import { entrar } from "@/app/cuenta/acciones";
@@ -22,6 +24,7 @@ import type { CuentaLocal } from "@/lib/cuenta-local";
 import { faltaMigracion } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
+import type { Edicion } from "@/lib/newsletter";
 import type { Producto } from "@/lib/producto";
 import { ROLES } from "@/lib/rol";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
@@ -88,6 +91,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
       else misPitches = (data ?? []) as MiPitch[];
     }
   }
+
+  const social = user ? await leerSocial(supabase, perfil?.id ?? null) : null;
 
   // Dato chico y público para la píldora y el "Editar perfil" de las páginas
   // estáticas. Nada de email ni ids.
@@ -221,6 +226,17 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               </>
             )}
 
+            {perfil && social?.disponible && (
+              <TarjetaNewsletter
+                newsletter={social.newsletter}
+                ediciones={social.ediciones}
+                slug={perfil.slug}
+                visible={perfil.publicado && !perfil.oculto}
+              />
+            )}
+
+            {social && <Novedades novedades={social.novedades} />}
+
             {esAdmin && (
               <Link
                 href="/admin"
@@ -327,6 +343,47 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
     empresa: miEmpresa,
     datos: (datos.data as DatoEmpresa[] | null) ?? [],
     participa: !!filaEvento?.participa,
+  };
+}
+
+type Social = {
+  disponible: boolean;
+  newsletter: MiNewsletter | null;
+  ediciones: Edicion[];
+  novedades: Novedad[];
+};
+
+/** Newsletter propia (si hay perfil) y novedades de las suscripciones. No lanza. */
+async function leerSocial(
+  supabase: Awaited<ReturnType<typeof supabaseConSesion>>,
+  perfilId: string | null
+): Promise<Social> {
+  const [mia, ediciones, novedades] = await Promise.all([
+    supabase.rpc("mi_newsletter"),
+    perfilId
+      ? supabase
+          .from("newsletter_ediciones")
+          .select("id, titulo, cuerpo, publicada_at")
+          .eq("perfil_id", perfilId)
+          .order("publicada_at", { ascending: false })
+          .limit(20)
+          .overrideTypes<Edicion[], { merge: false }>()
+      : null,
+    supabase.rpc("novedades_suscripciones"),
+  ]);
+  if (faltaMigracion(mia.error)) return { disponible: false, newsletter: null, ediciones: [], novedades: [] };
+  for (const [donde, r] of [
+    ["mi_newsletter", mia],
+    ["newsletter_ediciones", ediciones],
+    ["novedades_suscripciones", novedades],
+  ] as const) {
+    if (r?.error) console.error(`Supabase (${donde}): ${r.error.message}`);
+  }
+  return {
+    disponible: !mia.error,
+    newsletter: ((mia.data as MiNewsletter[] | null) ?? [])[0] ?? null,
+    ediciones: ediciones?.data ?? [],
+    novedades: (novedades.data as Novedad[] | null) ?? [],
   };
 }
 
