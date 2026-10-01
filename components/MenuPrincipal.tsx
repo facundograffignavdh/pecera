@@ -9,7 +9,7 @@ import { EVENTO_ACTUAL } from "@/lib/eventos";
 const ENLACES = [
   { href: "/", label: "Feed", bajada: "Los pitches en video" },
   { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "Programa y votación" },
-  { href: "/docs", label: "Docs", bajada: "Conceptos y documentos legales" },
+  { href: "/academy", label: "Academy", bajada: "Aprendé y prepará tu startup" },
   { href: "/sumate", label: "Sumate", bajada: "Qué es Pecera y cómo entrar" },
   { href: "/cuenta", label: "Mi perfil", bajada: "Tu perfil, tu empresa y tus datos" },
 ] as const;
@@ -57,7 +57,9 @@ export default function MenuPrincipal() {
           </div>
           <ul className="flex flex-col gap-1">
             {ENLACES.map((e) => {
-              const actual = e.href === "/" ? ruta === "/" : ruta.startsWith(e.href);
+              // /docs (conceptos y legales) es parte de Academy.
+              const actual =
+                e.href === "/" ? ruta === "/" : ruta.startsWith(e.href) || (e.href === "/academy" && ruta.startsWith("/docs"));
               return (
                 <li key={e.href}>
                   <Link
