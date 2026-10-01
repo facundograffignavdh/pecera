@@ -142,9 +142,6 @@ export default function MapaEcosistema({ lecciones, templates }: { lecciones: nu
               }`}
             >
               {g.nombre}
-              <span className={`text-xs font-medium tabular-nums ${i === activo ? "text-tinta/70" : "text-tinta/65"}`}>
-                {g.modulos.length}
-              </span>
             </button>
           ))}
         </div>

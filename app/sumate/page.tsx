@@ -94,77 +94,81 @@ export default async function SumatePage() {
   const pulso = await getPulsoEcosistema();
 
   return (
-    <main
-      id={ID_SCROLL}
-      className="tema-fijo h-dvh overflow-y-auto overflow-x-clip overscroll-y-contain scroll-smooth bg-marfil text-tinta"
-    >
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(DATOS_ESTRUCTURADOS).replace(/</g, "\\u003c") }}
-      />
-      <div id="progreso" aria-hidden className="fixed inset-x-0 top-0 z-30 h-[3px] origin-left scale-x-0 bg-naranja" />
+    <>
+      {/* Fuera del .tema-fijo: las píldoras de vidrio siguen al tema de la app (de noche,
+          oscuras con texto claro), como en el resto de las páginas. Es fixed: no se mueve. */}
       <Encabezado variante="perfil" />
-      <Movimiento scroller={ID_SCROLL} />
-      <ElegirRol />
-
-      <Hero />
-      <ValuaStartup />
-      <Desparramado />
-
-      <Seccion
-        id="como-se-ve"
-        numero="03"
-        etiqueta="Cómo se ve"
-        titulo="Así se ve Pecera en 30 segundos."
-        bajada="El feed, un pique y el perfil de contacto de un proyecto, recreados desde la app real."
-        className="border-t border-tinta/10"
+      <main
+        id={ID_SCROLL}
+        className="tema-fijo h-dvh overflow-y-auto overflow-x-clip overscroll-y-contain scroll-smooth bg-marfil text-tinta"
       >
-        <div
-          data-revelar
-          className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-[var(--radius-bloque)] bg-tinta shadow-[0_1px_2px_rgb(28_27_22/0.12),0_24px_56px_rgb(28_27_22/0.18)]"
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(DATOS_ESTRUCTURADOS).replace(/</g, "\\u003c") }}
+        />
+        <div id="progreso" aria-hidden className="fixed inset-x-0 top-0 z-30 h-[3px] origin-left scale-x-0 bg-naranja" />
+        <Movimiento scroller={ID_SCROLL} />
+        <ElegirRol />
+
+        <Hero />
+        <ValuaStartup />
+        <Desparramado />
+
+        <Seccion
+          id="como-se-ve"
+          numero="03"
+          etiqueta="Cómo se ve"
+          titulo="Así se ve Pecera en 30 segundos."
+          bajada="El feed, un pique y el perfil de contacto de un proyecto, recreados desde la app real."
+          className="border-t border-tinta/10"
         >
-          <iframe
-            src="/demo-video/index.html"
-            title="Video demo de Pecera: el feed, un pique y el perfil de contacto"
-            loading="lazy"
-            className="aspect-video w-full"
-            style={{ border: 0 }}
-          />
+          <div
+            data-revelar
+            className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-[var(--radius-bloque)] bg-tinta shadow-[0_1px_2px_rgb(28_27_22/0.12),0_24px_56px_rgb(28_27_22/0.18)]"
+          >
+            <iframe
+              src="/demo-video/index.html"
+              title="Video demo de Pecera: el feed, un pique y el perfil de contacto"
+              loading="lazy"
+              className="aspect-video w-full"
+              style={{ border: 0 }}
+            />
+          </div>
+        </Seccion>
+
+        <Seccion id="segun-quien-sos" numero="04" etiqueta="Para vos" titulo="Pecera cambia según quién sos." className="bg-superficie">
+          <SegunQuienSos />
+        </Seccion>
+
+        <Seccion
+          id="mapa"
+          numero="05"
+          etiqueta="El ecosistema"
+          titulo="Todo lo que pasa en la Pecera, conectado."
+          bajada="Cinco cosas que hacés acá. Elegí una para ver con qué se hace."
+        >
+          <MapaEcosistema lecciones={LECCIONES.length} templates={PLANTILLAS.length} />
+        </Seccion>
+
+        <BuildEnPublico />
+        <CaminoInversion />
+        <AcademyDataroom />
+        <ExplorarBusqueda />
+        <Confianza pulso={pulso} />
+        <Diferencia />
+        <Preguntas />
+        <Cierre />
+        <PieLanding />
+
+        <div
+          id="cta-fijo"
+          data-oculto
+          inert
+          className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-20 w-max -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0"
+        >
+          <BotonForm tamano="md" className="shadow-[0_10px_30px_rgb(28_27_22/0.25)]" />
         </div>
-      </Seccion>
-
-      <Seccion id="segun-quien-sos" numero="04" etiqueta="Para vos" titulo="Pecera cambia según quién sos." className="bg-superficie">
-        <SegunQuienSos />
-      </Seccion>
-
-      <Seccion
-        id="mapa"
-        numero="05"
-        etiqueta="El ecosistema"
-        titulo="Todo lo que pasa en la Pecera, conectado."
-        bajada="Cinco cosas que hacés acá. Elegí una para ver con qué se hace."
-      >
-        <MapaEcosistema lecciones={LECCIONES.length} templates={PLANTILLAS.length} />
-      </Seccion>
-
-      <BuildEnPublico />
-      <CaminoInversion />
-      <AcademyDataroom />
-      <ExplorarBusqueda />
-      <Confianza pulso={pulso} />
-      <Diferencia />
-      <Preguntas />
-      <Cierre />
-      <PieLanding />
-
-      <div
-        id="cta-fijo"
-        data-oculto
-        inert
-        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-20 w-max -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0"
-      >
-        <BotonForm tamano="md" className="shadow-[0_10px_30px_rgb(28_27_22/0.25)]" />
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

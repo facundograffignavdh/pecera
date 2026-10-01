@@ -1027,6 +1027,36 @@ html .tema-fijo .solo-luz {
 html .tema-fijo .solo-noche {
   display: none !important;
 }
+/* El vidrio dentro de .tema-fijo (feed, landing) se queda claro de noche, como el resto
+   de esa zona: su texto es Tinta fija y sobre el vidrio oscuro no se leería (pista y
+   pop-up del pique, avisos del hero). El header va afuera de .tema-fijo y sí sigue al
+   tema. Mismos valores que .vidrio y .vidrio-popup de arriba. */
+html[data-tema="noche"] .tema-fijo .vidrio {
+  background: rgba(255, 253, 246, 0.92);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-tema="noche"] .tema-fijo .vidrio {
+    background: rgba(255, 253, 246, 0.62);
+  }
+  html[data-tema="noche"] .tema-fijo .vidrio.vidrio-popup {
+    background: rgba(255, 253, 246, 0.5);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-tema="luz"]) .tema-fijo .vidrio {
+    background: rgba(255, 253, 246, 0.92);
+    border-color: rgba(255, 255, 255, 0.55);
+  }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    html:not([data-tema="luz"]) .tema-fijo .vidrio {
+      background: rgba(255, 253, 246, 0.62);
+    }
+    html:not([data-tema="luz"]) .tema-fijo .vidrio.vidrio-popup {
+      background: rgba(255, 253, 246, 0.5);
+    }
+  }
+}
 /* ============================================================
    Switch Privado ↔ Transparente (liquid glass). Es un elemento especial: el único
    control de vidrio con reflejos de la app. El estado también va en texto.
