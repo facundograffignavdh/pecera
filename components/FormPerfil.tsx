@@ -31,6 +31,7 @@ import {
   TICKETS,
   TONO,
 } from "@/lib/etiquetas";
+import { borrarBorrador, guardarBorrador, useBorradorGuardado } from "@/lib/borrador-perfil";
 import { ROLES, TIPOS } from "@/lib/rol";
 import type { Perfil, Rol } from "@/types/pecera";
 
@@ -163,7 +164,7 @@ function Paso({
           {numero}
         </span>
         <div className="flex flex-col gap-0.5">
-          <h2 id={`paso-${numero}`} className="font-display text-xl font-semibold leading-tight text-tinta">
+          <h2 id={`paso-${numero}`} className="scroll-mt-24 font-display text-xl font-semibold leading-tight text-tinta">
             {titulo}
           </h2>
           {bajada && <p className="text-sm text-tinta/70">{bajada}</p>}
@@ -174,17 +175,23 @@ function Paso({
   );
 }
 
-export default function FormPerfil({
-  perfil,
-  rolInicial,
-}: {
-  perfil: PerfilPropio | null;
-  /** Desde /sumate: el rol ya elegido en la landing. */
-  rolInicial?: Rol;
-}) {
-  const creando = perfil === null;
+/** Solo las claves conocidas y con el tipo correcto (el borrador viene del celular). */
+function pick(origen: Record<string, unknown>, claves: string[]): Record<string, string> {
+  return Object.fromEntries(
+    claves.filter((c) => typeof origen?.[c] === "string").map((c) => [c, origen[c] as string])
+  );
+}
 
-  const [valores, setValores] = useState<Valores>({
+function pickListas(origen: Record<string, unknown>, claves: string[]): Record<string, string[]> {
+  return Object.fromEntries(
+    claves
+      .filter((c) => Array.isArray(origen?.[c]))
+      .map((c) => [c, (origen[c] as unknown[]).filter((x): x is string => typeof x === "string")])
+  );
+}
+
+function valoresDe(perfil: PerfilPropio | null, rolInicial?: Rol): Valores {
+  return {
     nombre: perfil?.nombre ?? "",
     tipo: perfil?.tipo ?? "",
     rol: perfil?.rol ?? rolInicial ?? "",
@@ -198,12 +205,29 @@ export default function FormPerfil({
     ronda: perfil?.ronda ?? "",
     cargo: perfil?.cargo ?? "",
     ticket: perfil?.ticket ?? "",
-  });
-  const [listas, setListas] = useState<Listas>({
+  };
+}
+
+function listasDe(perfil: PerfilPropio | null): Listas {
+  return {
     industrias: perfil?.industrias ?? [],
     especialidades: perfil?.especialidades ?? [],
     rondas_interes: perfil?.rondas_interes ?? [],
-  });
+  };
+}
+
+export default function FormPerfil({
+  perfil,
+  rolInicial,
+}: {
+  perfil: PerfilPropio | null;
+  /** Desde /sumate: el rol ya elegido en la landing. */
+  rolInicial?: Rol;
+}) {
+  const creando = perfil === null;
+
+  const [valores, setValores] = useState<Valores>(() => valoresDe(perfil, rolInicial));
+  const [listas, setListas] = useState<Listas>(() => listasDe(perfil));
   const [slug, setSlug] = useState("");
   const [slugTocado, setSlugTocado] = useState(false);
   const [consentimiento, setConsentimiento] = useState(false);
@@ -299,11 +323,81 @@ export default function FormPerfil({
     }
   }
 
+  // Cambios contra lo guardado. Al guardar, /cuenta se revalida y `perfil` trae lo
+  // nuevo: el formulario vuelve a estar "al día" sin remontarse.
+  const actual = JSON.stringify([valores, listas, slugTocado ? slug : ""]);
+  const original = JSON.stringify([valoresDe(perfil, rolInicial), listasDe(perfil), ""]);
+  const sinCambios = actual === original && oculto === (perfil?.oculto ?? false) && !foto;
+
+  // Al crear, lo cargado se guarda en el celular como borrador.
+  const borrador = useBorradorGuardado();
+  const [borradorDescartado, setBorradorDescartado] = useState(false);
+  const ofrecerBorrador = creando && !!borrador && !borradorDescartado && sinCambios;
+
+  useEffect(() => {
+    if (!creando) {
+      borrarBorrador();
+      return;
+    }
+    if (sinCambios) return;
+    const espera = setTimeout(
+      () => guardarBorrador({ valores, listas, slug: slugTocado ? slug : "" }),
+      400
+    );
+    return () => clearTimeout(espera);
+  }, [creando, sinCambios, valores, listas, slug, slugTocado]);
+
+  // Salir con cambios sin guardar: el navegador pregunta antes (al editar; al
+  // crear queda el borrador).
+  useEffect(() => {
+    if (creando || sinCambios || guardando) return;
+    const avisar = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", avisar);
+    return () => window.removeEventListener("beforeunload", avisar);
+  }, [creando, sinCambios, guardando]);
+
+  function recuperarBorrador() {
+    if (!borrador) return;
+    setValores((v) => ({ ...v, ...pick(borrador.valores, Object.keys(v)) }));
+    setListas((l) => ({ ...l, ...pickListas(borrador.listas, Object.keys(l)) }));
+    if (borrador.slug) {
+      setSlug(borrador.slug);
+      setSlugTocado(true);
+    }
+    setBorradorDescartado(true);
+  }
+
+  function descartarBorrador() {
+    borrarBorrador();
+    setBorradorDescartado(true);
+  }
+
   const rolAvatar = rol ?? "emprendedor";
   const avatar = foto?.url ?? perfil?.avatar_url ?? null;
 
   return (
     <form action={accion} noValidate className="flex flex-col gap-5">
+      {ofrecerBorrador && (
+        <div role="status" className="flex flex-col gap-3 rounded-2xl bg-celeste-suave px-4 py-3 text-sm text-tinta">
+          <p>Tenés un perfil a medio cargar en este celular. ¿Seguimos desde ahí?</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={recuperarBorrador}
+              className="min-h-11 rounded-full bg-tinta px-4 font-medium text-marfil focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+            >
+              Recuperar lo que cargué
+            </button>
+            <button
+              type="button"
+              onClick={descartarBorrador}
+              className="min-h-11 rounded-full border border-tinta/30 px-4 font-medium text-tinta transition-colors duration-200 ease-pecera hover:border-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+            >
+              Empezar de cero
+            </button>
+          </div>
+        </div>
+      )}
       {/* 1 · Rol: la decisión que ordena todo lo demás. */}
       <Paso numero={1} titulo="¿Cómo entrás a Pecera?">
         <fieldset className="flex flex-col gap-2.5" aria-describedby={errores.rol ? "rol-error" : undefined}>
@@ -698,7 +792,7 @@ export default function FormPerfil({
             />
             {CONSENTIMIENTO}
           </label>
-          {/* Pestaña nueva: el formulario no guarda borrador y se perdería lo cargado. */}
+          {/* Pestaña nueva: no saca a la persona del formulario a medio cargar. */}
           <p className="pl-8 text-sm text-tinta/80">
             Leé la{" "}
             <a
@@ -768,10 +862,29 @@ export default function FormPerfil({
             </button>
           </div>
         ) : (
-          <p role="status" className="min-h-5 rounded-full text-center text-sm text-tinta">
-            {!guardando && estado.guardado && !errorFoto
-              ? (estado.aviso ?? "Listo, guardado.")
-              : ""}
+          <p role="status" className="flex min-h-5 items-center justify-center gap-1.5 text-center text-sm text-tinta">
+            {guardando ? null : !sinCambios && !creando ? (
+              <>
+                <span aria-hidden className="size-2 rounded-full bg-arcilla" />
+                Tenés cambios sin guardar
+              </>
+            ) : estado.guardado && !errorFoto ? (
+              estado.aviso ?? (
+                <>
+                  <span
+                    aria-hidden
+                    className="aparecer-pop flex size-4 items-center justify-center rounded-full bg-aliado text-marfil"
+                  >
+                    <svg viewBox="0 0 12 12" className="size-2.5">
+                      <path d="M2.5 6.2 5 8.6l4.5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  Guardado
+                </>
+              )
+            ) : creando ? (
+              "Lo que cargás queda guardado en este celular hasta que crees tu perfil."
+            ) : null}
           </p>
         )}
       </div>

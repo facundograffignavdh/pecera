@@ -35,7 +35,7 @@ export function Tarjeta({
             {etiqueta}
           </span>
         )}
-        <h2 id={id} className="font-display text-xl font-semibold leading-tight text-tinta">
+        <h2 id={id} className="scroll-mt-24 font-display text-xl font-semibold leading-tight text-tinta">
           {titulo}
         </h2>
         {bajada && <p className="text-sm text-tinta/70">{bajada}</p>}

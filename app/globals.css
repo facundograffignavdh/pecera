@@ -7,6 +7,10 @@
   --color-arcilla: #d95a22;
   --color-inversor: #0c6aa8;
   --color-aliado: #1f7a52;
+  /* Celeste del Pitch: identifica el formato en feed, perfil, empresa y cuenta.
+     Siempre de fondo con texto Tinta (11:1); nunca como color de texto. */
+  --color-celeste: #8fd3f4;
+  --color-celeste-suave: #dcf1fb;
 
   /* Tonos de etiquetas (cargos, especialidades): fondo suave + texto fuerte, AA
      sobre marfil y sobre video. Se usan solo desde lib/etiquetas.ts. */
@@ -37,6 +41,74 @@ body {
   background: var(--color-marfil);
   color: var(--color-tinta);
   font-family: var(--font-sans);
+}
+
+/* Selección de texto. Los controles no se seleccionan con un toque largo, un doble
+   toque o un arrastre: botones, chips (labels con su input adentro), acordeones e
+   interfaces sobre video (`.ui-fija`). El texto de contenido (descripciones,
+   datos, newsletter) sigue seleccionable: no es una regla global. */
+button,
+[role="button"],
+summary,
+label:has(> input[type="radio"]),
+label:has(> input[type="checkbox"]),
+/* En el sistema, lo redondeado en píldora siempre es un control o una etiqueta:
+   links con forma de botón, chips de rol, etapa e industria, insignias. */
+a[class~="rounded-full"],
+span[class~="rounded-full"],
+.ui-fija {
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* Toque largo sobre un video: sin el menú de "Guardar video" de iOS ni el arrastre. */
+video {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+.ui-fija {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Barra de progreso del sistema (perfil, hitos, rachas, ronda): se llena de 0 a
+   --p (0..1) al aparecer. Solo transform: no mueve el layout. */
+@keyframes llenar {
+  from { transform: scaleX(0); }
+}
+.barra-progreso {
+  transform: scaleX(var(--p, 0));
+  transform-origin: left center;
+  animation: llenar 900ms var(--ease-pecera) both;
+  animation-delay: var(--retraso, 150ms);
+}
+
+/* Insignia PITCH: un brillo la recorre una vez cuando el reel entra en pantalla. */
+.insignia-pitch {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.insignia-pitch[data-activa]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.75) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: brillo-insignia 1100ms var(--ease-pecera) 400ms both;
+}
+@keyframes brillo-insignia {
+  to { transform: translateX(120%); }
+}
+
+/* Entrada de elementos de estado (un check, un hito nuevo): pop chico. */
+@keyframes aparecer-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  60% { opacity: 1; transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+.aparecer-pop {
+  animation: aparecer-pop 450ms var(--ease-pecera) both;
 }
 
 /* El feed ya tiene snap como afordancia: la barra de scroll solo estorba. */

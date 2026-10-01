@@ -8,6 +8,7 @@ import MisPitches, { type MiPitch } from "@/components/MisPitches";
 import PieLegal from "@/components/PieLegal";
 import RecordarCuenta from "@/components/RecordarCuenta";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
+import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
 import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
 import TarjetaTransparencia from "@/components/cuenta/TarjetaTransparencia";
@@ -145,6 +146,14 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               <Creado perfil={perfil} fotoFallo={foto === "error"} />
             ) : (
               perfil && <Estado perfil={perfil} />
+            )}
+
+            {perfil && (
+              <CompletarPerfil
+                perfil={perfil}
+                pitches={misPitches}
+                conEmpresa={extras?.disponible ? !!extras.empresa : null}
+              />
             )}
 
             <MisPitches

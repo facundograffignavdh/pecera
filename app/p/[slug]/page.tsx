@@ -16,6 +16,8 @@ import { ROLES, TIPOS } from "@/lib/rol";
 
 export const revalidate = 60;
 
+const SUBTITULO = "font-display text-sm font-semibold uppercase tracking-wide text-tinta/50";
+
 // Un perfil aprobado después del build se genera en la primera visita.
 export const dynamicParams = true;
 
@@ -107,21 +109,26 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
 
         <p className="mt-5 leading-relaxed text-tinta/90">{perfil.descripcion}</p>
 
-        <CanalesPerfil perfil={perfil} />
-
-        {pitches.length > 0 && (
-          <section className="mt-7">
-            <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-tinta/50">
-              {pitches.length === 1 ? "Su pitch" : "Sus pitches"}
-            </h2>
+        {/* El Pitch va primero después de la presentación: es la identidad del perfil. */}
+        <section aria-labelledby="pitch-titulo" className="mt-7">
+          <h2 id="pitch-titulo" className={SUBTITULO}>
+            Pitch
+          </h2>
+          {pitches.length > 0 ? (
             <GrillaPitches
               slug={perfil.slug}
               nombre={perfil.nombre}
               pitches={pitches}
               metricas={metricas}
             />
-          </section>
-        )}
+          ) : (
+            <p className="mt-3 rounded-2xl border border-dashed border-tinta/20 px-4 py-3 text-sm text-tinta/70">
+              Todavía no hay un pitch publicado.
+            </p>
+          )}
+        </section>
+
+        <CanalesPerfil perfil={perfil} />
 
         <PieLegal tono="claro" className="mt-10 pb-8" />
       </div>

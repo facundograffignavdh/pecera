@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from
 import Avatar from "@/components/Avatar";
 import { EtiquetasReel } from "@/components/Etiquetas";
 import { IconoCorazon, IconoSonido, IconoSubtitulos } from "@/components/Iconos";
+import InsigniaPitch from "@/components/InsigniaPitch";
 import Subtitulos from "@/components/Subtitulos";
 import { formatoCompacto } from "@/lib/formato";
 import { registrarVista } from "@/lib/medicion";
@@ -216,7 +217,8 @@ export default function Reel({
       ref={(el) => registrarRef(indice, el)}
       id={pitch.id}
       data-indice={indice}
-      className="relative h-dvh w-full snap-start snap-always overflow-hidden bg-tinta"
+      // ui-fija: el doble toque y el toque largo no seleccionan el texto del reel.
+      className="ui-fija relative h-dvh w-full snap-start snap-always overflow-hidden bg-tinta"
     >
       <video
         ref={videoRef}
@@ -358,7 +360,9 @@ export default function Reel({
 
           <EtiquetasReel perfil={perfil} />
 
+          {/* La insignia va pegada a la descripción: se reconoce el formato al pasar. */}
           <p className="mt-3 max-w-prose text-sm leading-relaxed text-marfil/90">
+            <InsigniaPitch grande activa={activo} className="mr-2 align-[0.1em]" />
             {pitch.descripcion || perfil.descripcion}
           </p>
 
