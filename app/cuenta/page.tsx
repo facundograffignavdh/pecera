@@ -10,11 +10,14 @@ import RecordarCuenta from "@/components/RecordarCuenta";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
 import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
+import EnVivo from "@/components/EnVivo";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
+import TarjetaNFC from "@/components/cuenta/TarjetaNFC";
 import TarjetaPortafolio from "@/components/cuenta/TarjetaPortafolio";
 import { entrar } from "@/app/cuenta/acciones";
 import { urlPerfil } from "@/lib/cuenta";
 import type { CuentaLocal } from "@/lib/cuenta-local";
+import { completitudDePerfil } from "@/lib/completitud";
 import { faltaMigracion } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
@@ -151,6 +154,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             ) : (
               perfil && <Estado perfil={perfil} />
             )}
+
+            <EnVivo canal={`perfil-${user.id}`} filtro={`usuario_id=eq.${user.id}`} />
+            {perfil && <TarjetaNFC slug={perfil.slug} completo={completitudDePerfil(perfil)} />}
 
             <MisPitches
               pitches={misPitches}

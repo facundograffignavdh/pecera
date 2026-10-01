@@ -13,7 +13,8 @@ const GRUPOS = [
     enlaces: [
       { href: "/", label: "Feed", bajada: "Para vos y Stakeholding" },
       { href: "/explorar", label: "Explorar", bajada: "Hashtags y secciones" },
-      { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "Programa y votación" },
+      { href: "/eventos", label: "Eventos", bajada: "Ferias, networking, pitch events y más" },
+      { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "En curso · programa y votación", sub: true },
       { href: "/cofundadores", label: "Cofundadores", bajada: "Encontrá socio/a, como en YC" },
     ],
   },
@@ -80,9 +81,11 @@ export default function MenuPrincipal() {
                 <p className="px-4 text-xs font-semibold uppercase tracking-[0.12em] text-tinta/50">{grupo.titulo}</p>
                 <ul className="flex flex-col gap-0.5">
                   {grupo.enlaces.map((e) => {
-                    const actual = e.href === "/" ? ruta === "/" : ruta.startsWith(e.href);
+                    const actual =
+                      e.href === "/" ? ruta === "/" : e.href === "/eventos" ? ruta === "/eventos" : ruta.startsWith(e.href);
+                    const sub = "sub" in e && e.sub;
                     return (
-                      <li key={e.href}>
+                      <li key={e.href} className={sub ? "ml-4 border-l-2 border-tinta/10 pl-2" : undefined}>
                         <Link
                           href={e.href}
                           onClick={cerrar}

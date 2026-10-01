@@ -129,3 +129,29 @@ export const EVENTO_ACTUAL: Evento = {
 export const EVENTOS: Evento[] = [EVENTO_ACTUAL];
 
 export const getEventoDefinido = (slug: string) => EVENTOS.find((e) => e.slug === slug) ?? null;
+
+// ---------------------------------------------------------------------------
+// Categorías de Eventos. La Feria es una de ellas: /eventos es la sección madre y
+// cada evento vive en /eventos/[slug] (la página de la Feria 21 no cambia).
+// ---------------------------------------------------------------------------
+export type CategoriaEvento = {
+  id: "feria" | "networking" | "pitch" | "workshops" | "demo-days" | "otros";
+  nombre: string;
+  bajada: string;
+  /** Slugs de EVENTOS que entran en la categoría. */
+  eventos: string[];
+};
+
+export const CATEGORIAS_EVENTO: CategoriaEvento[] = [
+  {
+    id: "feria",
+    nombre: "Ferias",
+    bajada: "Stands, pitches en vivo y votación del público.",
+    eventos: [EVENTO_ACTUAL.slug],
+  },
+  { id: "networking", nombre: "Networking", bajada: "Encuentros para conocer founders, inversores y aliados.", eventos: [] },
+  { id: "pitch", nombre: "Pitch Events", bajada: "Rondas de pitch con devolución de inversores.", eventos: [] },
+  { id: "workshops", nombre: "Workshops", bajada: "Talleres prácticos: métricas, legales, fundraising.", eventos: [] },
+  { id: "demo-days", nombre: "Demo Days", bajada: "Cierres de programas con pitches ante el jurado.", eventos: [] },
+  { id: "otros", nombre: "Otros eventos", bajada: "Hackathons, charlas y todo lo que se sume.", eventos: [] },
+];

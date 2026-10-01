@@ -1,4 +1,4 @@
-import type { Rol } from "@/types/pecera";
+import type { Perfil, Rol } from "@/types/pecera";
 
 /**
  * Qué tan completo está un perfil (0-100) y qué falta, con el paso del formulario
@@ -59,4 +59,29 @@ export function completitud(d: Datos): { porcentaje: number; items: ItemCompleti
   const total = items.reduce((s, i) => s + i.peso, 0);
   const hecho = items.reduce((s, i) => s + (i.hecho ? i.peso : 0), 0);
   return { porcentaje: Math.round((hecho / total) * 100), items };
+}
+
+/** Lo mismo desde un perfil guardado (columnas que pueden faltar sin la migración). */
+export function completitudDePerfil(p: Perfil): number {
+  return completitud({
+    rol: p.rol,
+    foto: !!p.avatar_url,
+    nombre: p.nombre ?? "",
+    descripcion: p.descripcion ?? "",
+    ubicacion: p.ubicacion ?? "",
+    experiencia: p.experiencia ?? "",
+    educacion: p.educacion ?? "",
+    skills: p.skills ?? [],
+    whatsapp: p.whatsapp ?? "",
+    email: p.email ?? "",
+    linkedin: p.linkedin ?? "",
+    instagram: p.instagram ?? "",
+    web: p.web ?? "",
+    etapa: p.etapa ?? "",
+    industrias: p.industrias ?? [],
+    rondas_interes: p.rondas_interes ?? [],
+    especialidades: p.especialidades ?? [],
+    busca: p.busca ?? [],
+    ofrece: p.ofrece ?? [],
+  }).porcentaje;
 }

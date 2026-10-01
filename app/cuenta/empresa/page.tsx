@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import Encabezado from "@/components/Encabezado";
+import EnVivo from "@/components/EnVivo";
 import PieLegal from "@/components/PieLegal";
 import PanelEmpresa, { type Miembro } from "@/components/cuenta/PanelEmpresa";
 import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
@@ -58,6 +59,7 @@ export default async function EmpresaCuentaPage() {
                 <h1 className="truncate font-display text-3xl font-semibold leading-tight text-tinta">{empresa.nombre}</h1>
               </div>
             </header>
+            <EnVivo canal={`empresa-${empresa.id}`} filtro={`empresa_id=eq.${empresa.id}`} />
             <div className="mt-6">
               <PanelEmpresa empresa={empresa} miembros={miembros} datos={datos} />
             </div>
