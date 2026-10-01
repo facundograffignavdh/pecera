@@ -7,18 +7,23 @@ import CausticPool, { type CausticParams } from "@/components/ui/caustic-pool";
 import { boton } from "@/lib/ui";
 
 /**
- * El agua del fondo: "deep-ocean" bajado de exposición para que el texto Marfil
- * lea sin pelear con las vetas, y con destellos cálidos (Naranja suave) que
- * enlazan con la marca. Constante de módulo: así `params` no cambia entre
- * renders y el agua nunca se reinicia.
+ * El agua del fondo: "deep-ocean" con más luz (exposición, cáusticas y vetas
+ * altas, viñeta suave) y destellos cálidos (Naranja suave) que enlazan con la
+ * marca. El texto Marfil se lee gracias al velo oscuro de la izquierda (abajo),
+ * no a bajar el brillo del agua. Constante de módulo: así `params` no cambia
+ * entre renders y el agua nunca se reinicia.
  */
 const AGUA: Partial<CausticParams> = {
-  exposure: 1.1,
-  causticGain: 0.2,
-  veinGain: 0.1,
-  glintColor: [253, 227, 212],
-  glintGain: 0.6,
-  vigDark: 0.45,
+  exposure: 1.85,
+  floorBase: 0.34,
+  causticGain: 0.36,
+  veinGain: 0.24,
+  veinColor: [150, 215, 250],
+  deepGain: 0.75,
+  glintColor: [255, 236, 214],
+  glintGain: 0.95,
+  fresnelGain: 0.4,
+  vigDark: 0.8,
 }
 
 const PARA_QUIEN = [
@@ -38,18 +43,20 @@ export default function Hero() {
   return (
     <section
       aria-labelledby="hero-titulo"
-      className="relative isolate flex min-h-[38rem] items-center overflow-hidden bg-tinta px-5 pb-16 pt-[calc(max(0.75rem,env(safe-area-inset-top))+5.25rem)] sm:px-8 lg:min-h-[min(50rem,100svh)] lg:pb-24"
+      className="paleta-original relative isolate flex min-h-[38rem] items-center overflow-hidden bg-tinta px-5 pb-16 pt-[calc(max(0.75rem,env(safe-area-inset-top))+5.25rem)] sm:px-8 lg:min-h-[min(50rem,100svh)] lg:pb-24"
     >
       {/* Agua con cáusticas que se revuelve al pasar el mouse o arrastrar el dedo.
           Es decoración (aria-hidden); el contenido va encima y deja pasar el puntero. */}
       <div aria-hidden className="absolute inset-0 -z-10">
         <CausticPool preset="deep-ocean" params={AGUA} height="100%" resolution={256} />
-        {/* Velo a la izquierda (donde va el texto) y fundido a Marfil abajo. */}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(28_27_22/0.62),rgb(28_27_22/0.18)_60%,transparent)]" />
+        {/* Velo a la izquierda (donde va el texto): fuerte detrás de las letras y se va
+            a nada hacia la derecha, para que el agua se vea brillante. En el celular el
+            texto ocupa todo el ancho, así que el velo es parejo. */}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(4_38_72/0.74),rgb(4_38_72/0.58)_48%,rgb(4_38_72/0.1)_80%,transparent)] max-lg:bg-[linear-gradient(180deg,rgb(4_38_72/0.6),rgb(4_38_72/0.52))]" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-marfil to-transparent" />
       </div>
       <div className="pointer-events-none mx-auto w-full max-w-6xl">
-        <div className="max-w-xl text-marfil [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
+        <div className="max-w-xl text-marfil [text-shadow:0_1px_16px_rgb(4_38_72/0.55)] [&_a]:pointer-events-auto [&_a]:[text-shadow:none] [&_button]:pointer-events-auto [&_button]:[text-shadow:none]">
           {feria ? (
             <Link
               href={`/eventos/${EVENTO_ACTUAL.slug}`}

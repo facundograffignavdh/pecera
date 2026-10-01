@@ -241,7 +241,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `/red` (Mi red: los perfiles que seguís, en el celular)
 - `/sumate` → landing de adquisición (ISR 60 s), armada en `components/landing/`: Hero
   (agua interactiva `components/ui/caustic-pool.tsx` de fondo y titular rotativo
-  Construí / Fondeá / Invertí en; sin tarjetas de ejemplo), Desparramado (problema → solución), demo,
+  Construí / Fondeá / Invertí en; sin tarjetas de ejemplo), después franjas que alternan
+  blanca y naranja (`Banda` en page.tsx; colores en `globals.css`, bloque "Landing en
+  franjas alternas": sin bloques negros, en la blanca pasan a naranja y en la naranja a
+  blanco; las islas de imagen llevan `paleta-original`), Desparramado (problema → solución), demo,
   SegunQuienSos (pestañas por rol), MapaEcosistema (Descubrir/Construir/Conectar/Fondear/
   Aprender), BuildEnPublico, CaminoInversion, AcademyDataroom, ExplorarBusqueda (form real a
   `/explorar`), Confianza (datos en vivo), Diferencia, Preguntas (también JSON-LD), Cierre

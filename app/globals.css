@@ -1143,3 +1143,104 @@ html .tema-fijo {
   --color-celeste-suave: #dde8f1;
   --color-obra-suave: #f8ebcb;
 }
+
+/* ===========================================================================
+   Landing en franjas alternas (/sumate): blanca (letras negras y naranjas) y
+   naranja (letras blancas). Cada franja redefine los tokens como el modo noche:
+   en la naranja lo crema (marfil) pasa a naranja y lo negro (tinta) a blanco, así
+   que las tarjetas, chips y bloques que eran negros quedan blancos con letras
+   naranjas, y el botón primario, blanco con letra naranja.
+   - Naranja #BF4513: con blanco da 5,1:1 (AA, también sobre tarjetas translúcidas).
+     El de marca #F87C43 daría 2,6:1.
+   - Los bloques de imagen o video (hero con agua, cierre) no están dentro de una
+     franja: conservan su paleta.
+   =========================================================================== */
+/* Base de la página (hero, cierre, pie): blanco cálido. Las franjas redefinen lo suyo. */
+html .landing-base,
+html .banda-blanca {
+  --color-marfil: #fffdf8;
+  --color-superficie: #f6f2e8;
+}
+/* Sin bloques negros: en una franja blanca los que eran negros pasan a naranja con
+   letras blancas (el fondo del bloque es --color-tinta, así que se redefine ahí).
+   Adentro, lo "claro" (bg-marfil) es blanco con letra naranja y el botón primario
+   (bg-naranja) es blanco con letra naranja. */
+html .banda-blanca .bg-tinta {
+  --color-tinta: #bf4513;
+  --color-marfil: #fffdf9;
+  --color-naranja: #fffdf9;
+  --color-pecera: #fffdf9;
+  --color-arcilla: #fffdf9;
+  --color-naranja-texto: #fffdf9;
+  /* El ámbar "obra" (Build in Public) no se lee sobre naranja: pasa a blanco. */
+  --color-obra: #fffdf9;
+  --color-obra-suave: #fffdf9;
+}
+/* Las tarjetas claras de adentro (maquetas del producto) siguen blancas con letra negra
+   y naranja; si no, heredarían el "naranja de texto" ya convertido a blanco. */
+html .banda-blanca .bg-tinta .bg-marfil {
+  --color-marfil: #fffdf8;
+  --color-tinta: #1c1b16;
+  --color-naranja-suave: #fde3d4;
+  --color-naranja-texto: #a9441a;
+  --color-arcilla: #d95a22;
+  --color-naranja: #f47c3c;
+  --color-pecera: #f87c43;
+}
+/* El texto secundario (blanco al 55-80 %) pierde AA sobre naranja: va pleno. */
+html .banda-blanca .bg-tinta [class*="text-marfil/"] {
+  color: var(--color-marfil);
+}
+html .banda-blanca .bg-tinta .bg-marfil [class*="text-tinta/"] {
+  color: var(--color-tinta);
+}
+html .banda-naranja {
+  --color-marfil: #bf4513;
+  --color-tinta: #fffdf9;
+  --color-superficie: #a93b0d;
+  --color-naranja-suave: #a93b0d;
+  --color-naranja-texto: #fffdf9;
+  --color-arcilla: #fffdf9;
+  --color-naranja: #fffdf9;
+  --color-pecera: #fffdf9;
+}
+/* Los bloques que eran negros pasan a blanco; la letra de adentro, naranja profundo
+   (#AD3D0D: 6,3:1 sobre blanco, también para texto chico). */
+html .banda-naranja .bg-tinta {
+  --color-marfil: #ad3d0d;
+  --color-naranja-texto: #ad3d0d;
+  --color-arcilla: #ad3d0d;
+  --color-pecera: #ad3d0d;
+}
+/* Botón primario: blanco con letra naranja; al pasar el mouse, durazno. */
+html .banda-naranja .bg-naranja {
+  --color-tinta: #bf4513;
+  --color-naranja-texto: #bf4513;
+  --color-arcilla: #bf4513;
+  --color-pecera: #f6e4d8;
+}
+/* Las etiquetas de vidrio (claras) llevan letra naranja. */
+html .banda-naranja .vidrio {
+  --color-tinta: #bf4513;
+  --color-naranja-texto: #ad3d0d;
+  --color-arcilla: #ad3d0d;
+}
+/* El blanco translúcido pierde contraste sobre naranja: el texto va siempre pleno. */
+html .banda-naranja [class*="text-tinta/"] {
+  color: var(--color-tinta);
+}
+html .banda-naranja .bg-tinta [class*="text-marfil/"] {
+  color: var(--color-marfil);
+}
+/* Islas con su propia paleta (video de la demo, maquetas del producto): no se
+   invierten en ninguna franja. */
+html :is(.banda-blanca, .banda-naranja) :is(.paleta-original, .paleta-original .bg-tinta, .paleta-original .bg-naranja, .paleta-original .vidrio) {
+  --color-marfil: #f5f4ec;
+  --color-tinta: #1c1b16;
+  --color-superficie: #efede3;
+  --color-naranja-suave: #fde3d4;
+  --color-naranja-texto: #a9441a;
+  --color-arcilla: #d95a22;
+  --color-naranja: #f47c3c;
+  --color-pecera: #f87c43;
+}

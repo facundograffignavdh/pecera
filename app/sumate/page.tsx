@@ -90,13 +90,18 @@ const ID_SCROLL = "landing";
  * puede comprobar → por qué Pecera → preguntas → un solo CTA. Todos los "Sumate"
  * abren la misma elección de rol (ElegirRol) y de ahí, el alta con Google.
  */
+/** Una franja de la landing: fondo y letras de su tono (los tokens, en globals.css). */
+function Banda({ tono, children }: { tono: "blanca" | "naranja"; children: React.ReactNode }) {
+  return <div className={`${tono === "naranja" ? "banda-naranja" : "banda-blanca"} bg-marfil text-tinta`}>{children}</div>;
+}
+
 export default async function SumatePage() {
   const pulso = await getPulsoEcosistema();
 
   return (
     <main
       id={ID_SCROLL}
-      className="tema-fijo h-dvh overflow-y-auto overflow-x-clip overscroll-y-contain scroll-smooth bg-marfil text-tinta"
+      className="tema-fijo landing-base h-dvh overflow-y-auto overflow-x-clip overscroll-y-contain scroll-smooth bg-marfil text-tinta"
     >
       <script
         type="application/ld+json"
@@ -108,9 +113,15 @@ export default async function SumatePage() {
       <ElegirRol />
 
       <Hero />
-      <ValuaStartup />
-      <Desparramado />
+      {/* Franjas que alternan: blanca (letras negras y naranjas) y naranja (letras blancas). */}
+      <Banda tono="blanca">
+        <ValuaStartup />
+      </Banda>
+      <Banda tono="naranja">
+        <Desparramado />
+      </Banda>
 
+      <Banda tono="blanca">
       <Seccion
         id="como-se-ve"
         numero="03"
@@ -121,7 +132,7 @@ export default async function SumatePage() {
       >
         <div
           data-revelar
-          className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-[var(--radius-bloque)] bg-tinta shadow-[0_1px_2px_rgb(28_27_22/0.12),0_24px_56px_rgb(28_27_22/0.18)]"
+          className="paleta-original mx-auto mt-12 max-w-4xl overflow-hidden rounded-[var(--radius-bloque)] bg-tinta shadow-[0_1px_2px_rgb(28_27_22/0.12),0_24px_56px_rgb(28_27_22/0.18)]"
         >
           <iframe
             src="/demo-video/index.html"
@@ -132,11 +143,15 @@ export default async function SumatePage() {
           />
         </div>
       </Seccion>
+      </Banda>
 
-      <Seccion id="segun-quien-sos" numero="04" etiqueta="Para vos" titulo="Pecera cambia según quién sos." className="bg-superficie">
+      <Banda tono="naranja">
+      <Seccion id="segun-quien-sos" numero="04" etiqueta="Para vos" titulo="Pecera cambia según quién sos.">
         <SegunQuienSos />
       </Seccion>
+      </Banda>
 
+      <Banda tono="blanca">
       <Seccion
         id="mapa"
         numero="05"
@@ -146,14 +161,30 @@ export default async function SumatePage() {
       >
         <MapaEcosistema lecciones={LECCIONES.length} templates={PLANTILLAS.length} />
       </Seccion>
+      </Banda>
 
-      <BuildEnPublico />
-      <CaminoInversion />
-      <AcademyDataroom />
-      <ExplorarBusqueda />
-      <Confianza pulso={pulso} />
-      <Diferencia />
-      <Preguntas />
+      {/* Build in Public es una sección negra: en una franja blanca pasa a naranja. */}
+      <Banda tono="blanca">
+        <BuildEnPublico />
+      </Banda>
+      <Banda tono="blanca">
+        <CaminoInversion />
+      </Banda>
+      <Banda tono="naranja">
+        <AcademyDataroom />
+      </Banda>
+      <Banda tono="blanca">
+        <ExplorarBusqueda />
+      </Banda>
+      <Banda tono="naranja">
+        <Confianza pulso={pulso} />
+      </Banda>
+      <Banda tono="blanca">
+        <Diferencia />
+      </Banda>
+      <Banda tono="naranja">
+        <Preguntas />
+      </Banda>
       <Cierre />
       <PieLanding />
 

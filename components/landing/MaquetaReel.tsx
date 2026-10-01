@@ -29,7 +29,7 @@ export default function MaquetaReel({
       <div
         role="img"
         aria-label={`Ejemplo de un pitch en el feed de Pecera: ${pitch.nombre}, ${rol.label.toLowerCase()}, con un botón para ver el perfil.`}
-        className="relative mx-auto aspect-[9/19] w-[250px] rounded-[2.6rem] bg-tinta p-2.5 shadow-[0_2px_4px_rgb(28_27_22/0.12),0_28px_60px_rgb(28_27_22/0.28)]"
+        className="paleta-original relative mx-auto aspect-[9/19] w-[250px] rounded-[2.6rem] bg-tinta p-2.5 shadow-[0_2px_4px_rgb(28_27_22/0.12),0_28px_60px_rgb(28_27_22/0.28)]"
       >
         <div aria-hidden className="relative h-full w-full overflow-hidden rounded-[2.1rem] bg-tinta">
           <Image src={pitch.poster} alt="" fill sizes="230px" className="object-cover" />

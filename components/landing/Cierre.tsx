@@ -12,7 +12,7 @@ export default function Cierre() {
     <section aria-labelledby="cierre-titulo" className="px-3 pb-3 sm:px-5 sm:pb-5">
       <div
         data-revelar
-        className="relative isolate mx-auto w-full max-w-7xl overflow-hidden rounded-[2rem] bg-tinta px-6 py-20 text-center text-marfil sm:px-12 sm:py-28"
+        className="paleta-original relative isolate mx-auto w-full max-w-7xl overflow-hidden rounded-[2rem] bg-tinta px-6 py-20 text-center text-marfil sm:px-12 sm:py-28"
       >
         <VideoFondo
           src="/landing/pecera-hero.mp4"
