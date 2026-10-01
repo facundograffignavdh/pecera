@@ -11,12 +11,15 @@ import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
 import AccionesPerfil from "@/components/perfil/AccionesPerfil";
 import BarraDueno from "@/components/perfil/BarraDueno";
 import {
+  BloqueBuscaOfrece,
   BloqueCofundador,
   BloquePortafolio,
   BloqueRacha,
+  BloqueTrayectoria,
   SUBTITULO,
   TarjetaEmpresaPerfil,
 } from "@/components/perfil/Bloques";
+import { IconoUbicacion } from "@/components/perfil/IconosMarca";
 import DescripcionConTags from "@/components/DescripcionConTags";
 import { urlPerfil } from "@/lib/cuenta";
 import { getMetricasPerfil, getPerfil, getSeguidores, getSlugs } from "@/lib/datos";
@@ -107,6 +110,12 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold text-marfil ${rol.bg}`}>{rol.label}</span>
                     <span className="text-tinta/65">{TIPOS[perfil.tipo] ?? ""}</span>
                   </p>
+                  {perfil.ubicacion && (
+                    <p className="flex items-center gap-1.5 text-sm text-tinta/65">
+                      <IconoUbicacion />
+                      {perfil.ubicacion}
+                    </p>
+                  )}
                 </header>
                 <EtiquetasPerfil perfil={perfil} conCargo={!perfil.empresa} />
                 <DescripcionConTags texto={perfil.descripcion} className="leading-relaxed text-tinta/90" />
@@ -149,7 +158,9 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
               </section>
             )}
 
+            <BloqueBuscaOfrece perfil={perfil} />
             <BloqueRacha racha={racha} />
+            <BloqueTrayectoria perfil={perfil} />
             <BloqueCofundador perfil={perfil} />
             <BloquePortafolio items={portafolio} rol={perfil.rol} />
           </div>

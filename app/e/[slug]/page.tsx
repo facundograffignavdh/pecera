@@ -10,6 +10,7 @@ import Info from "@/components/Info";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { LogoEmpresa, SUBTITULO } from "@/components/perfil/Bloques";
+import { IconoUbicacion } from "@/components/perfil/IconosMarca";
 import { canalesDe, conProtocolo, hrefInstagram } from "@/lib/contacto";
 import { getEmpresa } from "@/lib/datos";
 import { cargo, industria, labelRonda } from "@/lib/etiquetas";
@@ -52,6 +53,11 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
     items: datos.datos.map((d) => ({ dato: d, def: defDato(d.clave) })).filter((x) => x.def?.categoria === categoria),
   })).filter((g) => g.items.length > 0);
 
+  // Fundadores: quienes tienen un cargo de dirección o de fundador; el resto, equipo.
+  const DIRECCION = new Set(["ceo", "cto", "cfo", "coo", "cmo", "cpo", "fundador", "cofundador"]);
+  const fundadores = miembros.filter((m) => m.cargo && DIRECCION.has(m.cargo));
+  const equipo = miembros.filter((m) => !m.cargo || !DIRECCION.has(m.cargo));
+
   // "Escribile al equipo": el primer miembro con WhatsApp (o email), priorizando al CEO.
   const ordenados = [...miembros].sort((a, b) => Number(b.cargo === "ceo") - Number(a.cargo === "ceo"));
   const contacto = ordenados
@@ -88,6 +94,12 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
                   <LogoEmpresa nombre={empresa.nombre} logo={empresa.logo_url ?? null} size={88} />
                 </span>
                 <h1 className="font-display text-3xl font-semibold leading-[1.05] text-tinta">{empresa.nombre}</h1>
+                {empresa.ubicacion && (
+                  <p className="-mt-2 flex items-center gap-1.5 text-sm text-tinta/65">
+                    <IconoUbicacion />
+                    {empresa.ubicacion}
+                  </p>
+                )}
                 <BarraEtapa etapa={empresa.etapa} />
                 {(ronda || empresa.industrias.length > 0) && (
                   <div className="flex flex-wrap gap-1.5">
@@ -142,31 +154,36 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
 
           {/* ---- Contenido ---- */}
           <div className="flex flex-col gap-8">
-            {miembros.length > 0 && (
-              <section aria-label="El equipo">
-                <h2 className={SUBTITULO}>El equipo</h2>
-                <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {miembros.map((m, i) => {
-                    const c = cargo(m.cargo);
-                    return (
-                      <li key={m.id} className="aparecer" style={{ "--i": i } as React.CSSProperties}>
-                        <Link
-                          href={`/p/${m.slug}`}
-                          className="boton flex min-h-16 items-center gap-3 rounded-2xl border border-tinta/10 bg-tinta/[0.02] px-3 py-2.5 hover:border-arcilla"
-                        >
-                          <Avatar perfil={m} size={48} />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate font-semibold text-tinta">{m.nombre}</span>
-                            <span className="line-clamp-1 block text-sm text-tinta/60">{m.descripcion}</span>
-                          </span>
-                          {c && <Etiqueta clase={c.clase}>{c.label}</Etiqueta>}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            )}
+            {[
+              { titulo: "Fundadores", lista: fundadores },
+              { titulo: fundadores.length ? "Equipo" : "El equipo", lista: equipo },
+            ]
+              .filter((g) => g.lista.length > 0)
+              .map((g) => (
+                <section key={g.titulo} aria-label={g.titulo}>
+                  <h2 className={SUBTITULO}>{g.titulo}</h2>
+                  <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {g.lista.map((m, i) => {
+                      const c = cargo(m.cargo);
+                      return (
+                        <li key={m.id} className="aparecer" style={{ "--i": i } as React.CSSProperties}>
+                          <Link
+                            href={`/p/${m.slug}`}
+                            className="boton flex min-h-16 items-center gap-3 rounded-2xl border border-tinta/10 bg-tinta/[0.02] px-3 py-2.5 hover:border-arcilla"
+                          >
+                            <Avatar perfil={m} size={48} />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-semibold text-tinta">{m.nombre}</span>
+                              <span className="line-clamp-1 block text-sm text-tinta/60">{m.descripcion}</span>
+                            </span>
+                            {c && <Etiqueta clase={c.clase}>{c.label}</Etiqueta>}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
 
             <section aria-label="Pitches">
               <h2 className={SUBTITULO}>{pitches.length === 1 ? "Su pitch" : "Sus pitches"}</h2>

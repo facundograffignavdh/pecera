@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Etiqueta } from "@/components/Etiquetas";
 import { canalesDe } from "@/lib/contacto";
-import { aporte, labelDedicacion, tipoPortafolio } from "@/lib/etiquetas";
+import { aporte, labelDedicacion, necesidad, tipoPortafolio } from "@/lib/etiquetas";
 import type { Racha } from "@/lib/racha";
 import type { EmpresaResumen, ItemPortafolio, Perfil } from "@/types/pecera";
 
@@ -156,22 +156,93 @@ export function BloquePortafolio({ items, rol }: { items: ItemPortafolio[]; rol:
   );
 }
 
-/** La empresa del perfil, con su logo. */
+/** La empresa del perfil, con su logo: Empresa → Nombre, a un toque de su página. */
 export function TarjetaEmpresaPerfil({ empresa, cargo }: { empresa: EmpresaResumen; cargo: string | null }) {
   return (
     <Link
       href={`/e/${empresa.slug}`}
-      className="boton flex min-h-16 items-center gap-3 rounded-2xl border border-tinta/12 bg-marfil px-3 py-2.5 hover:border-arcilla"
+      aria-label={`Empresa: ${empresa.nombre}. Ver la página de la empresa`}
+      className="boton group flex min-h-16 items-center gap-3 rounded-2xl border border-tinta/12 bg-marfil px-3 py-2.5 hover:border-arcilla"
     >
       <LogoEmpresa nombre={empresa.nombre} logo={empresa.logo_url ?? null} size={44} />
       <span className="min-w-0 flex-1">
-        <span className="block text-xs text-tinta/60">{cargo ?? "Equipo"} en</span>
+        <span className="block text-xs font-semibold uppercase tracking-[0.12em] text-tinta/55">
+          Empresa{cargo ? ` · ${cargo}` : ""}
+        </span>
         <span className="block truncate font-display text-lg font-semibold leading-tight text-tinta">{empresa.nombre}</span>
       </span>
-      <span aria-hidden className="text-tinta/50">
+      <span aria-hidden className="text-lg text-tinta/50 transition-transform duration-200 group-hover:translate-x-1">
         &rarr;
       </span>
     </Link>
+  );
+}
+
+/** Trayectoria: experiencia, educación y skills. */
+export function BloqueTrayectoria({ perfil }: { perfil: Perfil }) {
+  const skills = perfil.skills ?? [];
+  if (!perfil.experiencia && !perfil.educacion && skills.length === 0) return null;
+  return (
+    <section aria-label="Trayectoria" className="rounded-3xl border border-tinta/10 bg-tinta/[0.02] px-5 py-5">
+      <h2 className={SUBTITULO}>Trayectoria</h2>
+      <dl className="mt-3 flex flex-col gap-3">
+        {perfil.experiencia && (
+          <div>
+            <dt className="text-xs font-semibold text-tinta/55">Experiencia</dt>
+            <dd className="mt-0.5 leading-relaxed text-tinta/90">{perfil.experiencia}</dd>
+          </div>
+        )}
+        {perfil.educacion && (
+          <div>
+            <dt className="text-xs font-semibold text-tinta/55">Educación</dt>
+            <dd className="mt-0.5 text-tinta/90">{perfil.educacion}</dd>
+          </div>
+        )}
+        {skills.length > 0 && (
+          <div>
+            <dt className="text-xs font-semibold text-tinta/55">Skills</dt>
+            <dd className="mt-1.5 flex flex-wrap gap-1.5">
+              {skills.map((s) => (
+                <span key={s} className="rounded-full border border-tinta/15 px-2.5 py-0.5 text-sm text-tinta/85">
+                  {s}
+                </span>
+              ))}
+            </dd>
+          </div>
+        )}
+      </dl>
+    </section>
+  );
+}
+
+/** Qué busca y qué ofrece: la base del networking y del matching. */
+export function BloqueBuscaOfrece({ perfil }: { perfil: Perfil }) {
+  const busca = perfil.busca ?? [];
+  const ofrece = perfil.ofrece ?? [];
+  if (busca.length === 0 && ofrece.length === 0) return null;
+  return (
+    <section aria-label="Busca y ofrece" className="grid gap-3 sm:grid-cols-2">
+      {[
+        { titulo: "Busca", lista: busca },
+        { titulo: "Ofrece", lista: ofrece },
+      ]
+        .filter((g) => g.lista.length > 0)
+        .map((g) => (
+          <div key={g.titulo} className="rounded-3xl border border-tinta/10 bg-tinta/[0.02] px-5 py-4">
+            <h2 className={SUBTITULO}>{g.titulo}</h2>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {g.lista.map((v) => {
+                const n = necesidad(v);
+                return (
+                  <Etiqueta key={v} clase={n.clase}>
+                    {n.label}
+                  </Etiqueta>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+    </section>
   );
 }
 
