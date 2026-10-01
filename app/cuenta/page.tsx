@@ -31,6 +31,7 @@ import type { NewsletterLink } from "@/lib/newsletter";
 import { COLUMNAS_PORTFOLIO, type EntradaPortfolio, type Servicio, type Tesis } from "@/lib/portfolio";
 import type { Producto } from "@/lib/producto";
 import { ROLES } from "@/lib/rol";
+import { boton } from "@/lib/ui";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 import type { DatoEmpresa, Rol } from "@/types/pecera";
 
@@ -43,8 +44,7 @@ const COLUMNAS_BASE =
   "id, slug, nombre, tipo, rol, descripcion, avatar_url, whatsapp, email, linkedin, instagram, web, publicado, oculto";
 const COLUMNAS = `${COLUMNAS_BASE}, etapa, ronda, industrias, cargo, especialidades, ticket, rondas_interes, empresa_id`;
 
-const BOTON_PRIMARIO =
-  "inline-flex min-h-12 items-center justify-center rounded-full bg-tinta px-6 font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla";
+const BOTON_PRIMARIO = boton("primario", "lg");
 
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
   const { error, creado, foto, rol } = await searchParams;
@@ -217,7 +217,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
             {perfil && extras?.disponible && (
               <>
-                <TarjetaEmpresa empresa={extras.empresa} />
+                <TarjetaEmpresa empresa={extras.empresa} logo={extras.logo} />
                 {extras.empresa && extras.producto && (
                   <TarjetaProducto
                     producto={extras.producto.producto}
@@ -297,7 +297,21 @@ type Extras = {
   build: { hitos: Hito[]; avances: Avance[] } | null;
   /** null: la base todavía no tiene productos. `producto` null: no lo cargaron. */
   producto: { producto: Producto | null; imagenes: ImagenPropia[] } | null;
+  /** undefined: la base no tiene logos; null: sin logo. */
+  logo?: string | null;
 };
+
+async function leerLogo(
+  supabase: Awaited<ReturnType<typeof supabaseConSesion>>,
+  empresaId: string
+): Promise<string | null | undefined> {
+  const { data, error } = await supabase.from("empresa_logos").select("clave").eq("empresa_id", empresaId).maybeSingle();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (leerLogo): ${error.message}`);
+    return undefined;
+  }
+  return data?.clave ? urlMedia(data.clave as string) : null;
+}
 
 async function leerProducto(
   supabase: Awaited<ReturnType<typeof supabaseConSesion>>,
@@ -367,9 +381,11 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
   return {
     disponible: true,
     ...(miEmpresa
-      ? await Promise.all([leerBuild(supabase, miEmpresa.id), leerProducto(supabase, miEmpresa.id)]).then(
-          ([build, producto]) => ({ build, producto })
-        )
+      ? await Promise.all([
+          leerBuild(supabase, miEmpresa.id),
+          leerProducto(supabase, miEmpresa.id),
+          leerLogo(supabase, miEmpresa.id),
+        ]).then(([build, producto, logo]) => ({ build, producto, logo }))
       : { build: null, producto: null }),
     empresa: miEmpresa,
     datos: (datos.data as DatoEmpresa[] | null) ?? [],
@@ -469,7 +485,7 @@ function Creado({ perfil, fotoFallo }: { perfil: PerfilPropio; fotoFallo: boolea
       <BotonCopiar
         texto={url}
         etiqueta="Copiar dirección"
-        className="inline-flex min-h-11 items-center justify-center self-start rounded-full bg-tinta px-5 text-sm font-medium text-marfil focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+        className="inline-flex min-h-11 items-center justify-center self-start rounded-full bg-naranja px-5 text-sm font-semibold text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:bg-pecera active:scale-[0.98]"
       />
       {fotoFallo && (
         <p className="text-sm font-medium">

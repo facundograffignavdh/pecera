@@ -12,7 +12,18 @@ const SUBTITULO = "font-display text-sm font-semibold uppercase tracking-wide te
  * sus entradas, nunca tipeado) y portfolio con la inversión separada del resto.
  * Aliado: servicios y con quién trabajó, con sus casos. Solo lo cargado.
  */
-export default function PortfolioPublico({ rol, perfilId, datos }: { rol: Rol; perfilId: string; datos: Datos }) {
+export default function PortfolioPublico({
+  rol,
+  perfilId,
+  datos,
+  logos,
+}: {
+  rol: Rol;
+  perfilId: string;
+  datos: Datos;
+  /** Logos de las empresas de Pecera enlazadas, por id. */
+  logos?: Map<string, string>;
+}) {
   const { entradas, servicios, tesis } = datos;
   const grupos = agrupar(rol, entradas);
   const tr = trackRecord(entradas);
@@ -85,7 +96,7 @@ export default function PortfolioPublico({ rol, perfilId, datos }: { rol: Rol; p
                   <ul data-revelar className="flex flex-col gap-2">
                     {g.items.map((e) => (
                       <li key={e.id}>
-                        <TarjetaEntrada e={e} />
+                        <TarjetaEntrada e={e} logoUrl={e.empresa_id ? logos?.get(e.empresa_id) : null} />
                       </li>
                     ))}
                   </ul>

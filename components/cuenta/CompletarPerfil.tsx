@@ -91,7 +91,7 @@ export default function CompletarPerfil({
         className="h-2 overflow-hidden rounded-full bg-tinta/10"
       >
         <div
-          className={`barra-progreso h-full rounded-full ${completo ? "bg-aliado" : "bg-arcilla"}`}
+          className={`barra-progreso h-full rounded-full ${completo ? "bg-aliado" : "bg-naranja"}`}
           style={{ "--p": proporcion } as CSSProperties}
         />
       </div>

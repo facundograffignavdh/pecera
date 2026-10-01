@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import DocumentoLectura from "@/components/dataroom/DocumentoLectura";
+import LogoEntidad from "@/components/LogoEntidad";
 import { CATEGORIAS_DATAROOM, CATEGORIA_DE_DATO, type Documento } from "@/lib/dataroom";
 import { defDato } from "@/lib/transparencia";
 import type { DatoEmpresa } from "@/types/pecera";
@@ -18,7 +19,17 @@ const FECHA = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", 
  * hoja para guardar como PDF. Reglas: solo lo que está cargado (nada vacío ni de
  * ejemplo), lo privado y los borradores no van salvo que los marques a propósito.
  */
-export default function Exportar({ empresa, documentos, datos }: { empresa: string; documentos: Documento[]; datos: DatoEmpresa[] }) {
+export default function Exportar({
+  empresa,
+  logo,
+  documentos,
+  datos,
+}: {
+  empresa: string;
+  logo: string | null;
+  documentos: Documento[];
+  datos: DatoEmpresa[];
+}) {
   const items = useMemo(() => {
     const mapa = new Map<string, Item[]>();
     for (const c of CATEGORIAS_DATAROOM) mapa.set(c.valor, []);
@@ -136,7 +147,7 @@ export default function Exportar({ empresa, documentos, datos }: { empresa: stri
               setVista(true);
               requestAnimationFrame(() => document.getElementById("hoja-dataroom")?.scrollIntoView({ behavior: "smooth", block: "start" }));
             }}
-            className="inline-flex min-h-12 items-center rounded-full bg-tinta px-6 font-medium text-marfil disabled:opacity-50"
+            className="inline-flex min-h-12 items-center rounded-full bg-naranja px-6 font-semibold text-tinta disabled:opacity-50 hover:bg-pecera active:scale-[0.98]"
           >
             Ver cómo queda
           </button>
@@ -155,6 +166,7 @@ export default function Exportar({ empresa, documentos, datos }: { empresa: stri
             <Image src="/brand/wordmark-tinta.png" alt="Pecera" width={110} height={24} />
             <div className="flex flex-col gap-3">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-tinta/55">Dataroom</p>
+              {logo && <LogoEntidad nombre={empresa} logoUrl={logo} tamano="xl" />}
               <h1 className="font-display text-4xl font-semibold leading-tight text-tinta">{empresa}</h1>
               {para && <p className="text-lg text-tinta/80">Preparado para {para}</p>}
               <p className="text-sm text-tinta/60">Generado el {hoy}</p>

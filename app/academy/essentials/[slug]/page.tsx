@@ -49,17 +49,17 @@ export default async function LeccionPage({ params }: PageProps<"/academy/essent
 
         <section className="mt-7">
           <h2 className={SUBTITULO}>¿Qué es?</h2>
-          <p className="mt-2 leading-relaxed text-tinta/90">{l.queEs}</p>
+          <p className="mt-2 font-editorial text-[1.0625rem] leading-relaxed text-tinta/90">{l.queEs}</p>
         </section>
 
         <section className="mt-6">
           <h2 className={SUBTITULO}>¿Por qué importa?</h2>
-          <p className="mt-2 leading-relaxed text-tinta/90">{l.porQueImporta}</p>
+          <p className="mt-2 font-editorial text-[1.0625rem] leading-relaxed text-tinta/90">{l.porQueImporta}</p>
         </section>
 
         <section className="mt-6 rounded-3xl bg-celeste-suave/60 px-4 py-4">
           <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-tinta/60">Ejemplo ilustrativo (empresa ficticia)</h2>
-          <p className="mt-2 leading-relaxed text-tinta">{l.ejemplo}</p>
+          <p className="mt-2 font-editorial text-[1.0625rem] italic leading-relaxed text-tinta">{l.ejemplo}</p>
         </section>
 
         <section className="mt-6">

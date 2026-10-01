@@ -24,7 +24,7 @@ export default function CabeceraAcademy({ actual }: { actual: "essentials" | "do
             href={p.href}
             aria-current={actual === p.id ? "page" : undefined}
             className={`flex min-h-11 flex-1 items-center justify-center rounded-full px-3 text-sm font-medium transition-colors duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
-              actual === p.id ? "bg-tinta text-marfil" : "text-tinta hover:bg-tinta/5"
+              actual === p.id ? "bg-naranja text-tinta" : "text-tinta hover:bg-tinta/5"
             }`}
           >
             {p.label}

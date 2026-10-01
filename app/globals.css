@@ -3,7 +3,15 @@
 @theme {
   --color-marfil: #f5f4ec;
   --color-tinta: #1c1b16;
+  /* Naranjas de marca. Naranja (#F47C3C) es la acción primaria: botones con texto
+     Tinta (6,4:1, AA); Pecera (#F87C43) es su hover y los acentos. Ninguno de los
+     dos va como texto sobre Marfil (2,4:1): para texto naranja, naranja-texto. */
+  --color-naranja: #f47c3c;
   --color-pecera: #f87c43;
+  --color-naranja-texto: #a9441a;
+  --color-naranja-suave: #fde3d4;
+  /* Superficies cálidas: Marfil de fondo, un tono más para bloques. */
+  --color-superficie: #efede3;
   --color-arcilla: #d95a22;
   --color-inversor: #0c6aa8;
   --color-aliado: #1f7a52;
@@ -36,9 +44,24 @@
   --color-t-tierra-suave: #ede3d2;
 
   --font-display: var(--font-fraunces), Georgia, serif;
+  /* Lectura larga (lecciones, presentaciones de perfil y empresa): serif del
+     sistema, sin costo de carga. La interfaz sigue en Familjen Grotesk. */
+  --font-editorial: Georgia, "Iowan Old Style", "Times New Roman", serif;
   --font-sans: var(--font-grotesk), system-ui, sans-serif;
 
   --ease-pecera: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Radios por jerarquía: controles en píldora, tarjetas medianas, secciones grandes. */
+  --radius-tarjeta: 1rem;
+  --radius-bloque: 1.5rem;
+}
+
+/* Movimiento: tres velocidades. Rápida para feedback (tocar, cambiar), estándar
+   para transiciones de estado, énfasis para lo que hay que notar (un logro). */
+:root {
+  --duracion-rapida: 140ms;
+  --duracion: 220ms;
+  --duracion-enfasis: 420ms;
 }
 
 body {
@@ -146,6 +169,17 @@ video {
 }
 .punto-vivo {
   animation: latir-punto 2s ease-out infinite;
+}
+
+/* Carga: superficie cálida que respira, nunca naranja. */
+@keyframes respirar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.esqueleto {
+  border-radius: var(--radius-tarjeta);
+  background: var(--color-superficie);
+  animation: respirar 1.6s ease-in-out infinite;
 }
 
 /* Entrada de elementos de estado (un check, un hito nuevo): pop chico. */

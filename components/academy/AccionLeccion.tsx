@@ -5,9 +5,9 @@ import type { CSSProperties } from "react";
 import { useProgreso } from "@/components/academy/useProgreso";
 import type { Accion } from "@/lib/essentials";
 import { plantilla as buscarPlantilla } from "@/lib/plantillas";
+import { boton } from "@/lib/ui";
 
-const PRIMARIO =
-  "inline-flex min-h-12 items-center justify-center rounded-full bg-tinta px-6 font-medium text-marfil transition-opacity duration-200 ease-pecera hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla";
+const PRIMARIO = boton("primario", "lg");
 
 /** "Ahora completá el tuyo": la acción de la lección, con su estado si hay sesión. */
 export default function AccionLeccion({ accion }: { accion: Accion }) {

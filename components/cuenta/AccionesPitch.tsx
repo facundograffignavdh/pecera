@@ -68,7 +68,7 @@ export default function AccionesPitch({
           {restan} {restan === 1 ? "caracter" : "caracteres"}
         </p>
         <div className="flex gap-2">
-          <button type="button" onClick={guardar} disabled={pendiente} className={`${BOTON} bg-tinta text-marfil`}>
+          <button type="button" onClick={guardar} disabled={pendiente} className={`${BOTON} bg-naranja text-tinta hover:bg-pecera`}>
             {pendiente ? "Guardando…" : "Guardar"}
           </button>
           <button
@@ -107,7 +107,7 @@ export default function AccionesPitch({
           type="button"
           onClick={alternarOculto}
           disabled={pendiente}
-          className={`${BOTON} ${oculto ? "bg-tinta text-marfil" : "border border-tinta/30 hover:border-tinta"}`}
+          className={`${BOTON} ${oculto ? "bg-naranja text-tinta hover:bg-pecera" : "border border-tinta/30 hover:border-tinta"}`}
         >
           {pendiente ? "…" : oculto ? "Mostrar" : "Ocultar"}
         </button>

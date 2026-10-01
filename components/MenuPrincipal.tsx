@@ -67,12 +67,14 @@ export default function MenuPrincipal() {
                     href={e.href}
                     onClick={cerrar}
                     aria-current={actual ? "page" : undefined}
-                    className={`flex min-h-14 flex-col justify-center rounded-2xl px-4 py-2 transition-colors duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
-                      actual ? "bg-tinta text-marfil" : "text-tinta hover:bg-tinta/5"
+                    className={`relative flex min-h-14 flex-col justify-center rounded-2xl py-2 pl-5 pr-4 text-tinta transition-colors duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
+                      actual ? "bg-naranja-suave" : "hover:bg-tinta/5"
                     }`}
                   >
-                    <span className="font-medium">{e.label}</span>
-                    <span className={`text-sm ${actual ? "text-marfil/75" : "text-tinta/60"}`}>{e.bajada}</span>
+                    {/* La sección actual: una barra naranja a la izquierda, sin pintar todo. */}
+                    {actual && <span aria-hidden className="absolute inset-y-3 left-1.5 w-1 rounded-full bg-naranja" />}
+                    <span className={actual ? "font-semibold" : "font-medium"}>{e.label}</span>
+                    <span className="text-sm text-tinta/65">{e.bajada}</span>
                   </Link>
                 </li>
               );

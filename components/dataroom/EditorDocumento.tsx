@@ -176,7 +176,7 @@ export default function EditorDocumento({ tipo, inicial }: { tipo: "escrito" | "
         <button
           type="submit"
           disabled={estado === "guardando"}
-          className="min-h-12 rounded-full bg-tinta px-6 font-medium text-marfil disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+          className="min-h-12 rounded-full bg-naranja px-6 font-semibold text-tinta disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:bg-pecera active:scale-[0.98]"
         >
           {estado === "guardando" ? "Guardando…" : "Guardar"}
         </button>

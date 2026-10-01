@@ -1,5 +1,5 @@
 import { urlMedia } from "@/lib/media";
-import { faltaMigracion } from "@/lib/datos";
+import { faltaMigracion, getLogos } from "@/lib/datos";
 import { supabase } from "@/lib/supabase";
 import type { Rol, TipoPerfil } from "@/types/pecera";
 
@@ -66,7 +66,7 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
       .overrideTypes<FilaPerfil[], { merge: false }>(),
     supabase
       .from("empresas")
-      .select("slug, nombre, descripcion, industrias, etapa, ronda")
+      .select("id, slug, nombre, descripcion, industrias, etapa, ronda")
       .order("nombre")
       .limit(1000),
     supabase.from("portfolio").select("perfil_id, tipo, industria, nombre").eq("visibilidad", "publico").limit(10000),
@@ -118,14 +118,16 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
     };
   });
 
-  const fichasEmpresa: FichaDirectorio[] = ((empresas.data ?? []) as Array<{ slug: string; nombre: string; descripcion: string; industrias: string[]; etapa: string | null; ronda: string | null }>).map((e) => ({
+  const filasEmpresa = (empresas.data ?? []) as Array<{ id: string; slug: string; nombre: string; descripcion: string; industrias: string[]; etapa: string | null; ronda: string | null }>;
+  const logos = await getLogos(filasEmpresa.map((e) => e.id));
+  const fichasEmpresa: FichaDirectorio[] = filasEmpresa.map((e) => ({
     clase: "empresa",
     slug: e.slug,
     nombre: e.nombre,
     rol: null,
     tipo: null,
     descripcion: e.descripcion,
-    avatar_url: null,
+    avatar_url: logos.get(e.id) ?? null,
     industrias: e.industrias ?? [],
     etapa: e.etapa,
     ronda: e.ronda,

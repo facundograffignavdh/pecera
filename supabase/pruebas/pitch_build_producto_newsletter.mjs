@@ -1,4 +1,4 @@
-// Harness de las migraciones pitch_build_producto_newsletter, dataroom y portfolio sobre PGlite (Postgres en
+// Harness de las migraciones pitch_build_producto_newsletter, dataroom, portfolio y logos sobre PGlite (Postgres en
 // WASM), con roles y JWT simulados como PostgREST de Supabase. No toca ninguna base.
 //
 // PGlite no es dependencia de la app: se instala en una carpeta aparte.
@@ -47,6 +47,7 @@ const MIGRACIONES = [
   "20261003120000_pitch_build_producto_newsletter.sql",
   "20261004120000_dataroom.sql",
   "20261005120000_portfolio.sql",
+  "20261006120000_logos.sql",
 ];
 
 let ok = 0;
@@ -309,6 +310,25 @@ async function main() {
   await espera("geografía fuera del vocabulario", () => como("authenticated", U.caro, `select public.guardar_tesis(null, '{marte}', '{}', null)`), "geografias_validas");
   const tesis = (await como("anon", null, `select geografias from public.perfil_tesis`)).rows[0];
   chequear(tesis?.geografias?.length === 2, "anon ve la tesis", tesis);
+
+  console.log("\n7) Logo de la empresa");
+  const empresaLogo = (await db.query(`select id from public.empresas where slug = 'raiz-verde'`)).rows[0].id;
+  const logo1 = `${empresaLogo}-aaaaaaaa.png`;
+  const logo2 = `${empresaLogo}-bbbbbbbb.jpg`;
+  await como("authenticated", U.beto, `select public.poner_logo_empresa($1)`, [logo1]);
+  const logoAnon = (await como("anon", null, `select clave from public.empresa_logos`)).rows;
+  chequear(logoAnon.length === 1 && logoAnon[0].clave === logo1, "un miembro pone el logo y anon lo ve", logoAnon);
+  await espera("logo con clave de otra empresa", () => como("authenticated", U.beto, `select public.poner_logo_empresa('99999999-9999-9999-9999-999999999999-cccccccc.png')`), "imagen inválida");
+  await espera("logo con otra extensión", () => como("authenticated", U.beto, `select public.poner_logo_empresa($1)`, [`${empresaLogo}-cccccccc.gif`]), "clave_valida");
+  await espera("caro (de afuera) no pone logos", () => como("authenticated", U.caro, `select public.poner_logo_empresa($1)`, [logo2]), "primero sumate");
+  await como("authenticated", U.beto, `select public.poner_logo_empresa($1)`, [logo2]);
+  const enBorrar = (await db.query(`select count(*)::int n from public.r2_borrar where clave = $1`, [logo1])).rows[0].n;
+  chequear(enBorrar === 1, "el logo anterior va a r2_borrar", enBorrar);
+  await como("authenticated", U.beto, `select public.poner_logo_empresa(null)`);
+  const sinLogo = (await db.query(`select count(*)::int n from public.empresa_logos`)).rows[0].n;
+  const borrado2 = (await db.query(`select count(*)::int n from public.r2_borrar where clave = $1`, [logo2])).rows[0].n;
+  chequear(sinLogo === 0 && borrado2 === 1, "sacar el logo lo borra y anota el archivo", { sinLogo, borrado2 });
+  await espera("anon no escribe logos directo", () => como("anon", null, `insert into public.empresa_logos (empresa_id, clave) values ('${empresaLogo}', '${logo1}')`), "permission denied");
 
   console.log(`\n${ok} ok · ${fallas} fallas`);
   process.exit(fallas ? 1 : 0);

@@ -68,7 +68,7 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
           <div className="relative mt-5 flex flex-wrap gap-2">
             <a
               href="#votacion"
-              className="inline-flex min-h-11 items-center rounded-full bg-arcilla px-5 text-sm font-medium text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera"
+              className="inline-flex min-h-11 items-center rounded-full bg-naranja px-5 text-sm font-semibold text-tinta transition-[background-color,transform] duration-200 ease-pecera hover:bg-pecera active:scale-[0.98]"
             >
               {estado.votacionAbierta ? "Votar ahora" : "Ver los proyectos"}
             </a>

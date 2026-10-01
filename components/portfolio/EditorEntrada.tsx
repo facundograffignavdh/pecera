@@ -161,7 +161,7 @@ export default function EditorEntrada({
         </p>
         <div aria-hidden className="flex gap-1">
           {pasos.map((p, i) => (
-            <span key={p} className={`h-1 flex-1 rounded-full transition-colors duration-300 ease-pecera ${i <= paso ? "bg-tinta" : "bg-tinta/10"}`} />
+            <span key={p} className={`h-1 flex-1 rounded-full transition-colors duration-300 ease-pecera ${i <= paso ? "bg-naranja" : "bg-tinta/10"}`} />
           ))}
         </div>
       </div>
@@ -351,11 +351,11 @@ export default function EditorEntrada({
           </button>
         )}
         {nombrePaso === "Revisar" ? (
-          <button type="button" onClick={guardar} disabled={guardando} className="min-h-12 flex-1 rounded-full bg-tinta px-5 font-medium text-marfil disabled:opacity-70">
+          <button type="button" onClick={guardar} disabled={guardando} className="min-h-12 flex-1 rounded-full bg-naranja px-5 font-semibold text-tinta disabled:opacity-70 hover:bg-pecera active:scale-[0.98]">
             {guardando ? "Guardando…" : "Guardar"}
           </button>
         ) : (
-          <button type="button" onClick={seguir} className="min-h-12 flex-1 rounded-full bg-tinta px-5 font-medium text-marfil">
+          <button type="button" onClick={seguir} className="min-h-12 flex-1 rounded-full bg-naranja px-5 font-semibold text-tinta hover:bg-pecera active:scale-[0.98]">
             Siguiente
           </button>
         )}

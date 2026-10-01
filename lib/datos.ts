@@ -270,6 +270,25 @@ export const getApoyos = cache(async (empresaId: string): Promise<Apoyo[]> => {
     .sort((a, b) => Number(b.confirmacion === "confirmada") - Number(a.confirmacion === "confirmada"));
 });
 
+/**
+ * URL del logo de cada empresa (las visibles), por id. Tabla aparte: si la
+ * migración no corrió o falla, vacío y se ven las iniciales. No lanza.
+ */
+export async function getLogos(empresaIds: string[]): Promise<Map<string, string>> {
+  const ids = [...new Set(empresaIds)].filter(Boolean);
+  if (ids.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from("empresa_logos")
+    .select("empresa_id, clave")
+    .in("empresa_id", ids)
+    .overrideTypes<Array<{ empresa_id: string; clave: string }>, { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getLogos): ${error.message}`);
+    return new Map();
+  }
+  return new Map((data ?? []).map((l) => [l.empresa_id, urlMedia(l.clave)]));
+}
+
 /** Slugs publicados, para `generateStaticParams`. */
 export async function getSlugs(): Promise<string[]> {
   const { data, error } = await supabase

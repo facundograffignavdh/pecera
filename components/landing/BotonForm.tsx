@@ -30,7 +30,7 @@ export default function BotonForm({
       type="button"
       onClick={abrirElegirRol}
       data-magnetic
-      className={`brillo group inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-arcilla px-8 text-[19px] font-bold text-marfil shadow-[0_1px_2px_rgb(28_27_22/0.15),0_8px_20px_rgb(217_90_34/0.28)] transition-shadow duration-200 ease-pecera hover:shadow-[0_1px_2px_rgb(28_27_22/0.15),0_12px_28px_rgb(217_90_34/0.4)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta ${className}`}
+      className={`brillo group inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-naranja px-8 text-[19px] font-bold text-tinta shadow-[0_1px_2px_rgb(28_27_22/0.15),0_8px_20px_rgb(217_90_34/0.28)] transition-shadow duration-200 ease-pecera hover:shadow-[0_1px_2px_rgb(28_27_22/0.15),0_12px_28px_rgb(217_90_34/0.4)] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-tinta hover:bg-pecera active:scale-[0.98]${className}`}
     >
       {children}
       <Flecha className="h-5 w-5 transition-transform duration-200 ease-pecera group-hover:translate-x-1" />

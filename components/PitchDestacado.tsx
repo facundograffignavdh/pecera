@@ -48,7 +48,7 @@ export default function PitchDestacado({
         {children}
         <Link
           href={`/#${pitch.id}`}
-          className="mt-auto inline-flex min-h-10 items-center self-start rounded-full bg-tinta px-4 text-sm font-medium text-marfil transition-opacity duration-200 ease-pecera hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+          className="mt-auto inline-flex min-h-10 items-center self-start rounded-full bg-naranja px-4 text-sm font-semibold text-tinta transition-[background-color,transform] duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:bg-pecera active:scale-[0.98]"
         >
           Ver el pitch
         </Link>

@@ -6,7 +6,8 @@ import type { CSSProperties } from "react";
 import BotonImprimir from "@/components/BotonImprimir";
 import { conProtocolo } from "@/lib/contacto";
 import { labelEtapaBuild, ordenarHitos, fechaHito } from "@/lib/build";
-import { getEmpresa } from "@/lib/datos";
+import LogoEntidad from "@/components/LogoEntidad";
+import { getEmpresa, getLogos } from "@/lib/datos";
 import { cargo, labelEtapa, labelIndustria, labelRonda } from "@/lib/etiquetas";
 import { defDato } from "@/lib/transparencia";
 
@@ -64,6 +65,7 @@ export default async function OnePagerPage({ params }: PageProps<"/e/[slug]/one-
       ].filter((b): b is { titulo: string; texto: string } => !!b.texto)
     : [];
   const urlPagina = `${SITIO}/e/${empresa.slug}`;
+  const logo = (await getLogos([empresa.id])).get(empresa.id) ?? null;
 
   return (
     <main className="h-dvh overflow-y-auto bg-tinta/[0.06] py-6 print:py-0">
@@ -71,7 +73,7 @@ export default async function OnePagerPage({ params }: PageProps<"/e/[slug]/one-
         <Link href={`/e/${empresa.slug}`} className="inline-flex min-h-11 items-center text-sm font-medium text-tinta underline underline-offset-4">
           ← Volver a la empresa
         </Link>
-        <BotonImprimir className="inline-flex min-h-11 items-center rounded-full bg-tinta px-5 text-sm font-medium text-marfil focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla">
+        <BotonImprimir className="inline-flex min-h-11 items-center rounded-full bg-naranja px-5 text-sm font-semibold text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:bg-pecera active:scale-[0.98]">
           Descargar PDF
         </BotonImprimir>
       </div>
@@ -82,7 +84,10 @@ export default async function OnePagerPage({ params }: PageProps<"/e/[slug]/one-
             <span className={TITULO}>One Pager</span>
             <Image src="/brand/wordmark-tinta.png" alt="Pecera" width={92} height={20} />
           </div>
-          <h1 className="font-display text-4xl font-semibold leading-tight text-tinta text-balance">{empresa.nombre}</h1>
+          <div className="flex items-center gap-4">
+            {logo && <LogoEntidad nombre={empresa.nombre} logoUrl={logo} tamano="lg" />}
+            <h1 className="font-display text-4xl font-semibold leading-tight text-tinta text-balance">{empresa.nombre}</h1>
+          </div>
           <p className="text-lg leading-snug text-tinta/85 text-pretty">{producto?.propuesta ?? empresa.descripcion}</p>
           <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-tinta/70">
             {labelEtapa(empresa.etapa) && <span>Etapa: {labelEtapa(empresa.etapa)}</span>}

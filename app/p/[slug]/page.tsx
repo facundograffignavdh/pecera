@@ -14,7 +14,8 @@ import BuildPublico from "@/components/build/BuildPublico";
 import NewsletterPerfil from "@/components/newsletter/NewsletterPerfil";
 import Revelar from "@/components/Revelar";
 import PortfolioPublico from "@/components/portfolio/PortfolioPublico";
-import { getBuildEmpresa, getMetricasPerfil, getNewsletter, getPerfil, getPortfolio, getSlugs } from "@/lib/datos";
+import LogoEntidad from "@/components/LogoEntidad";
+import { getBuildEmpresa, getLogos, getMetricasPerfil, getNewsletter, getPerfil, getPortfolio, getSlugs } from "@/lib/datos";
 import { cargo } from "@/lib/etiquetas";
 import { ROLES, TIPOS } from "@/lib/rol";
 
@@ -65,6 +66,10 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
     getNewsletter(perfil.id),
     conPortfolio ? getPortfolio(perfil.id) : null,
   ]);
+  const logos = await getLogos([
+    perfil.empresa_id ?? "",
+    ...(portfolio?.entradas.map((e) => e.empresa_id ?? "") ?? []),
+  ]);
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
@@ -100,7 +105,8 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
             href={`/e/${perfil.empresa.slug}`}
             className="mt-5 flex min-h-12 items-center justify-between gap-3 rounded-2xl border border-tinta/15 px-4 py-2.5 text-tinta transition-colors duration-200 ease-pecera hover:border-arcilla"
           >
-            <span className="min-w-0">
+            <LogoEntidad nombre={perfil.empresa.nombre} logoUrl={perfil.empresa_id ? logos.get(perfil.empresa_id) : null} tamano="md" />
+            <span className="min-w-0 flex-1">
               <span className="block text-xs text-tinta/60">
                 {cargo(perfil.cargo)?.label ?? "Equipo"} en
               </span>
@@ -118,7 +124,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
           <EtiquetasPerfil perfil={perfil} conCargo={!perfil.empresa} />
         </div>
 
-        <p className="mt-5 leading-relaxed text-tinta/90">{perfil.descripcion}</p>
+        <p className="mt-5 font-editorial text-[1.0625rem] leading-relaxed text-tinta/90">{perfil.descripcion}</p>
 
         {/* El Pitch va primero después de la presentación: es la identidad del perfil. */}
         <section aria-labelledby="pitch-titulo" className="mt-7">
@@ -139,7 +145,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
           )}
         </section>
 
-        {portfolio && <PortfolioPublico rol={perfil.rol} perfilId={perfil.id} datos={portfolio} />}
+        {portfolio && <PortfolioPublico rol={perfil.rol} perfilId={perfil.id} datos={portfolio} logos={logos} />}
 
         {build && perfil.empresa && (build.hitos.length > 0 || build.avances.length > 0) && (
           <section aria-labelledby="build-titulo" className="mt-7">

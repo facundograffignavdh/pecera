@@ -78,7 +78,7 @@ export default function ListaEssentials({ lecciones }: { lecciones: Leccion[] })
                         {plantilla && (
                           <Link
                             href={`/cuenta/dataroom/plantilla/${plantilla.id}`}
-                            className="inline-flex min-h-11 items-center rounded-full bg-tinta px-4 text-sm font-medium text-marfil transition-opacity duration-200 ease-pecera hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+                            className="inline-flex min-h-11 items-center rounded-full bg-naranja px-4 text-sm font-semibold text-tinta transition-[background-color,transform] duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:bg-pecera active:scale-[0.98]"
                           >
                             {estado?.completo ? "Ver template" : estado ? "Seguir completando" : `Completar · ${plantilla.minutos} min`}
                           </Link>

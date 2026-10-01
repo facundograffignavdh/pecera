@@ -14,7 +14,8 @@ import { BarraEtapa, Etiqueta } from "@/components/Etiquetas";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { conProtocolo, hrefInstagram } from "@/lib/contacto";
-import { getApoyos, getDocumentosPublicos, getEmpresa } from "@/lib/datos";
+import LogoEntidad from "@/components/LogoEntidad";
+import { getApoyos, getDocumentosPublicos, getEmpresa, getLogos } from "@/lib/datos";
 import { defTipo } from "@/lib/portfolio";
 import { ROLES } from "@/lib/rol";
 import { cargo, labelIndustria, labelRonda } from "@/lib/etiquetas";
@@ -60,7 +61,11 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
   const [principal, ...otros] = [...pitches].sort((a, b) => b.orden - a.orden);
   const hayBuild = hitos.length > 0 || avances.length > 0;
   const hayRonda = !!ronda || datos.datos.some((d) => defDato(d.clave)?.categoria === "Ronda");
-  const [documentos, apoyos] = await Promise.all([getDocumentosPublicos(empresa.id), getApoyos(empresa.id)]);
+  const [documentos, apoyos, logos] = await Promise.all([
+    getDocumentosPublicos(empresa.id),
+    getApoyos(empresa.id),
+    getLogos([empresa.id]),
+  ]);
   const hayTransparencia = documentos.length > 0 || datos.datos.some((d) => defDato(d.clave)?.categoria !== "Ronda");
 
   const canales = [
@@ -88,10 +93,13 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
         <EnlaceVolver href="/" />
 
         <header className="entrada mt-6 flex flex-col gap-3">
-          <span className="self-start rounded-full bg-tinta px-2.5 py-0.5 text-xs font-medium text-marfil">
-            Empresa
-          </span>
-          <h1 className="font-display text-3xl font-semibold leading-tight text-tinta text-balance">{empresa.nombre}</h1>
+          <div className="flex items-center gap-4">
+            <LogoEntidad nombre={empresa.nombre} logoUrl={logos.get(empresa.id)} tamano="xl" />
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <span className="self-start rounded-full bg-tinta px-2.5 py-0.5 text-xs font-medium text-marfil">Empresa</span>
+              <h1 className="font-display text-3xl font-semibold leading-tight text-tinta text-balance">{empresa.nombre}</h1>
+            </div>
+          </div>
           <BarraEtapa etapa={empresa.etapa} />
           {(ronda || empresa.industrias.length > 0) && (
             <div className="flex flex-wrap gap-1.5">
@@ -103,7 +111,7 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
           )}
         </header>
 
-        <p className="mt-5 leading-relaxed text-tinta/90">{empresa.descripcion}</p>
+        <p className="mt-5 font-editorial text-[1.0625rem] leading-relaxed text-tinta/90">{empresa.descripcion}</p>
 
         {canales.length > 0 && (
           <ul className="mt-5 flex flex-wrap gap-2">

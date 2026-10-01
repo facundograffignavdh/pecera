@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useDeferredValue, useMemo, useState } from "react";
 import Avatar from "@/components/Avatar";
+import LogoEntidad from "@/components/LogoEntidad";
 import { ESPECIALIDADES, ETAPAS, INDUSTRIAS, RONDAS_INTERES, labelEtapa, labelIndustria, labelRonda } from "@/lib/etiquetas";
 import type { FichaDirectorio } from "@/lib/explorar";
 import { GEOGRAFIAS, labelGeografia } from "@/lib/portfolio";
@@ -146,7 +147,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
             aria-selected={vista === v.id}
             onClick={() => cambiarVista(v.id)}
             className={`min-h-10 flex-1 rounded-full px-2 text-sm font-medium transition-colors duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
-              vista === v.id ? "bg-tinta text-marfil" : "text-tinta hover:bg-tinta/5"
+              vista === v.id ? "bg-naranja text-tinta" : "text-tinta hover:bg-tinta/5"
             }`}
           >
             {v.label}
@@ -278,9 +279,7 @@ function Ficha({ f }: { f: FichaDirectorio }) {
       className="flex items-start gap-3 rounded-2xl border border-tinta/10 bg-marfil px-3.5 py-3 transition-colors duration-200 ease-pecera hover:border-tinta/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
     >
       {f.clase === "empresa" ? (
-        <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-tinta font-display text-lg font-semibold text-marfil">
-          {f.nombre.charAt(0).toUpperCase()}
-        </span>
+        <LogoEntidad nombre={f.nombre} logoUrl={f.avatar_url} tamano="md" />
       ) : (
         <Avatar perfil={{ nombre: f.nombre, rol: f.rol ?? "emprendedor", avatar_url: f.avatar_url }} size={44} />
       )}

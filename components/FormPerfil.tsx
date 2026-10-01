@@ -384,7 +384,7 @@ export default function FormPerfil({
             <button
               type="button"
               onClick={recuperarBorrador}
-              className="min-h-11 rounded-full bg-tinta px-4 font-medium text-marfil focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+              className="min-h-11 rounded-full bg-naranja px-4 font-semibold text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:bg-pecera active:scale-[0.98]"
             >
               Recuperar lo que cargué
             </button>
@@ -843,7 +843,7 @@ export default function FormPerfil({
         <button
           type="submit"
           disabled={guardando}
-          className="min-h-12 rounded-full bg-tinta px-5 font-medium text-marfil shadow-[0_8px_24px_rgb(28_27_22/0.25)] transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-70"
+          className="min-h-12 rounded-full bg-naranja px-5 font-semibold text-tinta shadow-[0_8px_24px_rgb(28_27_22/0.25)] transition-[background-color,transform] duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-70 hover:bg-pecera active:scale-[0.98]"
         >
           {guardando ? "Guardando…" : creando ? "Crear mi perfil" : "Guardar cambios"}
         </button>

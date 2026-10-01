@@ -1,5 +1,6 @@
 "use client";
 
+import LogoEmpresa from "@/components/cuenta/LogoEmpresa";
 import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
 import {
@@ -50,12 +51,20 @@ const formatoCodigo = (c: string) => `${c.slice(0, 4)}-${c.slice(4)}`;
 /** Dirección pública de la empresa. */
 const urlEmpresa = (slug: string) => urlSitio(`/e/${slug}`);
 
-export default function TarjetaEmpresa({ empresa }: { empresa: MiEmpresa | null }) {
+export default function TarjetaEmpresa({
+  empresa,
+  logo,
+}: {
+  empresa: MiEmpresa | null;
+  /** undefined: la base todavía no tiene logos (no se ofrece subirlo). */
+  logo?: string | null;
+}) {
   return (
     <Tarjeta
       titulo="Tu empresa"
       bajada="Una página con todo tu equipo, cada uno con su cargo, y todos sus pitches juntos."
     >
+      {empresa && logo !== undefined && <LogoEmpresa nombre={empresa.nombre} logoUrl={logo} />}
       {empresa ? <ConEmpresa empresa={empresa} /> : <SinEmpresa />}
     </Tarjeta>
   );
@@ -79,7 +88,7 @@ function SinEmpresa() {
             aria-selected={modo === valor}
             onClick={() => setModo(valor)}
             className={`min-h-11 rounded-full text-sm font-medium transition-colors duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
-              modo === valor ? "bg-tinta text-marfil" : "text-tinta/75 hover:text-tinta"
+              modo === valor ? "bg-naranja text-tinta" : "text-tinta/75 hover:text-tinta"
             }`}
           >
             {label}

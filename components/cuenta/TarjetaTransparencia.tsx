@@ -147,7 +147,7 @@ function FilaDato({
         <button
           type="submit"
           disabled={guardando}
-          className="inline-flex min-h-11 items-center rounded-full bg-tinta px-4 text-sm font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-70"
+          className="inline-flex min-h-11 items-center rounded-full bg-naranja px-4 text-sm font-semibold text-tinta transition-[background-color,transform] duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-70 hover:bg-pecera active:scale-[0.98]"
         >
           {guardando ? "Guardando…" : "Guardar"}
         </button>

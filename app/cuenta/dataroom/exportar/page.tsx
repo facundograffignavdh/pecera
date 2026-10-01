@@ -3,6 +3,7 @@ import Exportar from "@/components/dataroom/Exportar";
 import Marco, { SinEmpresa, SinSesion } from "@/components/dataroom/Marco";
 import { cuentaConEmpresa } from "@/lib/cuenta-empresa";
 import type { Documento } from "@/lib/dataroom";
+import { urlMedia } from "@/lib/media";
 import type { DatoEmpresa } from "@/types/pecera";
 
 export const metadata: Metadata = { title: "Exportar Dataroom — Pecera", robots: { index: false } };
@@ -33,6 +34,8 @@ export default async function ExportarPage() {
       .overrideTypes<Documento[], { merge: false }>(),
     supabase.rpc("mis_datos_empresa"),
   ]);
+  const { data: filaLogo } = await supabase.from("empresa_logos").select("clave").eq("empresa_id", empresa.id).maybeSingle();
+  const logo = filaLogo?.clave ? urlMedia(filaLogo.clave as string) : null;
   if (docs.error) throw new Error(`Supabase (exportar): ${docs.error.message}`);
 
   return (
@@ -42,7 +45,7 @@ export default async function ExportarPage() {
         <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">Exportar para un inversor</h1>
         <p className="leading-relaxed text-tinta/80">Elegí qué compartir con cada inversor. Sale un PDF listo para mandar.</p>
       </header>
-      <Exportar empresa={empresa.nombre} documentos={docs.data ?? []} datos={(datos.data as DatoEmpresa[] | null) ?? []} />
+      <Exportar empresa={empresa.nombre} logo={logo} documentos={docs.data ?? []} datos={(datos.data as DatoEmpresa[] | null) ?? []} />
     </Marco>
   );
 }

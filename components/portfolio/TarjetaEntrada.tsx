@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LogoEntidad from "@/components/LogoEntidad";
 import type { ReactNode } from "react";
 import { conProtocolo } from "@/lib/contacto";
 import { labelIndustria } from "@/lib/etiquetas";
@@ -20,8 +21,10 @@ export default function TarjetaEntrada({
   e,
   acciones,
   mostrarVisibilidad = false,
+  logoUrl,
 }: {
   e: EntradaPortfolio;
+  logoUrl?: string | null;
   acciones?: ReactNode;
   mostrarVisibilidad?: boolean;
 }) {
@@ -34,14 +37,11 @@ export default function TarjetaEntrada({
     e.anio && String(e.anio),
     e.ubicacion,
   ].filter(Boolean) as string[];
-  const inicial = e.nombre.trim().charAt(0).toUpperCase() || "·";
 
   return (
     <article className="flex flex-col gap-3 rounded-2xl border border-tinta/10 bg-marfil px-4 py-3.5">
       <div className="flex items-start gap-3">
-        <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-tinta font-display text-lg font-semibold text-marfil">
-          {inicial}
-        </span>
+        <LogoEntidad nombre={e.nombre} logoUrl={logoUrl} tamano="md" />
         <div className="min-w-0 flex-1">
           <h4 className="font-semibold leading-tight text-tinta">
             {e.empresa ? (

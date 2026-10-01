@@ -10,6 +10,7 @@ import { CATEGORIAS_DATAROOM, CATEGORIA_DE_DATO, type Documento, haceCuanto } fr
 import { PLANTILLAS, plantilla, progresoPlantilla } from "@/lib/plantillas";
 import { defDato } from "@/lib/transparencia";
 import type { DatoEmpresa } from "@/types/pecera";
+import { boton } from "@/lib/ui";
 
 export const metadata: Metadata = { title: "Dataroom — Pecera", robots: { index: false } };
 
@@ -103,7 +104,7 @@ export default async function DataroomPage() {
           {datos.length === 1 ? "dato" : "datos"} · {transparentes} {transparentes === 1 ? "transparente" : "transparentes"}
         </p>
         <div className="flex flex-wrap gap-2">
-          <Link href="/cuenta/dataroom/exportar" className={`${BOTON} bg-tinta text-marfil`}>
+          <Link href="/cuenta/dataroom/exportar" className={boton("primario", "md")}>
             Exportar Dataroom
           </Link>
           <AgregarDocumento className={`${BOTON} border border-tinta/30 text-tinta hover:border-tinta`} />
@@ -122,7 +123,7 @@ export default async function DataroomPage() {
             Empezá con los documentos esenciales de tu startup: cada template de Academy te guía paso a paso.
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            <Link href="/academy" className={`${BOTON} bg-tinta text-marfil`}>
+            <Link href="/academy" className={boton("primario", "md")}>
               Explorar Startup Essentials
             </Link>
             <AgregarDocumento className={`${BOTON} border border-tinta/30 text-tinta hover:border-tinta`} />

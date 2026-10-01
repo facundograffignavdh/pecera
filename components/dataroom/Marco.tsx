@@ -38,7 +38,7 @@ export function SinSesion({ volverA, titulo }: { volverA: string; titulo: string
       <p className="leading-relaxed text-tinta/80">Entrá con tu cuenta de Google para seguir.</p>
       <form action={entrar}>
         <input type="hidden" name="next" value={volverA} />
-        <button type="submit" className="inline-flex min-h-12 items-center rounded-full bg-tinta px-6 font-medium text-marfil focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla">
+        <button type="submit" className="inline-flex min-h-12 items-center rounded-full bg-naranja px-6 font-semibold text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:bg-pecera active:scale-[0.98]">
           Entrar con Google
         </button>
       </form>
@@ -59,7 +59,7 @@ export function SinEmpresa({ disponible }: { disponible: boolean }) {
           : "Estamos actualizando Pecera. Probá de nuevo en un rato."}
       </p>
       {disponible && (
-        <a href="/cuenta#tarjeta-tu-empresa" className="inline-flex min-h-11 items-center self-start rounded-full bg-tinta px-5 text-sm font-medium text-marfil">
+        <a href="/cuenta#tarjeta-tu-empresa" className="inline-flex min-h-11 items-center self-start rounded-full bg-naranja px-5 text-sm font-semibold text-tinta hover:bg-pecera active:scale-[0.98]">
           Ir a Mi perfil
         </a>
       )}

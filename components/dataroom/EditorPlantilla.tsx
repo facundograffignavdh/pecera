@@ -157,7 +157,7 @@ export default function EditorPlantilla({
                 setEstado("pendiente");
                 setRespaldoResuelto(true);
               }}
-              className="min-h-11 rounded-full bg-tinta px-4 font-medium text-marfil"
+              className="min-h-11 rounded-full bg-naranja px-4 font-semibold text-tinta hover:bg-pecera active:scale-[0.98]"
             >
               Recuperar cambios
             </button>
@@ -195,7 +195,7 @@ export default function EditorPlantilla({
           {Array.from({ length: total }, (_, i) => (
             <span key={i} className="h-1.5 flex-1 overflow-hidden rounded-full bg-tinta/10">
               <span
-                className="block h-full origin-left rounded-full bg-tinta transition-transform duration-500 ease-pecera"
+                className="block h-full origin-left rounded-full bg-naranja transition-transform duration-500 ease-pecera"
                 style={{ transform: `scaleX(${i <= paso ? 1 : 0})` } as CSSProperties}
               />
             </span>
@@ -245,12 +245,12 @@ export default function EditorPlantilla({
             type="button"
             onClick={() => void guardar(true)}
             disabled={estado === "guardando"}
-            className="min-h-12 flex-[2] rounded-full bg-tinta px-4 font-medium text-marfil disabled:opacity-70"
+            className="min-h-12 flex-[2] rounded-full bg-naranja px-4 font-semibold text-tinta disabled:opacity-70 hover:bg-pecera active:scale-[0.98]"
           >
             {estado === "guardando" ? "Guardando…" : "Guardar en el Dataroom"}
           </button>
         ) : (
-          <button type="button" onClick={siguiente} className="min-h-12 flex-[2] rounded-full bg-tinta px-4 font-medium text-marfil">
+          <button type="button" onClick={siguiente} className="min-h-12 flex-[2] rounded-full bg-naranja px-4 font-semibold text-tinta hover:bg-pecera active:scale-[0.98]">
             {paso === p.pasos.length - 1 ? "Revisar" : "Siguiente"}
           </button>
         )}
@@ -266,7 +266,7 @@ export default function EditorPlantilla({
                 etiqueta={p.nombre}
                 onCambiar={(v) => cambiarVisibilidad(docId, v)}
               />
-              <Link href="/cuenta/dataroom" className="inline-flex min-h-11 items-center self-start rounded-full bg-tinta px-5 text-sm font-medium text-marfil">
+              <Link href="/cuenta/dataroom" className="inline-flex min-h-11 items-center self-start rounded-full bg-naranja px-5 text-sm font-semibold text-tinta hover:bg-pecera active:scale-[0.98]">
                 Ir al Dataroom
               </Link>
             </>
