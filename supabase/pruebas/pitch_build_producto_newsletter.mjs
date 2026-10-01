@@ -1,4 +1,4 @@
-// Harness de las migraciones pitch_build_producto_newsletter y dataroom sobre PGlite (Postgres en
+// Harness de las migraciones pitch_build_producto_newsletter, dataroom y portfolio sobre PGlite (Postgres en
 // WASM), con roles y JWT simulados como PostgREST de Supabase. No toca ninguna base.
 //
 // PGlite no es dependencia de la app: se instala en una carpeta aparte.
@@ -46,6 +46,7 @@ const MIGRACIONES = [
   "20261002120000_medicion.sql",
   "20261003120000_pitch_build_producto_newsletter.sql",
   "20261004120000_dataroom.sql",
+  "20261005120000_portfolio.sql",
 ];
 
 let ok = 0;
@@ -266,6 +267,69 @@ async function main() {
   await espera("restaurar el archivado con otro activo", () => como("authenticated", U.ana, `select public.archivar_documento($1, false)`, [doc]), "ya hay otro documento");
   await espera("anon no escribe documentos directo", () => como("anon", null, `update public.empresa_documentos set visible = true`), "permission denied");
   await espera("un miembro no escribe directo (solo por función)", () => como("authenticated", U.ana, `update public.empresa_documentos set visible = true`), "permission denied");
+
+  console.log("\n6) Portfolio de inversores y aliados");
+  const guardarP = (uid, o) =>
+    como("authenticated", uid, `select public.guardar_portfolio($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) id`, [
+      o.id ?? null, o.tipo, o.empresa ?? null, o.nombre ?? "X", o.web ?? null, o.industria ?? null, o.ubicacion ?? null,
+      o.estado ?? "actual", o.ronda ?? null, o.lider ?? null, o.anio ?? null, o.rol ?? null, o.descripcion ?? null,
+      o.desafio ?? null, o.solucion ?? null, o.resultados ?? [], o.enlace ?? null, o.visibilidad ?? "publico",
+    ]);
+  const empresaRV = (await db.query(`select id from public.empresas where slug = 'raiz-verde'`)).rows[0].id;
+  const inv = (await guardarP(U.caro, { tipo: "inversion", empresa: empresaRV, nombre: "lo que sea", ronda: "pre_seed", lider: true, anio: 2026, industria: "agtech" })).rows[0].id;
+  const filaInv = (await db.query(`select nombre, confirmacion from public.portfolio where id = $1`, [inv])).rows[0];
+  chequear(filaInv.nombre === "Raíz Verde" && filaInv.confirmacion === "pendiente", "enlazar una empresa de Pecera toma su nombre y queda pendiente de confirmar", filaInv);
+  await espera("la misma relación dos veces", () => guardarP(U.caro, { tipo: "inversion", empresa: empresaRV }), "portfolio_sin_duplicados");
+  await espera("ronda en algo que no es inversión", () => guardarP(U.caro, { tipo: "asesoria", nombre: "Otra", ronda: "seed" }), "inversion_coherente");
+  await espera("beto no edita el portfolio de caro", () => guardarP(U.beto, { id: inv, tipo: "inversion", nombre: "Hack" }), "no es tuya");
+  const ext = (await guardarP(U.caro, { tipo: "inversion", nombre: "Startup de afuera", web: "afuera.com", industria: "fintech", estado: "exit", ronda: "seed" })).rows[0].id;
+  const privada = (await guardarP(U.caro, { tipo: "asesoria", empresa: empresaRV, visibilidad: "privado" })).rows[0].id;
+  const soloMiembros = (await guardarP(U.caro, { tipo: "mentoria", nombre: "Programa X", visibilidad: "miembros" })).rows[0].id;
+  const filaExt = (await db.query(`select confirmacion from public.portfolio where id = $1`, [ext])).rows[0];
+  chequear(filaExt.confirmacion === "declarada", "sin empresa de Pecera queda como declarada (nunca confirmada)", filaExt);
+  const filaPriv = (await db.query(`select confirmacion from public.portfolio where id = $1`, [privada])).rows[0];
+  chequear(filaPriv.confirmacion === "declarada", "una relación privada no le pide confirmación a la empresa", filaPriv);
+
+  const anonVe = (await como("anon", null, `select id from public.portfolio order by created_at`)).rows.map((r) => r.id);
+  chequear(anonVe.length === 2 && anonVe.includes(inv) && anonVe.includes(ext), "anon ve solo lo público (no lo privado ni lo de miembros)", anonVe);
+  const daniVe = (await como("authenticated", U.dani, `select id from public.portfolio`)).rows.map((r) => r.id);
+  chequear(daniVe.length === 3 && daniVe.includes(soloMiembros), "una cuenta de Pecera ve también lo de miembros", daniVe);
+  const caroVe = (await como("authenticated", U.caro, `select count(*)::int n from public.portfolio where perfil_id = (select id from public.perfiles where usuario_id = $1)`, [U.caro])).rows[0].n;
+  chequear(caroVe === 4, "la dueña ve todo su portfolio", caroVe);
+  const anaVe = (await como("authenticated", U.ana, `select id from public.portfolio where empresa_id = $1`, [empresaRV])).rows.map((r) => r.id);
+  chequear(anaVe.length === 1 && anaVe[0] === inv, "la empresa ve la relación que la nombra, no la privada", anaVe);
+
+  const pendientes = (await como("authenticated", U.ana, `select id, slug from public.relaciones_pendientes()`)).rows;
+  chequear(pendientes.length === 1 && pendientes[0].slug === "caro-inversora", "relaciones_pendientes lista la inversión de caro para Raíz Verde", pendientes);
+  await espera("caro no se confirma sola", () => como("authenticated", U.caro, `select public.responder_relacion($1, true)`, [inv]), "primero sumate");
+  await como("authenticated", U.beto, `select public.responder_relacion($1, true)`, [inv]);
+  const confirmada = (await db.query(`select confirmacion from public.portfolio where id = $1`, [inv])).rows[0].confirmacion;
+  chequear(confirmada === "confirmada", "beto (miembro) la confirma", confirmada);
+  await espera("responder dos veces", () => como("authenticated", U.ana, `select public.responder_relacion($1, false)`, [inv]), "no espera tu respuesta");
+  await guardarP(U.caro, { id: inv, tipo: "inversion", empresa: empresaRV, ronda: "seed", estado: "actual" });
+  const sigue = (await db.query(`select confirmacion, ronda from public.portfolio where id = $1`, [inv])).rows[0];
+  chequear(sigue.confirmacion === "confirmada" && sigue.ronda === "seed", "editar sin cambiar la empresa conserva la confirmación", sigue);
+  await guardarP(U.caro, { id: inv, tipo: "inversion", empresa: null, nombre: "Otra empresa", ronda: "seed" });
+  const reset = (await db.query(`select confirmacion from public.portfolio where id = $1`, [inv])).rows[0].confirmacion;
+  chequear(reset === "declarada", "cambiar la empresa saca la confirmación", reset);
+  const propia = (await guardarP(U.ana, { tipo: "fundacion", empresa: empresaRV })).rows[0].id;
+  const filaPropia = (await db.query(`select confirmacion from public.portfolio where id = $1`, [propia])).rows[0].confirmacion;
+  chequear(filaPropia === "confirmada", "la relación con la propia empresa queda confirmada", filaPropia);
+  await espera("anon no escribe portfolio directo", () => como("anon", null, `update public.portfolio set confirmacion = 'confirmada'`), "permission denied");
+  await espera("la dueña no se autoconfirma escribiendo directo", () => como("authenticated", U.caro, `update public.portfolio set confirmacion = 'confirmada'`), "permission denied");
+  await como("authenticated", U.caro, `select public.borrar_portfolio($1)`, [ext]);
+  const trasBorrar = (await db.query(`select count(*)::int n from public.portfolio where id = $1`, [ext])).rows[0].n;
+  chequear(trasBorrar === 0, "la dueña borra una entrada", trasBorrar);
+
+  const servicio = (await como("authenticated", U.caro, `select public.guardar_servicio(null, 'Due diligence express', 'finanzas', 'Revisión en 2 semanas', 'remoto', 'Desde USD 500') id`)).rows[0].id;
+  await espera("categoría de servicio inválida", () => como("authenticated", U.caro, `select public.guardar_servicio(null, 'X', 'magia', null, null, null)`), "categoria_valida");
+  await espera("beto no edita el servicio de caro", () => como("authenticated", U.beto, `select public.guardar_servicio($1, 'Hack', null, null, null, null)`, [servicio]), "no es tuyo");
+  const servAnon = (await como("anon", null, `select nombre from public.perfil_servicios`)).rows;
+  chequear(servAnon.length === 1, "anon ve los servicios de un perfil visible", servAnon);
+  await como("authenticated", U.caro, `select public.guardar_tesis('Agtech y fintech con tracción temprana', '{argentina,latam}', '{b2b}', 'Founders técnicos')`);
+  await espera("geografía fuera del vocabulario", () => como("authenticated", U.caro, `select public.guardar_tesis(null, '{marte}', '{}', null)`), "geografias_validas");
+  const tesis = (await como("anon", null, `select geografias from public.perfil_tesis`)).rows[0];
+  chequear(tesis?.geografias?.length === 2, "anon ve la tesis", tesis);
 
   console.log(`\n${ok} ok · ${fallas} fallas`);
   process.exit(fallas ? 1 : 0);

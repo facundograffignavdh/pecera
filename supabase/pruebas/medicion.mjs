@@ -48,6 +48,7 @@ const MIGRACIONES = [
   "20261002120000_medicion.sql",
   "20261003120000_pitch_build_producto_newsletter.sql",
   "20261004120000_dataroom.sql",
+  "20261005120000_portfolio.sql",
 ];
 
 let ok = 0;
