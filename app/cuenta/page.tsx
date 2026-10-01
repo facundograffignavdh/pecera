@@ -8,6 +8,7 @@ import MisPitches, { type MiPitch } from "@/components/MisPitches";
 import PieLegal from "@/components/PieLegal";
 import RecordarCuenta from "@/components/RecordarCuenta";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
+import AccionesPitch from "@/components/cuenta/AccionesPitch";
 import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
 import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
@@ -65,11 +66,23 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   ]);
 
   // "Mis pitches" es un extra: si falla, se edita el perfil igual.
+  // Con la migración pitch_build_producto_newsletter, la versión con ocultos y las
+  // acciones de editar/ocultar; si no, la de siempre.
   let misPitches: MiPitch[] = [];
+  let pitchesEditables = false;
   if (user) {
-    const { data, error: errorPitches } = await supabase.rpc("mis_pitches");
-    if (errorPitches) console.error(`Supabase (mis_pitches): ${errorPitches.message}`);
-    else misPitches = (data ?? []) as MiPitch[];
+    const detalle = await supabase.rpc("mis_pitches_detalle");
+    if (!detalle.error) {
+      misPitches = (detalle.data ?? []) as MiPitch[];
+      pitchesEditables = true;
+    } else {
+      if (!faltaMigracion(detalle.error)) {
+        console.error(`Supabase (mis_pitches_detalle): ${detalle.error.message}`);
+      }
+      const { data, error: errorPitches } = await supabase.rpc("mis_pitches");
+      if (errorPitches) console.error(`Supabase (mis_pitches): ${errorPitches.message}`);
+      else misPitches = (data ?? []) as MiPitch[];
+    }
   }
 
   // Dato chico y público para la píldora y el "Editar perfil" de las páginas
@@ -161,6 +174,18 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               email={user.email ?? ""}
               conPerfil={!!perfil}
               claseBoton={BOTON_PRIMARIO}
+              acciones={
+                pitchesEditables
+                  ? (p, compacto) => (
+                      <AccionesPitch
+                        id={p.id}
+                        descripcion={p.descripcion}
+                        oculto={p.estado === "oculto"}
+                        compacto={compacto}
+                      />
+                    )
+                  : undefined
+              }
             />
 
             <FormPerfil key={perfil?.id ?? "nuevo"} perfil={perfil} rolInicial={rolInicial} />

@@ -7,7 +7,8 @@ import { urlMedia } from "@/lib/media";
 export type MiPitch = {
   id: string;
   fecha: string;
-  estado: "publicado" | "procesando" | "en_espera" | "error";
+  /** "oculto" solo viene de mis_pitches_detalle(): publicado pero oculto por su dueño. */
+  estado: "publicado" | "oculto" | "procesando" | "en_espera" | "error";
   poster_url: string | null;
   descripcion: string | null;
 };
@@ -22,7 +23,8 @@ const FECHA = new Intl.DateTimeFormat("es-AR", {
  * "Tu Pitch" en /cuenta. El Pitch es obligatorio para completar el perfil: el más
  * nuevo publicado es el del perfil; subir otro lo reemplaza y el anterior queda
  * como anterior. Los envíos del Form que se procesan o esperan se ven con su
- * estado. `acciones` (opcional) dibuja editar/ocultar debajo de cada publicado.
+ * estado. `acciones` (opcional) dibuja editar/ocultar debajo de cada publicado u
+ * oculto (solo si la base ya tiene mis_pitches_detalle).
  */
 export default function MisPitches({
   pitches,
@@ -35,7 +37,7 @@ export default function MisPitches({
   email: string;
   conPerfil: boolean;
   claseBoton: string;
-  acciones?: (pitch: MiPitch) => ReactNode;
+  acciones?: (pitch: MiPitch, compacto: boolean) => ReactNode;
 }) {
   if (!conPerfil && pitches.length === 0) return null;
 
@@ -78,7 +80,7 @@ export default function MisPitches({
               <p className="text-sm text-tinta/60">Sin descripción.</p>
             )}
             <p className="text-xs text-tinta/60">Del {FECHA.format(new Date(principal.fecha))}</p>
-            {acciones?.(principal)}
+            {acciones?.(principal, false)}
           </div>
         </article>
       ) : (
@@ -138,14 +140,21 @@ export default function MisPitches({
             {resto.map((p) => (
               <li key={p.id} className="flex flex-col gap-1.5">
                 {p.poster_url ? (
-                  <Poster pitch={p} />
+                  <span className="relative block">
+                    <Poster pitch={p} className={`w-full ${p.estado === "oculto" ? "opacity-45" : ""}`} />
+                    {p.estado === "oculto" && (
+                      <span className="absolute inset-x-1.5 top-1.5 rounded-full bg-marfil px-2 py-0.5 text-center text-xs font-semibold text-tinta">
+                        Oculto
+                      </span>
+                    )}
+                  </span>
                 ) : (
                   <div className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-1 rounded-xl bg-tinta/10 px-2 text-center text-xs text-tinta">
                     <span className="font-medium">{etiqueta(p, conPerfil)}</span>
                     <span className="text-tinta/60">Enviado el {FECHA.format(new Date(p.fecha))}</span>
                   </div>
                 )}
-                {p.estado === "publicado" && acciones?.(p)}
+                {(p.estado === "publicado" || p.estado === "oculto") && acciones?.(p, true)}
               </li>
             ))}
           </ul>

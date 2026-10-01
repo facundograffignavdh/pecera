@@ -22,6 +22,18 @@ const MENSAJES: Record<string, string> = {
   "evento inexistente": "Ese evento no está activo.",
   "sin sesión": SIN_SESION,
   "no autorizado": "Esta acción es solo para el equipo de Pecera.",
+  "ese pitch no es tuyo": "Ese pitch no es de tu perfil.",
+  "ya hay un hito en curso": "Ya hay un hito en curso. Marcalo como logrado o pasalo a próximo primero.",
+  "demasiados hitos": "Llegaste a 40 hitos. Borrá alguno viejo para sumar otro.",
+  "ese hito no es de tu empresa": "Ese hito no es de tu empresa.",
+  "demasiados avances": "Ya publicaste 5 avances hoy. Mañana podés sumar más.",
+  "primero guardá el producto": "Primero guardá el producto; después sumá las imágenes.",
+  "imagen inválida": "Esa imagen no es válida. Probá subirla de nuevo.",
+  "primero abrí tu newsletter": "Primero abrí tu newsletter.",
+  "demasiadas ediciones": "Ya publicaste 3 ediciones hoy. Mañana podés publicar otra.",
+  "esa edición no es tuya": "Esa edición no es tuya.",
+  "newsletter inexistente": "Esa newsletter ya no está disponible.",
+  "es tu newsletter": "Es tu propia newsletter.",
 };
 
 /** Error de Supabase → Resultado con un mensaje que se entiende. Nunca tira. */
