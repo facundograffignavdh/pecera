@@ -33,10 +33,10 @@ export default function Hero() {
         className="absolute -right-[20%] top-[8%] -z-10 aspect-square w-[min(90vw,920px)] rounded-full bg-[radial-gradient(closest-side,rgb(253_227_212/0.9),rgb(253_227_212/0.35)_55%,transparent)]"
       />
       <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:gap-10">
-        {/* En escritorio, panel suave sobre el agua: el contraste lo da su Marfil al 0,80
+        {/* En escritorio, panel suave sobre el agua: el contraste lo da su Marfil al 0,88
             (medido contra el píxel más oscuro del agua); el margen negativo deja el texto
             donde estaba. */}
-        <div className="max-w-xl lg:-m-6 lg:max-w-[calc(36rem+3rem)] lg:rounded-[2rem] lg:bg-[rgb(245_244_236/0.8)] lg:p-6 lg:backdrop-blur-md">
+        <div className="max-w-xl lg:-m-6 lg:max-w-[calc(36rem+3rem)] lg:rounded-[2rem] lg:bg-[rgb(245_244_236/0.88)] lg:p-6 lg:backdrop-blur-md">
           {feria ? (
             <Link
               href={`/eventos/${EVENTO_ACTUAL.slug}`}

@@ -11,33 +11,34 @@ const CausticPool = dynamic(() => import("@/components/ui/caustic-pool"), { ssr:
 const ESCRITORIO = "(min-width: 1024px)";
 
 /**
- * Agua clara de pileta al sol: arena casi Marfil, poca absorción y el celeste de la
- * marca en lo hondo y en el reflejo del cielo. Su píxel más oscuro posible (sin
- * cáustica, viñeta y grano en contra) queda en luminancia 0,43: con el panel del
- * texto al 0,80, el Arcilla queda en 3,06:1 y tinta/65 en 4,86:1. Constante de
- * módulo: si cambia, el agua se reinicia.
+ * Agua celeste, como el interior de una pecera: el rojo se absorbe con la
+ * profundidad, lo hondo tira a azul y las cáusticas se ven. Ningún texto va directo
+ * sobre el agua: el del hero tiene su panel Marfil al 0,88 y el pie su píldora al 0,80,
+ * medidos contra el píxel más oscuro posible del render (sin cáustica, viñeta y grano
+ * en contra: luminancia 0,18). Las notificaciones de vidrio llevan Tinta sólida
+ * (10,5:1 ahí). Constante de módulo: si cambia, el agua se reinicia.
  */
 const AGUA: Partial<CausticParams> = {
-  floorBase: 0.5,
-  causticGain: 0.36,
-  veinGain: 0.2,
-  veinColor: [200, 236, 250],
-  sandHi: [236, 226, 200],
-  sandLo: [200, 192, 170],
-  absorb: [90, 28, 12],
-  absorbScale: 0.9,
-  deepColor: [120, 196, 232],
-  deepGain: 0.22,
-  skyColor: [143, 211, 244],
+  floorBase: 0.3,
+  causticGain: 0.48,
+  veinGain: 0.3,
+  veinColor: [170, 235, 255],
+  sandHi: [190, 226, 236],
+  sandLo: [120, 180, 200],
+  absorb: [230, 60, 20],
+  absorbScale: 1.5,
+  deepColor: [8, 105, 170],
+  deepGain: 0.42,
+  skyColor: [90, 185, 230],
   fresnelGain: 0.3,
-  glintColor: [255, 250, 236],
-  exposure: 1.8,
+  glintColor: [235, 250, 255],
+  exposure: 1.35,
   grain: 0.012,
-  vigDark: 0.85,
-  vigBright: 1.02,
+  vigDark: 0.78,
+  vigBright: 1.05,
 };
-/** Antes del primer cuadro y sin WebGL2: el mismo agua, quieta. */
-const AGUA_FIJA = "radial-gradient(120% 90% at 35% 25%, #eef3ee 0%, #d6e2e2 55%, #c4d2d2 100%)";
+/** Antes del primer cuadro y sin WebGL2: el mismo celeste, quieto. */
+const AGUA_FIJA = "radial-gradient(120% 90% at 35% 25%, #7cc4dc 0%, #4fa3c7 55%, #2f86b0 100%)";
 
 function suscribir(avisar: () => void) {
   const consulta = window.matchMedia(ESCRITORIO);
