@@ -11,6 +11,7 @@ import Diferencia from "@/components/landing/Diferencia";
 import ElegirRol from "@/components/landing/ElegirRol";
 import ExplorarBusqueda from "@/components/landing/ExplorarBusqueda";
 import Hero from "@/components/landing/Hero";
+import ValuaStartup from "@/components/landing/ValuaStartup";
 import MapaEcosistema from "@/components/landing/MapaEcosistema";
 import Movimiento from "@/components/landing/Movimiento";
 import PieLanding from "@/components/landing/PieLanding";
@@ -107,6 +108,7 @@ export default async function SumatePage() {
       <ElegirRol />
 
       <Hero />
+      <ValuaStartup />
       <Desparramado />
 
       <Seccion

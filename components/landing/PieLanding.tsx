@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PieLegal from "@/components/PieLegal";
+import BotonSubstack from "@/components/landing/BotonSubstack";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 
 const COLUMNAS = [
@@ -34,6 +35,13 @@ const COLUMNAS = [
 export default function PieLanding() {
   return (
     <footer data-cta-zona className="px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-16 sm:px-8">
+      <div className="mx-auto mb-12 flex w-full max-w-6xl flex-col items-start gap-4 rounded-[var(--radius-bloque)] bg-superficie p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <div>
+          <p className="font-display text-2xl font-semibold">Lo que pasa en la Pecera, en tu mail.</p>
+          <p className="mt-1 text-tinta/70">Novedades del ecosistema y de la plataforma.</p>
+        </div>
+        <BotonSubstack />
+      </div>
       <nav aria-label="Pie de página" className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-8 border-b border-tinta/10 pb-12 sm:grid-cols-3">
         {COLUMNAS.map((c) => (
           <div key={c.titulo}>
