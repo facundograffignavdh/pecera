@@ -1,5 +1,5 @@
 // Newsletter de Pecera en Substack (el link lo definió el equipo).
-export const SUBSTACK_PECERA = "https://substack.com/peceravc";
+export const SUBSTACK_PECERA = "https://substack.com/@peceravc";
 
 export function LogoSubstack({ className = "size-5" }: { className?: string }) {
   return (

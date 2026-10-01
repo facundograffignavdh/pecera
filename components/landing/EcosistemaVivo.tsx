@@ -6,9 +6,9 @@ import { Peces } from "@/components/landing/Seccion";
 /**
  * El hero muestra el producto, no un dibujo: cuatro piezas reales de Pecera (un
  * pitch, una empresa construyendo en público, una inversora con su tesis y un
- * aliado con sus servicios) unidas por corrientes. Al cargar, los dos peces del
- * isotipo se encuentran en el centro, las corrientes se trazan desde ahí y
- * aparecen las tarjetas; después solo queda un movimiento ambiente. Con el mouse,
+ * aliado con sus servicios) unidas por corrientes. Al cargar, las corrientes se
+ * trazan desde el isotipo del centro y aparecen las tarjetas; después solo queda
+ * un movimiento ambiente. Con el mouse,
  * las capas se mueven a distintas profundidades y una tarjeta enciende sus
  * relaciones. Todo es CSS salvo la profundidad (Movimiento.tsx).
  *
@@ -93,7 +93,7 @@ export default function EcosistemaVivo() {
           ))}
         </svg>
 
-        {/* Centro: los peces se encuentran. */}
+        {/* Centro: el isotipo, quieto. */}
         <div className="eco-nodo" style={{ "--x": "50%", "--y": "50%", "--w": "21%", "--z": 4 } as CSSProperties}>
           <Peces ondas className="mx-auto w-full drop-shadow-[0_6px_14px_rgb(248_124_67/0.25)]" />
         </div>

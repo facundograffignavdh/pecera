@@ -133,8 +133,6 @@ export function Peces({ className = "", ondas = false }: { className?: string; o
       {ondas && (
         <span className="ondas absolute inset-0">
           <span />
-          <span />
-          <span />
         </span>
       )}
       <span className="peces block">

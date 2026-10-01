@@ -447,7 +447,7 @@ html[data-revelar] [data-revelar]:not([data-visible]) .palabra {
 }
 
 /* --- Firma: los dos peces. Cada mitad es el isotipo recortado por el hueco
-   blanco de la S; las dos giran alrededor del mismo centro y se encajan. --- */
+   blanco de la S; quietos, encajados (sin animación de encuentro). --- */
 .peces {
   position: relative;
   aspect-ratio: 600 / 388;
@@ -459,25 +459,15 @@ html[data-revelar] [data-revelar]:not([data-visible]) .palabra {
 }
 .pez-izq {
   clip-path: polygon(0 0, 38.3% 0, 38.7% 42%, 61.7% 56.2%, 62% 100%, 0 100%);
-  animation: pez-izq 1500ms var(--ease-pecera) 200ms both;
 }
 .pez-der {
   clip-path: polygon(38.3% 0, 100% 0, 100% 100%, 62% 100%, 61.7% 56.2%, 38.7% 42%);
-  animation: pez-der 1500ms var(--ease-pecera) 200ms both;
 }
-/* Fuera del hero, los peces esperan a que su bloque aparezca para encontrarse. */
-html[data-revelar] [data-revelar]:not([data-visible]) :is(.peces > span, .ondas > span) {
+/* Fuera del hero, la onda espera a que su bloque aparezca. */
+html[data-revelar] [data-revelar]:not([data-visible]) .ondas > span {
   animation-play-state: paused;
 }
-@keyframes pez-izq {
-  from { opacity: 0; transform: rotate(-210deg) translateX(-42%) scale(0.72); }
-  30% { opacity: 1; }
-}
-@keyframes pez-der {
-  from { opacity: 0; transform: rotate(-210deg) translateX(42%) scale(0.72); }
-  30% { opacity: 1; }
-}
-/* Ondas: dos al encontrarse y una lenta, cada tanto, mientras la página vive. */
+/* Ondas: una lenta, cada tanto, mientras la página vive. */
 .ondas > span {
   position: absolute;
   left: 50%;
@@ -489,10 +479,8 @@ html[data-revelar] [data-revelar]:not([data-visible]) :is(.peces > span, .ondas 
   translate: -50% -50%;
   opacity: 0;
   pointer-events: none;
-  animation: onda 2600ms var(--ease-pecera) 1350ms both;
+  animation: onda 3200ms ease-out 2s infinite;
 }
-.ondas > span:nth-child(2) { animation-delay: 1650ms; }
-.ondas > span:nth-child(3) { animation: onda 3200ms ease-out 6s infinite; }
 @keyframes onda {
   from { opacity: 0.9; scale: 0.4; }
   to { opacity: 0; scale: 1.9; }
