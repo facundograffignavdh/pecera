@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BotonForm from "@/components/landing/BotonForm";
+import AguaHero from "@/components/landing/AguaHero";
 import EcosistemaVivo from "@/components/landing/EcosistemaVivo";
 import { EVENTO_ACTUAL, momentoEvento } from "@/lib/eventos";
 import { FEED_DESDE_LANDING } from "@/lib/landing";
@@ -24,13 +25,18 @@ export default function Hero() {
       aria-labelledby="hero-titulo"
       className="grano relative isolate overflow-hidden px-5 pb-16 pt-[calc(max(0.75rem,env(safe-area-inset-top))+5.25rem)] sm:px-8 lg:pb-24"
     >
+      {/* En escritorio, agua de fondo; en el celular no se carga. */}
+      <AguaHero />
       {/* Luz cálida detrás del ecosistema: profundidad sin dibujar agua. */}
       <div
         aria-hidden
         className="absolute -right-[20%] top-[8%] -z-10 aspect-square w-[min(90vw,920px)] rounded-full bg-[radial-gradient(closest-side,rgb(253_227_212/0.9),rgb(253_227_212/0.35)_55%,transparent)]"
       />
       <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:gap-10">
-        <div className="max-w-xl">
+        {/* En escritorio, panel suave sobre el agua: el contraste lo da su Marfil al 0,80
+            (medido contra el píxel más oscuro del agua); el margen negativo deja el texto
+            donde estaba. */}
+        <div className="max-w-xl lg:-m-6 lg:max-w-[calc(36rem+3rem)] lg:rounded-[2rem] lg:bg-[rgb(245_244_236/0.8)] lg:p-6 lg:backdrop-blur-md">
           {feria ? (
             <Link
               href={`/eventos/${EVENTO_ACTUAL.slug}`}

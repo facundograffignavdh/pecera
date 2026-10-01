@@ -1027,6 +1027,22 @@ html .tema-fijo .solo-luz {
 html .tema-fijo .solo-noche {
   display: none !important;
 }
+/* Salvo dentro del vidrio (la píldora del header): el vidrio sigue al tema aunque esté
+   en una página .tema-fijo, así que el logo también, o quedaría Tinta sobre vidrio oscuro. */
+html[data-tema="noche"] .tema-fijo .vidrio .solo-luz {
+  display: none !important;
+}
+html[data-tema="noche"] .tema-fijo .vidrio .solo-noche {
+  display: revert !important;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-tema="luz"]) .tema-fijo .vidrio .solo-luz {
+    display: none !important;
+  }
+  html:not([data-tema="luz"]) .tema-fijo .vidrio .solo-noche {
+    display: revert !important;
+  }
+}
 /* ============================================================
    Switch Privado ↔ Transparente (liquid glass). Es un elemento especial: el único
    control de vidrio con reflejos de la app. El estado también va en texto.

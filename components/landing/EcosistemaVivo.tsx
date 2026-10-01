@@ -212,7 +212,10 @@ export default function EcosistemaVivo() {
           </span>
         </div>
       </div>
-      <figcaption className="mt-3 text-center text-xs text-tinta/65">Perfiles de ejemplo</figcaption>
+      {/* En escritorio va sobre el agua: el fondo Marfil al 0,80 le sostiene el AA. */}
+      <figcaption className="mx-auto mt-3 w-fit text-center text-xs text-tinta/65 lg:rounded-full lg:bg-[rgb(245_244_236/0.8)] lg:px-3 lg:py-1 lg:backdrop-blur-md">
+        Perfiles de ejemplo
+      </figcaption>
     </figure>
   );
 }
