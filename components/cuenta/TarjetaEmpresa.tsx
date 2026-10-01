@@ -1,17 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState, useTransition } from "react";
-import {
-  crearEmpresa,
-  editarEmpresa,
-  renovarCodigo,
-  salirEmpresa,
-  unirseEmpresa,
-} from "@/app/cuenta/empresa";
-import BotonCopiar from "@/components/BotonCopiar";
+import { useActionState, useState } from "react";
+import { crearEmpresa, unirseEmpresa } from "@/app/cuenta/empresa";
 import { ChipsMultiple, ChipsUnico, SelectorEtapa } from "@/components/Chips";
-import { Aviso, BOTON_PRIMARIO, BOTON_SECUNDARIO, INPUT, Tarjeta } from "@/components/cuenta/ui";
+import { Aviso, BOTON_PRIMARIO, INPUT, Tarjeta } from "@/components/cuenta/ui";
+import { LogoEmpresa } from "@/components/perfil/Bloques";
 import { slugDesdeNombre, urlSitio } from "@/lib/cuenta";
 import type { Resultado } from "@/lib/errores-base";
 import {
@@ -20,7 +14,7 @@ import {
   INDUSTRIAS,
   MAX_INDUSTRIAS_PROYECTO,
   RONDAS,
-  TONO,
+  conTono,
 } from "@/lib/etiquetas";
 
 export type MiEmpresa = {
@@ -34,18 +28,20 @@ export type MiEmpresa = {
   industrias: string[];
   etapa: string | null;
   ronda: string | null;
+  /** URL ya armada (mi_empresa_v2); null sin logo o sin la migración feria_pro. */
+  logo_url?: string | null;
   codigo: string | null;
   es_dueno: boolean;
   visible: boolean;
   miembros: number;
 };
 
-const OPCIONES_INDUSTRIAS = INDUSTRIAS.map(({ valor, label }) => ({ valor, label }));
-const OPCIONES_CARGOS = CARGOS.map(({ valor, label, tono }) => ({ valor, label, tono: TONO[tono] }));
+const OPCIONES_INDUSTRIAS = conTono(INDUSTRIAS);
+const OPCIONES_CARGOS = conTono(CARGOS);
 const INICIAL: Resultado = { ok: false };
 
 /** "A1B2C3D4" → "A1B2-C3D4": se dicta y se copia más fácil. */
-const formatoCodigo = (c: string) => `${c.slice(0, 4)}-${c.slice(4)}`;
+export const formatoCodigo = (c: string) => `${c.slice(0, 4)}-${c.slice(4)}`;
 
 /** Dirección pública de la empresa. */
 const urlEmpresa = (slug: string) => urlSitio(`/e/${slug}`);
@@ -91,7 +87,7 @@ function SinEmpresa() {
   );
 }
 
-function CamposEmpresa({
+export function CamposEmpresa({
   inicial,
   conSlug,
 }: {
@@ -243,128 +239,39 @@ function FormUnirme() {
   );
 }
 
+/** Con empresa: un resumen. Todo lo demás se administra en /cuenta/empresa. */
 function ConEmpresa({ empresa }: { empresa: MiEmpresa }) {
-  const [codigo, setCodigo] = useState(empresa.codigo);
-  const [mensaje, setMensaje] = useState<Resultado | null>(null);
-  const [pendiente, iniciar] = useTransition();
-  const [estadoEditar, accionEditar, guardando] = useActionState(editarEmpresa, INICIAL);
-
-  const invitacion = codigo
-    ? `Sumate a ${empresa.nombre} en Pecera: entrá a ${urlSitio("/cuenta")}, en "Tu empresa" tocá "Tengo un código" y poné ${formatoCodigo(codigo)}`
-    : "";
-
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <p className="font-display text-2xl font-semibold leading-tight text-tinta">{empresa.nombre}</p>
-        <p className="text-sm text-tinta/70">
-          {empresa.miembros} {empresa.miembros === 1 ? "miembro" : "miembros"} ·{" "}
-          {empresa.es_dueno ? "la creaste vos" : "sos parte del equipo"}
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <LogoEmpresa nombre={empresa.nombre} logo={empresa.logo_url ?? null} size={56} />
+        <div className="min-w-0">
+          <p className="truncate font-display text-2xl font-semibold leading-tight text-tinta">{empresa.nombre}</p>
+          <p className="text-sm text-tinta/70">
+            {empresa.miembros} {empresa.miembros === 1 ? "miembro" : "miembros"} ·{" "}
+            {empresa.es_dueno ? "la creaste vos" : "sos parte del equipo"}
+          </p>
+        </div>
+      </div>
+      {!empresa.logo_url && (
+        <p className="rounded-2xl bg-t-ocre-suave px-4 py-3 text-sm text-t-ocre">
+          Sumale el logo: la página de la empresa se ve mucho mejor.
         </p>
-        {empresa.visible ? (
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Link href="/cuenta/empresa" className={`${BOTON_PRIMARIO} boton flex-1`}>
+          Administrar empresa
+        </Link>
+        {empresa.visible && (
           <Link
             href={`/e/${empresa.slug}`}
-            className="mt-1 self-start font-medium text-tinta underline underline-offset-4 hover:text-arcilla"
+            className="boton inline-flex min-h-12 items-center justify-center rounded-full border border-tinta/30 px-5 font-medium text-tinta"
           >
-            Ver la página de la empresa
+            Ver página
           </Link>
-        ) : (
-          <p className="mt-1 text-sm text-tinta/70">
-            La página se ve cuando al menos un perfil del equipo está publicado.
-          </p>
         )}
       </div>
-
-      {codigo && (
-        <div className="flex flex-col gap-3 rounded-2xl bg-tinta px-4 py-4 text-marfil">
-          <p className="text-sm text-marfil/80">Código para invitar a tu equipo</p>
-          <p className="font-mono text-3xl font-semibold tracking-[0.2em]">{formatoCodigo(codigo)}</p>
-          <div className="flex flex-wrap gap-2">
-            <BotonCopiar
-              texto={formatoCodigo(codigo)}
-              etiqueta="Copiar código"
-              className="inline-flex min-h-11 items-center rounded-full bg-marfil px-4 text-sm font-medium text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
-            />
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(invitacion)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center rounded-full border border-marfil/40 px-4 text-sm font-medium text-marfil hover:border-marfil"
-            >
-              Mandar por WhatsApp
-            </a>
-          </div>
-          {empresa.es_dueno && (
-            <button
-              type="button"
-              disabled={pendiente}
-              onClick={() =>
-                iniciar(async () => {
-                  const r = await renovarCodigo();
-                  if (r.ok && r.codigo) setCodigo(r.codigo);
-                  setMensaje(r);
-                })
-              }
-              className="self-start text-sm text-marfil/80 underline underline-offset-4 hover:text-marfil"
-            >
-              Generar un código nuevo (el actual deja de servir)
-            </button>
-          )}
-        </div>
-      )}
-
-      {mensaje?.mensaje && <Aviso ok={mensaje.ok}>{mensaje.mensaje}</Aviso>}
-
-      {empresa.es_dueno && (
-        <details className="group rounded-2xl border border-tinta/15 px-4 py-3">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-medium text-tinta [&::-webkit-details-marker]:hidden">
-            Editar los datos de la empresa
-            <span aria-hidden className="text-xl transition-transform duration-300 ease-pecera group-open:rotate-45">
-              +
-            </span>
-          </summary>
-          <form action={accionEditar} className="mt-3 flex flex-col gap-4">
-            <input type="hidden" name="slug_actual" value={empresa.slug} />
-            <CamposEmpresa inicial={empresa} conSlug={false} />
-            <label className="flex flex-col gap-1.5 text-sm font-medium text-tinta">
-              Web
-              <input name="web" defaultValue={empresa.web ?? ""} placeholder="tuempresa.com.ar" className={INPUT} />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm font-medium text-tinta">
-              LinkedIn de la empresa
-              <input
-                name="linkedin"
-                defaultValue={empresa.linkedin ?? ""}
-                placeholder="linkedin.com/company/…"
-                className={INPUT}
-              />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm font-medium text-tinta">
-              Instagram
-              <input name="instagram" defaultValue={empresa.instagram ?? ""} placeholder="@tuempresa" className={INPUT} />
-            </label>
-            {estadoEditar.mensaje && <Aviso ok={estadoEditar.ok}>{estadoEditar.mensaje}</Aviso>}
-            <button type="submit" disabled={guardando} className={BOTON_PRIMARIO}>
-              {guardando ? "Guardando…" : "Guardar la empresa"}
-            </button>
-          </form>
-        </details>
-      )}
-
-      <button
-        type="button"
-        disabled={pendiente}
-        onClick={() => {
-          const texto = empresa.es_dueno
-            ? "¿Salir de la empresa? Si queda alguien del equipo, pasa a ser quien la administra."
-            : "¿Salir de la empresa?";
-          if (!window.confirm(texto)) return;
-          iniciar(async () => setMensaje(await salirEmpresa()));
-        }}
-        className={`${BOTON_SECUNDARIO} self-start`}
-      >
-        Salir de la empresa
-      </button>
+      <p className="text-sm text-tinta/65">Logo, datos, equipo, métricas y documentos.</p>
     </div>
   );
 }

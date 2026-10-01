@@ -244,6 +244,21 @@ export default function FormPerfil({
     return Object.fromEntries(Object.entries(errores).filter(([c]) => campos.has(c as CampoPerfil)));
   }
 
+  function irA(indice: number) {
+    setPaso(indice);
+    setVisitado((v) => Math.max(v, indice));
+    // Arriba del formulario y el foco en el título del paso (lector de pantalla).
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+      tituloRef.current?.focus({ preventScroll: true });
+    });
+  }
+
+  function irAlPrimerError(errs: Partial<Record<CampoPerfil, string>>) {
+    const indice = pasos.findIndex((p) => p.campos.some((c) => errs[c]));
+    if (indice >= 0) irA(indice);
+  }
+
   const [estado, accion, guardando] = useActionState(
     async (previo: EstadoGuardar, formData: FormData): Promise<EstadoGuardar> => {
       setTardando(false);
@@ -277,21 +292,6 @@ export default function FormPerfil({
     const espera = setTimeout(() => setTardando(true), ESPERA_MAXIMA_MS);
     return () => clearTimeout(espera);
   }, [guardando]);
-
-  function irA(indice: number) {
-    setPaso(indice);
-    setVisitado((v) => Math.max(v, indice));
-    // Arriba del formulario y el foco en el título del paso (lector de pantalla).
-    requestAnimationFrame(() => {
-      formRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-      tituloRef.current?.focus({ preventScroll: true });
-    });
-  }
-
-  function irAlPrimerError(errs: Partial<Record<CampoPerfil, string>>) {
-    const indice = pasos.findIndex((p) => p.campos.some((c) => errs[c]));
-    if (indice >= 0) irA(indice);
-  }
 
   function siguiente() {
     const errs = erroresDe([paso]);

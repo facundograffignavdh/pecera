@@ -9,8 +9,9 @@ import PieLegal from "@/components/PieLegal";
 import RecordarCuenta from "@/components/RecordarCuenta";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
+import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
-import TarjetaTransparencia from "@/components/cuenta/TarjetaTransparencia";
+import TarjetaPortafolio from "@/components/cuenta/TarjetaPortafolio";
 import { entrar } from "@/app/cuenta/acciones";
 import { urlPerfil } from "@/lib/cuenta";
 import type { CuentaLocal } from "@/lib/cuenta-local";
@@ -19,7 +20,7 @@ import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
 import { ROLES } from "@/lib/rol";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
-import type { DatoEmpresa, Rol } from "@/types/pecera";
+import type { ItemPortafolio, Rol } from "@/types/pecera";
 
 export const metadata: Metadata = {
   title: "Mi perfil — Pecera",
@@ -28,7 +29,8 @@ export const metadata: Metadata = {
 
 const COLUMNAS_BASE =
   "id, slug, nombre, tipo, rol, descripcion, avatar_url, whatsapp, email, linkedin, instagram, web, publicado, oculto";
-const COLUMNAS = `${COLUMNAS_BASE}, etapa, ronda, industrias, cargo, especialidades, ticket, rondas_interes, empresa_id`;
+const COLUMNAS_LISTA = `${COLUMNAS_BASE}, etapa, ronda, industrias, cargo, especialidades, ticket, rondas_interes, empresa_id`;
+const COLUMNAS = `${COLUMNAS_LISTA}, busca_cofundador, cofundador_aporta, cofundador_busca, cofundador_dedicacion, cofundador_nota`;
 
 const BOTON_PRIMARIO =
   "inline-flex min-h-12 items-center justify-center rounded-full bg-tinta px-6 font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla";
@@ -50,7 +52,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         .eq("usuario_id", user.id)
         .maybeSingle()
         .overrideTypes<PerfilPropio | null, { merge: false }>();
+    // En cascada: feria_pro → feria_lista → lo de siempre.
     let { data, error: errorLectura } = await leer(COLUMNAS);
+    if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_LISTA));
     if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_BASE));
     if (errorLectura) throw new Error(`Supabase (cuenta): ${errorLectura.message}`);
     perfil = data && { ...data, avatar_url: data.avatar_url && urlMedia(data.avatar_url) };
@@ -100,6 +104,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <p className="leading-relaxed text-tinta/80">
               Entrá con tu cuenta de Google para crear tu perfil o editarlo.
             </p>
+            <AvisoNavegadorInterno />
             {error === "login" && (
               <p
                 role="alert"
@@ -158,10 +163,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
             {perfil && extras?.disponible && (
               <>
+                {extras.portafolio && <TarjetaPortafolio items={extras.portafolio} rol={perfil.rol} />}
                 <TarjetaEmpresa empresa={extras.empresa} />
-                {extras.empresa && (
-                  <TarjetaTransparencia datos={extras.datos} slugEmpresa={extras.empresa.slug} />
-                )}
                 <TarjetaEvento participa={extras.participa} rol={perfil.rol} />
               </>
             )}
@@ -189,32 +192,38 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 type Extras = {
   disponible: boolean;
   empresa: MiEmpresa | null;
-  datos: DatoEmpresa[];
   participa: boolean;
+  /** null si la base todavía no tiene feria_pro: la tarjeta no se muestra. */
+  portafolio: ItemPortafolio[] | null;
 };
 
 async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>>): Promise<Extras> {
-  const [empresa, datos, evento] = await Promise.all([
-    supabase.rpc("mi_empresa"),
-    supabase.rpc("mis_datos_empresa"),
+  const [v2, evento, portafolio] = await Promise.all([
+    supabase.rpc("mi_empresa_v2"),
     supabase.rpc("mi_evento", { p_evento: EVENTO_ACTUAL.slug }),
+    supabase.rpc("mi_portafolio"),
   ]);
+  // Sin feria_pro, la empresa sale de mi_empresa (sin logo).
+  const empresa = faltaMigracion(v2.error) ? await supabase.rpc("mi_empresa") : v2;
   if (faltaMigracion(empresa.error)) {
-    return { disponible: false, empresa: null, datos: [], participa: false };
+    return { disponible: false, empresa: null, participa: false, portafolio: null };
   }
   for (const [donde, r] of [
     ["mi_empresa", empresa],
-    ["mis_datos_empresa", datos],
     ["mi_evento", evento],
   ] as const) {
     if (r.error) console.error(`Supabase (${donde}): ${r.error.message}`);
   }
+  if (portafolio.error && !faltaMigracion(portafolio.error)) {
+    console.error(`Supabase (mi_portafolio): ${portafolio.error.message}`);
+  }
+  const fila = ((empresa.data as MiEmpresa[] | null) ?? [])[0] ?? null;
   const filaEvento = (evento.data as Array<{ participa: boolean }> | null)?.[0];
   return {
     disponible: true,
-    empresa: ((empresa.data as MiEmpresa[] | null) ?? [])[0] ?? null,
-    datos: (datos.data as DatoEmpresa[] | null) ?? [],
+    empresa: fila && { ...fila, logo_url: fila.logo_url ? urlMedia(fila.logo_url) : null },
     participa: !!filaEvento?.participa,
+    portafolio: portafolio.error ? null : ((portafolio.data ?? []) as ItemPortafolio[]),
   };
 }
 

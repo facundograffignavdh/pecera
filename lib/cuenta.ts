@@ -398,15 +398,16 @@ function validarRol(rol: Rol, entrada: EntradaPerfil, errores: Errores): DatosRo
 
 /** Todo menos el cofounder match: para guardar si la base no tiene feria_pro. */
 export function sinCofundador(datos: DatosEditables): DatosBase & DatosRol {
-  const {
-    busca_cofundador: _b,
-    cofundador_aporta: _a,
-    cofundador_busca: _c,
-    cofundador_dedicacion: _d,
-    cofundador_nota: _n,
-    ...resto
-  } = datos;
-  return resto;
+  return {
+    ...soloBase(datos),
+    etapa: datos.etapa,
+    ronda: datos.ronda,
+    cargo: datos.cargo,
+    ticket: datos.ticket,
+    industrias: datos.industrias,
+    especialidades: datos.especialidades,
+    rondas_interes: datos.rondas_interes,
+  };
 }
 
 /** Separa lo de siempre de lo nuevo, para guardar sin la migración si hace falta. */
