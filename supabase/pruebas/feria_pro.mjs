@@ -46,7 +46,7 @@ const MIGRACIONES = [
   "20260930120000_perfiles_vacios.sql",
   "20261001120000_feria_lista.sql",
   "20261002120000_medicion.sql",
-  "20261003120000_feria_pro.sql",
+  "20261007120000_feria_pro.sql",
 ];
 
 let ok = 0;

@@ -1,6 +1,6 @@
 /**
  * Vocabularios del perfil y de las empresas. Espejo EXACTO de los CHECK de
- * supabase/migrations/20261001120000_feria_lista.sql y 20261003120000_feria_pro.sql:
+ * supabase/migrations/20261001120000_feria_lista.sql y 20261007120000_feria_pro.sql:
  * si agregás un valor acá, agregalo también allá con una migración nueva (y al
  * revés), o la base lo va a rechazar.
  *

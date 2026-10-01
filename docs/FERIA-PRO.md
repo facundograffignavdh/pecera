@@ -44,7 +44,7 @@ founders, inversores y aliados. La guía de operación de la feria sigue en
    node feria_pro.mjs <ruta al repo>
    ```
    Tiene que terminar en `34 ok · 0 fallas`.
-2. **Correr `supabase/migrations/20261003120000_feria_pro.sql`** en el SQL editor de Supabase.
+2. **Correr `supabase/migrations/20261007120000_feria_pro.sql`** en el SQL editor de Supabase.
    Es aditiva en datos: amplía dos `CHECK` (solo agrega valores), redefine el guardián de
    perfiles con la misma lógica + WhatsApp internacional, y crea columnas, tablas y funciones
    nuevas. No borra ni renombra nada; `main` sigue andando con esta base.

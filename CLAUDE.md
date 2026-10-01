@@ -241,7 +241,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `eventos` (votacion_abierta, resultados_visibles, activo), `evento_participantes`, `votos`
   (PK evento + votante). Solo reciben votos perfiles `emprendedor`; nadie se vota ni vota a
   su empresa. Resultados visibles solo si el equipo los muestra (o para admins).
-- feria_pro (`20261003120000_feria_pro.sql`, guía en `docs/FERIA-PRO.md`): tipos de perfil
+- feria_pro (`20261007120000_feria_pro.sql`, guía en `docs/FERIA-PRO.md`): tipos de perfil
   `profesional`, `empresa`, `institucion`; especialidades nuevas; WhatsApp `+E.164` además de
   los 10 dígitos argentinos; columnas de cofounder (`busca_cofundador`, `cofundador_*`);
   `empresas.logo_url` (`empresa-<id>-<hash8>.jpg`, `cambiar_logo_empresa`, `mi_empresa_v2`,
