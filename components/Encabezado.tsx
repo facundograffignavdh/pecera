@@ -16,7 +16,7 @@ export default function Encabezado({
   return (
     <header className="no-imprimir pointer-events-none fixed inset-x-0 top-0 z-20 flex justify-center pt-[max(0.75rem,env(safe-area-inset-top))]">
       <MenuPrincipal />
-      <LogoInicio variante={variante} />
+      <LogoInicio />
       {variante !== "cuenta" && <AccesoCuenta compacto={variante === "perfil"} />}
     </header>
   );
