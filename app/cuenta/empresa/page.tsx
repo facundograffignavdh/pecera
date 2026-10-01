@@ -30,7 +30,12 @@ export default async function EmpresaCuentaPage() {
   if (faltaMigracion(consulta.error)) consulta = await supabase.rpc("mi_empresa");
   if (consulta.error) console.error(`Supabase (mi_empresa): ${consulta.error.message}`);
   const fila = ((consulta.data ?? []) as MiEmpresa[])[0] ?? null;
-  const empresa = fila && { ...fila, logo_url: fila.logo_url ? urlMedia(fila.logo_url) : null };
+  // Logo: el de empresa_logos (migración logos) y, si no hay, el de feria_pro.
+  const logo = fila
+    ? await supabase.from("empresa_logos").select("clave").eq("empresa_id", fila.id).maybeSingle()
+    : null;
+  const clave = (logo?.data?.clave as string | undefined) ?? fila?.logo_url ?? null;
+  const empresa = fila && { ...fila, logo_url: clave ? urlMedia(clave) : null };
 
   let miembros: Miembro[] = [];
   let datos: DatoEmpresa[] = [];

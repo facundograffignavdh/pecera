@@ -13,6 +13,7 @@ import {
 } from "@/lib/etiquetas";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { faltaMigracion } from "@/lib/datos";
+import { quitarLogo as quitarLogoEcosistema, subirLogo as subirLogoEcosistema } from "@/app/cuenta/logo";
 import { guardarLogo } from "@/lib/foto";
 import { urlMedia } from "@/lib/media";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
@@ -36,6 +37,7 @@ function refrescar(slug?: string) {
   revalidatePath("/cuenta");
   revalidatePath("/cuenta/empresa");
   revalidatePath("/");
+  revalidatePath("/explorar");
   if (slug) revalidatePath(`/e/${slug}`);
 }
 
@@ -216,11 +218,29 @@ export async function subirLogo(formData: FormData): Promise<Resultado & { url?:
   const empresa = ((data ?? []) as Array<{ id: string; slug: string; logo_url: string | null }>)[0];
   if (!empresa) return { ok: false, mensaje: "Primero creá o sumate a una empresa." };
 
+  // Un solo logo: el de empresa_logos (migración logos) es el que se lee primero. Si esa
+  // tabla todavía no existe, se usa la columna empresas.logo_url (feria_pro).
+  const tabla = await supabase.from("empresa_logos").select("clave").eq("empresa_id", empresa.id).maybeSingle();
+  const conTablaLogos = !faltaMigracion(tabla.error);
+
   if (formData.get("quitar") === "1") {
+    // Se borra de los dos lados: si no, reaparecería el de la columna vieja.
+    if (conTablaLogos) {
+      const r = await quitarLogoEcosistema();
+      if (!r.ok) return r;
+    }
     const { error: e } = await supabase.rpc("cambiar_logo_empresa", { p_logo: null });
-    if (e) return traducir(e, "cambiar_logo_empresa");
+    if (e && !faltaMigracion(e)) return traducir(e, "cambiar_logo_empresa");
     refrescar(empresa.slug);
     return { ok: true, url: null, mensaje: "Sacaste el logo." };
+  }
+
+  if (conTablaLogos) {
+    const r = await subirLogoEcosistema(formData);
+    if (!r.ok) return r;
+    const { data: nuevo } = await supabase.from("empresa_logos").select("clave").eq("empresa_id", empresa.id).maybeSingle();
+    refrescar(empresa.slug);
+    return { ok: true, url: nuevo?.clave ? urlMedia(nuevo.clave as string) : null, mensaje: "Logo actualizado." };
   }
 
   const logo = formData.get("logo");

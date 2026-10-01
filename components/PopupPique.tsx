@@ -56,7 +56,7 @@ export default function PopupPique({ item, onCerrado }: Props) {
   const canal =
     canales.find((c) => c.clave === "whatsapp") ?? canales.find((c) => c.clave === "email");
   const clasesBoton =
-    "flex w-full items-center justify-center rounded-full bg-arcilla px-4 py-3 text-lg font-bold text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera";
+    "flex w-full items-center justify-center rounded-full bg-naranja px-4 py-3 text-lg font-bold text-tinta transition-colors duration-200 ease-pecera hover:bg-pecera";
 
   return (
     <dialog

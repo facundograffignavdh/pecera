@@ -1,3 +1,4 @@
+import { boton } from "@/lib/ui";
 import type { ReactNode } from "react";
 
 /** Piezas compartidas por las tarjetas de /cuenta (empresa, transparencia, evento). */
@@ -5,11 +6,9 @@ import type { ReactNode } from "react";
 export const INPUT =
   "w-full rounded-xl border border-tinta/55 bg-marfil px-3.5 py-2.5 text-base font-normal text-tinta placeholder:text-tinta/60 focus:outline-2 focus:outline-offset-2 focus:outline-arcilla";
 
-export const BOTON_PRIMARIO =
-  "inline-flex min-h-12 items-center justify-center rounded-full bg-tinta px-5 font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-70";
+export const BOTON_PRIMARIO = boton("primario", "lg");
 
-export const BOTON_SECUNDARIO =
-  "inline-flex min-h-11 items-center justify-center rounded-full border border-tinta/30 px-4 text-sm font-medium text-tinta transition-colors duration-200 ease-pecera hover:border-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-60";
+export const BOTON_SECUNDARIO = boton("secundario", "md");
 
 export function Tarjeta({
   titulo,
@@ -35,7 +34,7 @@ export function Tarjeta({
             {etiqueta}
           </span>
         )}
-        <h2 id={id} className="font-display text-xl font-semibold leading-tight text-tinta">
+        <h2 id={id} className="scroll-mt-24 font-display text-xl font-semibold leading-tight text-tinta">
           {titulo}
         </h2>
         {bajada && <p className="text-sm text-tinta/70">{bajada}</p>}

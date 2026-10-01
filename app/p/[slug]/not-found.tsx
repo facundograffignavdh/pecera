@@ -11,7 +11,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        className="mt-2 inline-flex rounded-full bg-arcilla px-5 py-2.5 font-medium text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera"
+        className="mt-2 inline-flex rounded-full bg-naranja px-5 py-2.5 font-semibold text-tinta transition-[background-color,transform] duration-200 ease-pecera hover:bg-pecera active:scale-[0.98]"
       >
         Ir al feed
       </Link>

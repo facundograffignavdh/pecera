@@ -3,10 +3,26 @@
 @theme {
   --color-marfil: #f5f4ec;
   --color-tinta: #1c1b16;
+  /* Naranjas de marca. Naranja (#F47C3C) es la acción primaria: botones con texto
+     Tinta (6,4:1, AA); Pecera (#F87C43) es su hover y los acentos. Ninguno de los
+     dos va como texto sobre Marfil (2,4:1): para texto naranja, naranja-texto. */
+  --color-naranja: #f47c3c;
   --color-pecera: #f87c43;
+  --color-naranja-texto: #a9441a;
+  --color-naranja-suave: #fde3d4;
+  /* Superficies cálidas: Marfil de fondo, un tono más para bloques. */
+  --color-superficie: #efede3;
   --color-arcilla: #d95a22;
   --color-inversor: #0c6aa8;
   --color-aliado: #1f7a52;
+  /* Celeste del Pitch: identifica el formato en feed, perfil, empresa y cuenta.
+     Siempre de fondo con texto Tinta (11:1); nunca como color de texto. */
+  --color-celeste: #1e5a87;
+  --color-celeste-suave: #dde8f1;
+  /* Ámbar "obra" de Build in Public: fondo con texto Tinta (10:1) o acento sobre
+     video; como texto sobre Marfil se usa t-ocre. */
+  --color-obra: #f2c45f;
+  --color-obra-suave: #f8ebcb;
 
   /* Tonos de etiquetas (cargos, especialidades): fondo suave + texto fuerte, AA
      sobre marfil y sobre video. Se usan solo desde lib/etiquetas.ts. */
@@ -28,15 +44,152 @@
   --color-t-tierra-suave: #ede3d2;
 
   --font-display: var(--font-fraunces), Georgia, serif;
+  /* Lectura larga (lecciones, presentaciones de perfil y empresa): serif del
+     sistema, sin costo de carga. La interfaz sigue en Familjen Grotesk. */
+  --font-editorial: Georgia, "Iowan Old Style", "Times New Roman", serif;
   --font-sans: var(--font-grotesk), system-ui, sans-serif;
 
   --ease-pecera: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Radios por jerarquía: controles en píldora, tarjetas medianas, secciones grandes. */
+  --radius-tarjeta: 1rem;
+  --radius-bloque: 1.5rem;
+}
+
+/* Movimiento: tres velocidades. Rápida para feedback (tocar, cambiar), estándar
+   para transiciones de estado, énfasis para lo que hay que notar (un logro). */
+:root {
+  --duracion-rapida: 140ms;
+  --duracion: 220ms;
+  --duracion-enfasis: 420ms;
 }
 
 body {
   background: var(--color-marfil);
   color: var(--color-tinta);
   font-family: var(--font-sans);
+}
+
+/* Selección de texto. Los controles no se seleccionan con un toque largo, un doble
+   toque o un arrastre: botones, chips (labels con su input adentro), acordeones e
+   interfaces sobre video (`.ui-fija`). El texto de contenido (descripciones,
+   datos, newsletter) sigue seleccionable: no es una regla global. */
+button,
+[role="button"],
+summary,
+label:has(> input[type="radio"]),
+label:has(> input[type="checkbox"]),
+/* En el sistema, lo redondeado en píldora siempre es un control o una etiqueta:
+   links con forma de botón, chips de rol, etapa e industria, insignias. */
+a[class~="rounded-full"],
+span[class~="rounded-full"],
+.ui-fija {
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* Toque largo sobre un video: sin el menú de "Guardar video" de iOS ni el arrastre. */
+video {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+.ui-fija {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Barra de progreso del sistema (perfil, hitos, rachas, ronda): se llena de 0 a
+   --p (0..1) al aparecer. Solo transform: no mueve el layout. */
+@keyframes llenar {
+  from { transform: scaleX(0); }
+}
+.barra-progreso {
+  transform: scaleX(var(--p, 0));
+  transform-origin: left center;
+  animation: llenar 900ms var(--ease-pecera) both;
+  animation-delay: var(--retraso, 150ms);
+}
+
+/* Insignia PITCH: un brillo la recorre una vez cuando el reel entra en pantalla. */
+.insignia-pitch {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.insignia-pitch[data-activa]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.3) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: brillo-insignia 1100ms var(--ease-pecera) 400ms both;
+}
+@keyframes brillo-insignia {
+  to { transform: translateX(120%); }
+}
+
+/* Contadores: el número sube de 0 a --valor al aparecer, sin JS (@property). Donde
+   no hay soporte se ve el número final. El texto real va aparte en sr-only. */
+@property --n {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+@keyframes contar {
+  from { --n: 0; }
+}
+.contador {
+  --n: var(--valor, 0);
+  counter-reset: n var(--n);
+  animation: contar 1200ms var(--ease-pecera) both;
+  animation-delay: var(--retraso, 150ms);
+  font-variant-numeric: tabular-nums;
+}
+.contador::after {
+  content: counter(n);
+}
+
+/* Llama de la racha: titila apenas, como una vela. Quieta con reducir movimiento. */
+@keyframes titilar {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(1.04, 0.97) rotate(-2deg); }
+  60% { transform: scale(0.97, 1.04) rotate(1.5deg); }
+}
+.llama {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: titilar 2.4s ease-in-out infinite;
+}
+
+/* Hito en curso: un punto que late (está pasando ahora). */
+@keyframes latir-punto {
+  0% { box-shadow: 0 0 0 0 rgb(242 196 95 / 0.7); }
+  70% { box-shadow: 0 0 0 8px rgb(242 196 95 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(242 196 95 / 0); }
+}
+.punto-vivo {
+  animation: latir-punto 2s ease-out infinite;
+}
+
+/* Carga: superficie cálida que respira, nunca naranja. */
+@keyframes respirar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.esqueleto {
+  border-radius: var(--radius-tarjeta);
+  background: var(--color-superficie);
+  animation: respirar 1.6s ease-in-out infinite;
+}
+
+/* Entrada de elementos de estado (un check, un hito nuevo): pop chico. */
+@keyframes aparecer-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  60% { opacity: 1; transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+.aparecer-pop {
+  animation: aparecer-pop 450ms var(--ease-pecera) both;
 }
 
 /* El feed ya tiene snap como afordancia: la barra de scroll solo estorba. */
@@ -240,10 +393,14 @@ body {
 
 /* ============================================================
    Landing /sumate. El JS vive en components/landing/Movimiento.tsx.
+   Dirección: editorial del ecosistema. Papel Marfil, tinta y un solo acento
+   naranja; el agua se insinúa (ondas, corrientes), nunca se dibuja. La firma
+   son los dos peces del isotipo, que giran uno alrededor del otro y se encajan
+   en la S: dos partes del ecosistema que se encuentran.
    ============================================================ */
 
-/* Entradas de 550 ms con fade + 14 px: el hero al cargar (en cascada con
-   animation-delay), el resto al aparecer en pantalla. */
+/* Entradas de 550 ms con fade + 14 px: al cargar (en cascada con
+   animation-delay) o al aparecer en pantalla. También las usan empresa y perfil. */
 @keyframes entrada {
   from { opacity: 0; transform: translateY(14px); }
 }
@@ -259,6 +416,10 @@ html[data-revelar] [data-revelar]:not([data-visible]) {
   opacity: 0;
   transform: translateY(14px);
 }
+/* Barras y contadores de un bloque esperan a que el bloque aparezca. */
+html[data-revelar] [data-revelar]:not([data-visible]) :is(.barra-progreso, .contador) {
+  animation-play-state: paused;
+}
 
 /* Títulos palabra por palabra, al revelarse su bloque. */
 .palabra {
@@ -273,108 +434,218 @@ html[data-revelar] [data-revelar]:not([data-visible]) .palabra {
   transform: translateY(55%);
 }
 
-/* Hero: acuario de fondo con un leve dolly al scrollear, donde hay soporte. */
-.hero-video {
-  filter: saturate(0.92) contrast(1.02) brightness(1.03);
-}
-@supports (animation-timeline: scroll()) {
-  .hero-video {
-    animation: dolly linear both;
-    animation-timeline: scroll(nearest);
-    animation-range: 0 90vh;
-  }
-  @keyframes dolly {
-    from { transform: scale(1.08); }
-    to { transform: scale(1); }
-  }
-}
-/* Velo Marfil: aclara la columna del texto (AA) y deja ver el agua en los
-   bordes; fuerte arriba (header) y abajo (la ola). */
-.hero-velo {
-  background:
-    radial-gradient(62% 66% at 50% 42%,
-      rgb(245 244 236 / 0.9) 0%,
-      rgb(245 244 236 / 0.6) 42%,
-      rgb(245 244 236 / 0) 74%),
-    linear-gradient(180deg,
-      rgb(245 244 236 / 0.85) 0%,
-      rgb(245 244 236 / 0.32) 26%,
-      rgb(245 244 236 / 0.1) 52%,
-      rgb(245 244 236 / 0.25) 80%,
-      rgb(245 244 236 / 0.75) 100%);
-}
-.hero-velo::after {
+/* Grano de papel en el hero: textura apenas visible, una sola pintura. */
+.grano::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(160deg, rgb(248 124 67 / 0.06), rgb(12 106 168 / 0.05));
-  mix-blend-mode: soft-light;
-}
-@media (max-width: 767px) {
-  .hero-velo {
-    background: linear-gradient(180deg,
-      rgb(245 244 236 / 0.93) 0%,
-      rgb(245 244 236 / 0.72) 45%,
-      rgb(245 244 236 / 0.5) 75%,
-      rgb(245 244 236 / 0.8) 100%);
-  }
-}
-.hero-texto {
-  text-shadow: 0 1px 10px rgb(245 244 236 / 0.6);
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  mix-blend-mode: multiply;
 }
 
-/* Burbujas que suben (hero y banda final). */
-.burbujas span {
+/* --- Firma: los dos peces. Cada mitad es el isotipo recortado por el hueco
+   blanco de la S; quietos, encajados (sin animación de encuentro). --- */
+.peces {
+  position: relative;
+  aspect-ratio: 600 / 388;
+}
+.peces > span {
   position: absolute;
-  bottom: -40px;
-  width: 18px;
-  height: 18px;
+  inset: 0;
+  background: url(/brand/isotipo-naranja.png) center / contain no-repeat;
+}
+.pez-izq {
+  clip-path: polygon(0 0, 38.3% 0, 38.7% 42%, 61.7% 56.2%, 62% 100%, 0 100%);
+}
+.pez-der {
+  clip-path: polygon(38.3% 0, 100% 0, 100% 100%, 62% 100%, 61.7% 56.2%, 38.7% 42%);
+}
+/* Fuera del hero, la onda espera a que su bloque aparezca. */
+html[data-revelar] [data-revelar]:not([data-visible]) .ondas > span {
+  animation-play-state: paused;
+}
+/* Ondas: una lenta, cada tanto, mientras la página vive. */
+.ondas > span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgb(248 124 67 / 0.5);
   border-radius: 50%;
-  border: 1.5px solid var(--color-burbuja, rgb(28 27 22 / 0.28));
-  animation: subir 16s linear infinite;
-}
-.burbujas span:nth-child(1) { left: 6%; animation-delay: 0s; --s: 0.7; }
-.burbujas span:nth-child(2) { left: 16%; animation-delay: 4s; --s: 1.15; }
-.burbujas span:nth-child(3) { left: 28%; animation-delay: 9s; --s: 0.5; }
-.burbujas span:nth-child(4) { left: 70%; animation-delay: 2s; --s: 0.9; }
-.burbujas span:nth-child(5) { left: 82%; animation-delay: 7s; --s: 0.6; }
-.burbujas span:nth-child(6) { left: 92%; animation-delay: 11s; --s: 1.05; }
-.burbujas span:nth-child(7) { left: 48%; animation-delay: 13s; --s: 0.8; }
-@keyframes subir {
-  from { transform: translateY(0) scale(var(--s, 1)); opacity: 0; }
-  6% { opacity: 0.9; }
-  85% { opacity: 0.7; }
-  to { transform: translateY(-105vh) scale(var(--s, 1)); opacity: 0; }
-}
-
-/* Titular rotativo. */
-.rotador {
-  transition:
-    opacity 280ms ease-out,
-    transform 280ms ease-out;
-}
-.rotador[data-saliendo] {
+  translate: -50% -50%;
   opacity: 0;
-  transform: translateY(-10px);
+  pointer-events: none;
+  animation: onda 3200ms ease-out 2s infinite;
+}
+@keyframes onda {
+  from { opacity: 0.9; scale: 0.4; }
+  to { opacity: 0; scale: 1.9; }
 }
 
-/* Subtítulo del hero: marea entre los dos lados de la marca. Va a 24 px o
-   más: con texto grande alcanza 3:1 (Arcilla 3,5:1 sobre Marfil). */
-.marea {
-  background: linear-gradient(90deg, #d95a22 0%, #3a3830 35%, #0c6aa8 70%, #d95a22 100%);
-  background-size: 250% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: #3a3830;
+/* --- Ecosistema vivo (hero): tarjetas de producto unidas por corrientes. --- */
+.eco-marco { container-type: inline-size; }
+.eco {
+  position: relative;
+  aspect-ratio: 580 / 540;
+  font-size: clamp(10.5px, 2.45cqw, 14px);
+}
+@media (max-width: 30rem) {
+  .eco { aspect-ratio: 360 / 410; font-size: clamp(10.5px, 3.05cqw, 13px); }
+}
+.eco-nodo {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w, 42%);
+  translate: -50% -50%;
+  transform: translate3d(calc(var(--px, 0) * var(--z, 0) * 1px), calc(var(--py, 0) * var(--z, 0) * 1px), 0);
+  transition: transform 700ms var(--ease-pecera);
+}
+.eco-tarjeta {
   animation:
-    entrada 550ms var(--ease-pecera) 180ms both,
-    marea 7s ease-in-out 900ms infinite;
+    tarjeta-entra 800ms var(--ease-pecera) var(--d, 0ms) both,
+    deriva 9s ease-in-out calc(var(--d, 0ms) + 900ms) infinite;
+  transition: box-shadow var(--duracion) var(--ease-pecera), border-color var(--duracion) var(--ease-pecera);
 }
-@keyframes marea {
-  0%, 100% { background-position: 0% 0; }
-  50% { background-position: 100% 0; }
+.eco-nodo:hover .eco-tarjeta {
+  border-color: rgb(248 124 67 / 0.55);
+  box-shadow: 0 1px 2px rgb(28 27 22 / 0.08), 0 18px 40px rgb(28 27 22 / 0.14);
 }
+@keyframes tarjeta-entra {
+  from { opacity: 0; transform: translateY(12px) scale(0.94); }
+}
+@keyframes deriva {
+  50% { translate: 0 -5px; }
+}
+.eco-aviso {
+  animation:
+    aviso 700ms var(--ease-pecera) var(--d, 0ms) both,
+    deriva 7s ease-in-out calc(var(--d, 0ms) + 800ms) infinite;
+}
+@keyframes aviso {
+  from { opacity: 0; transform: translateY(8px) scale(0.85); }
+}
+
+/* Corrientes: se trazan después del encuentro; un punto naranja las recorre. */
+.corriente {
+  fill: none;
+  stroke: rgb(28 27 22 / 0.24);
+  stroke-width: 0.3;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: trazar 1100ms var(--ease-pecera) var(--d, 1500ms) forwards;
+  transition: stroke var(--duracion) var(--ease-pecera), opacity var(--duracion) var(--ease-pecera);
+}
+.corriente[data-punteada] { stroke-dasharray: 0.012 0.012; stroke-dashoffset: 0; animation: aparecer 900ms var(--ease-pecera) var(--d, 1500ms) both; }
+@keyframes trazar { to { stroke-dashoffset: 0; } }
+@keyframes aparecer { from { opacity: 0; } }
+.pulso {
+  fill: none;
+  stroke: var(--color-pecera);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-dasharray: 0.002 0.998;
+  opacity: 0;
+  animation: pulso 5s linear var(--d, 2600ms) infinite;
+}
+@keyframes pulso {
+  0% { stroke-dashoffset: 0; opacity: 0; }
+  8% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { stroke-dashoffset: -1; opacity: 0; }
+}
+/* Al pasar por una tarjeta se encienden sus relaciones y se apaga el resto. */
+.eco:has([data-nodo]:hover) .corriente { opacity: 0.35; }
+.eco:has([data-nodo]:hover) .pulso { visibility: hidden; }
+.eco:has([data-nodo="pitch"]:hover) .corriente[data-de~="pitch"],
+.eco:has([data-nodo="inversor"]:hover) .corriente[data-de~="inversor"],
+.eco:has([data-nodo="empresa"]:hover) .corriente[data-de~="empresa"],
+.eco:has([data-nodo="aliado"]:hover) .corriente[data-de~="aliado"] {
+  opacity: 1;
+  stroke: var(--color-pecera);
+}
+
+/* --- Desparramado → en Pecera: las herramientas sueltas se ordenan. --- */
+.desorden-chip {
+  display: grid;
+  transform: translate(calc(var(--dx) * 1cqw), calc(var(--dy) * 1cqw)) rotate(var(--r));
+  transition:
+    transform 1100ms var(--ease-pecera),
+    background-color 400ms var(--ease-pecera),
+    border-color 400ms var(--ease-pecera);
+  transition-delay: calc(var(--i) * 70ms + 250ms);
+}
+.desorden-chip > span {
+  grid-area: 1 / 1;
+  transition: opacity 350ms var(--ease-pecera);
+  transition-delay: calc(var(--i) * 70ms + 650ms);
+}
+.desorden-chip > .despues { opacity: 0; }
+.desorden-marco {
+  opacity: 0;
+  transition: opacity 700ms var(--ease-pecera) 900ms;
+}
+[data-en-escena] .desorden-chip,
+html:not([data-revelar]) .desorden-chip {
+  transform: none;
+  background-color: var(--color-marfil);
+  border-color: rgb(28 27 22 / 0.14);
+  border-style: solid;
+}
+[data-en-escena] .desorden-chip > .antes,
+html:not([data-revelar]) .desorden-chip > .antes { opacity: 0; }
+[data-en-escena] .desorden-chip > .despues,
+html:not([data-revelar]) .desorden-chip > .despues { opacity: 1; }
+[data-en-escena] .desorden-marco,
+html:not([data-revelar]) .desorden-marco { opacity: 1; }
+
+/* --- Build in Public: la línea crece, los hitos aparecen, la racha se llena. --- */
+.linea-tiempo {
+  transform-origin: top;
+  scale: 1 0;
+  transition: scale 1400ms var(--ease-pecera) 200ms;
+}
+[data-visible] .linea-tiempo,
+html:not([data-revelar]) .linea-tiempo { scale: 1 1; }
+.hito-bip {
+  opacity: 0;
+  translate: -10px 0;
+  transition: opacity 600ms var(--ease-pecera), translate 600ms var(--ease-pecera);
+  transition-delay: calc(var(--i) * 220ms + 350ms);
+}
+[data-visible] .hito-bip,
+html:not([data-revelar]) .hito-bip { opacity: 1; translate: 0 0; }
+.racha-punto {
+  transition: background-color 300ms var(--ease-pecera), scale 300ms var(--ease-pecera);
+  transition-delay: calc(var(--i) * 90ms + 700ms);
+}
+[data-visible] .racha-punto[data-lleno],
+html:not([data-revelar]) .racha-punto[data-lleno] { background-color: var(--color-obra); scale: 1.1; }
+
+/* --- Recorridos (inversión, Academy → Dataroom): una línea que se dibuja. --- */
+.recorrido-linea {
+  transform-origin: left;
+  scale: 0 1;
+  transition: scale 1600ms var(--ease-pecera) 250ms;
+}
+@media (max-width: 63.99rem) {
+  .recorrido-linea { transform-origin: top; scale: 1 0; }
+}
+[data-visible] .recorrido-linea,
+html:not([data-revelar]) .recorrido-linea { scale: 1 1; }
+
+/* --- Mapa del ecosistema: las ramas del grupo activo se encienden. --- */
+.rama {
+  fill: none;
+  stroke: rgb(28 27 22 / 0.16);
+  stroke-width: 1.2;
+  transition: stroke var(--duracion) var(--ease-pecera), stroke-width var(--duracion) var(--ease-pecera);
+}
+.rama[data-activa] { stroke: var(--color-pecera); stroke-width: 2; }
 
 /* Botones: brillo que los recorre al hover e imán hacia el cursor. */
 .brillo {
@@ -394,107 +665,23 @@ html[data-revelar] [data-revelar]:not([data-visible]) .palabra {
   pointer-events: none;
 }
 .brillo:hover::after { left: 125%; }
+/* Las transiciones del botón van todas acá: esta regla pisa las de Tailwind. */
 [data-magnetic] {
-  transition: translate 200ms var(--ease-pecera);
-}
-
-/* Tarjetas con tilt 3D y luz que sigue al cursor (el JS escribe las variables). */
-[data-tilt] {
-  position: relative;
-  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
-    translateY(var(--lift, 0px));
   transition:
-    transform 200ms ease-out,
-    box-shadow 200ms ease-out;
-}
-[data-tilt]::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), var(--foco, rgb(12 106 168 / 0.09)), transparent 65%);
-  opacity: 0;
-  transition: opacity 250ms ease-out;
-  pointer-events: none;
-}
-[data-tilt]:hover::after { opacity: 1; }
-
-/* Haz de luz que barre las bandas oscuras al aparecer. */
-.haz {
-  position: relative;
-  overflow: hidden;
-}
-.haz::before {
-  content: "";
-  position: absolute;
-  top: -40%;
-  left: -10%;
-  width: 130%;
-  height: 180%;
-  background: radial-gradient(ellipse 38% 14% at 50% 50%, rgb(255 255 255 / 0.14), transparent 70%);
-  transform: translate(-30%, -25%) rotate(-18deg) scale(0.6);
-  opacity: 0;
-  pointer-events: none;
-}
-.haz[data-visible]::before {
-  animation: haz 2s var(--ease-pecera) 0.4s forwards;
-}
-@keyframes haz {
-  to { opacity: 1; transform: translate(0, 0) rotate(-18deg) scale(1); }
+    translate 200ms var(--ease-pecera),
+    background-color var(--duracion) var(--ease-pecera),
+    box-shadow var(--duracion) var(--ease-pecera),
+    scale var(--duracion-rapida) var(--ease-pecera);
 }
 
-/* "[ unicornio ]": destello que lo recorre. */
-.destello {
-  display: inline-block;
-  background: linear-gradient(100deg, #f7a878 20%, #fffdf6 40%, #f7a878 60%);
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: #f7a878;
-  animation: destello 2.8s linear infinite;
-}
-@keyframes destello {
-  from { background-position: 120% 0; }
-  to { background-position: -100% 0; }
-}
+/* Elegir rol: el diálogo entra como el resto de la página. */
+.elegir-rol[open] > div { animation: entrada 420ms var(--ease-pecera) both; }
+.elegir-rol[open]::backdrop { animation: fundido 300ms var(--ease-pecera) both; }
 
-/* Cardumen de industrias en marquesina. */
-.cardumen-pista {
-  display: flex;
-  width: max-content;
-  animation: nadar 32s linear infinite;
+/* Cierre: el acuario, apagado, detrás del texto. */
+.cierre-video {
+  filter: grayscale(0.35) brightness(0.5) contrast(1.05);
 }
-.cardumen:hover .cardumen-pista { animation-play-state: paused; }
-@keyframes nadar {
-  to { transform: translateX(-50%); }
-}
-
-/* Pasos: entran en cascada y cada número se enciende con un pop. */
-html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
-.pasos[data-anim] .paso {
-  animation: paso-entra 550ms var(--ease-pecera) both;
-  animation-delay: calc(var(--i) * 120ms + 50ms);
-}
-.pasos[data-anim] .paso-num {
-  animation: paso-num 600ms var(--ease-pecera) both;
-  animation-delay: calc(var(--i) * 120ms + 50ms);
-}
-@keyframes paso-entra {
-  from { opacity: 0; transform: translateX(-14px); }
-}
-@keyframes paso-num {
-  0% { transform: scale(0.4); background: #efede2; color: rgb(28 27 22 / 0.7); border-color: rgb(28 27 22 / 0.25); }
-  60% { transform: scale(1.18); }
-  100% { transform: scale(1); }
-}
-
-/* El celular de ejemplo flota. */
-@keyframes flotar {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-.flotar { animation: flotar 6s ease-in-out infinite; }
 
 /* Preguntas: apertura suave donde hay soporte. */
 @supports (interpolate-size: allow-keywords) {
@@ -509,15 +696,15 @@ html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
   .preguntas details[open]::details-content { block-size: auto; }
 }
 
-/* Botón burbuja "volver arriba". */
-#arriba {
+/* CTA fijo: aparece cuando los CTA del hero y del cierre no están en pantalla. */
+#cta-fijo {
   transition:
     opacity 250ms var(--ease-pecera),
     transform 250ms var(--ease-pecera);
 }
-#arriba[data-oculto] {
+#cta-fijo[data-oculto] {
   opacity: 0;
-  transform: translateY(12px) scale(0.9);
+  transform: translateY(16px);
   pointer-events: none;
 }
 
@@ -525,12 +712,15 @@ html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
   /* La regla general los dejaría en el último frame, corridos: mejor quietos.
      La escena queda en reposo: pez junto al anzuelo, caña recta. */
   .latido,
+  .llama,
+  .punto-vivo,
   .escena-pique *,
   .texto-pique,
   .popup-tarjeta,
   .popup-pique::backdrop {
     animation: none !important;
   }
+  .pulso { display: none; }
   /* La pista aparece y se va sin moverse. */
   .pista-pique {
     animation: pista-quieta 4200ms linear 900ms both !important;
@@ -540,12 +730,15 @@ html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
     animation: corazon-quieto 700ms linear forwards !important;
   }
 
+  /* Sin esperas: lo que entraba en cascada aparece ya en su estado final. */
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
 }
@@ -833,4 +1026,186 @@ html .tema-fijo .solo-luz {
 }
 html .tema-fijo .solo-noche {
   display: none !important;
+}
+/* ============================================================
+   Switch Privado ↔ Transparente (liquid glass). Es un elemento especial: el único
+   control de vidrio con reflejos de la app. El estado también va en texto.
+   ============================================================ */
+.switch-vidrio {
+  position: relative;
+  isolation: isolate;
+  width: 4.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background:
+    linear-gradient(180deg, rgb(255 253 246 / 0.75), rgb(255 253 246 / 0.35)),
+    rgb(28 27 22 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.7);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.9),
+    inset 0 -2px 4px rgb(28 27 22 / 0.08),
+    0 1px 2px rgb(28 27 22 / 0.12);
+  transition:
+    background-color 300ms var(--ease-pecera),
+    box-shadow 300ms var(--ease-pecera);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .switch-vidrio {
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    backdrop-filter: blur(12px) saturate(180%);
+  }
+}
+/* Luz interior: se enciende en verde al pasar a transparente. */
+.switch-vidrio::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(120% 140% at 30% 50%, rgb(31 122 82 / 0.55), rgb(31 122 82 / 0.15) 60%, transparent 75%);
+  opacity: 0;
+  transition: opacity 300ms var(--ease-pecera);
+}
+.switch-vidrio[aria-checked="true"]::before {
+  opacity: 1;
+}
+.switch-vidrio[aria-checked="true"] {
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.9),
+    inset 0 -2px 4px rgb(22 96 63 / 0.25),
+    0 0 0 3px rgb(31 122 82 / 0.12),
+    0 1px 2px rgb(28 27 22 / 0.12);
+}
+/* La perilla: una gota de vidrio con brillo arriba a la izquierda. Se desliza con
+   un rebote corto y se estira apenas al apretarla. */
+.switch-perilla {
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-tinta);
+  background:
+    radial-gradient(70% 60% at 30% 25%, rgb(255 255 255 / 0.95), rgb(255 255 255 / 0) 60%),
+    linear-gradient(180deg, rgb(255 253 246 / 0.98), rgb(236 233 220 / 0.92));
+  border: 1px solid rgb(255 255 255 / 0.8);
+  box-shadow:
+    0 2px 6px rgb(28 27 22 / 0.22),
+    inset 0 -1px 2px rgb(28 27 22 / 0.08);
+  transform-origin: center;
+  transition: transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.switch-vidrio[aria-checked="true"] .switch-perilla {
+  transform: translateX(2rem);
+  color: var(--color-t-verde);
+}
+.switch-vidrio:active .switch-perilla {
+  transform: scaleX(1.18);
+}
+.switch-vidrio[aria-checked="true"]:active .switch-perilla {
+  transform: translateX(2rem) scaleX(1.18);
+}
+.switch-vidrio:focus-visible {
+  outline: 2px solid var(--color-arcilla);
+  outline-offset: 3px;
+}
+.switch-vidrio:disabled {
+  opacity: 0.6;
+}
+/* El ícono de adentro cambia con un fundido. */
+.switch-perilla svg {
+  position: absolute;
+  transition: opacity 200ms var(--ease-pecera), transform 300ms var(--ease-pecera);
+}
+.switch-vidrio[aria-checked="true"] .icono-privado,
+.switch-vidrio[aria-checked="false"] .icono-transparente {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+/* Hojas para imprimir o guardar como PDF (One Pager, Dataroom): A4, sin la interfaz
+   de la app y sin el scroll de pantalla completa. */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+@media print {
+  body,
+  main {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .no-imprimir {
+    display: none !important;
+  }
+  .hoja {
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .hoja a {
+    text-decoration: none;
+  }
+  .sin-corte {
+    break-inside: avoid;
+  }
+  /* Las insignias y barras conservan su color; el fondo de la página no se imprime. */
+  .hoja * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+  html[data-revelar] [data-revelar]:not([data-visible]) {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Modo noche de los tokens del sistema de diseño (superficies y fondos suaves). Sobre
+   los colores plenos (naranja, ámbar) el texto sigue en tinta oscura (sobre el azul
+   del Pitch, claro): se
+   redefine la variable dentro del elemento, así text-tinta se lee en los dos temas. */
+html[data-tema="noche"] {
+  --color-superficie: #1d1c18;
+  --color-naranja-suave: #3b2014;
+  --color-naranja-texto: #f3b08e;
+  --color-celeste-suave: #132a3d;
+  --color-obra-suave: #2f2610;
+}
+html[data-tema="noche"] :is(.bg-naranja, .bg-pecera, .bg-obra) {
+  --color-tinta: #1c1b16;
+}
+html[data-tema="noche"] .bg-celeste {
+  --color-marfil: #f5f4ec;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-tema="luz"]) {
+    --color-superficie: #1d1c18;
+    --color-naranja-suave: #3b2014;
+    --color-naranja-texto: #f3b08e;
+    --color-celeste-suave: #132a3d;
+    --color-obra-suave: #2f2610;
+  }
+  html:not([data-tema="luz"]) :is(.bg-naranja, .bg-pecera, .bg-obra) {
+    --color-tinta: #1c1b16;
+  }
+  html:not([data-tema="luz"]) .bg-celeste {
+    --color-marfil: #f5f4ec;
+  }
+}
+.tema-fijo,
+html .tema-fijo {
+  --color-superficie: #efede3;
+  --color-naranja-suave: #fde3d4;
+  --color-naranja-texto: #a9441a;
+  --color-celeste-suave: #dde8f1;
+  --color-obra-suave: #f8ebcb;
 }

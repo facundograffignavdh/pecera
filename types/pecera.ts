@@ -118,6 +118,8 @@ export type ItemFeed = {
   piques: number;
   /** Días seguidos con pitch nuevo del perfil (racha de progreso). */
   racha?: number;
+  /** Hito en curso de su empresa (Build in Public), si hay. */
+  construyendo?: { titulo: string; progreso: number | null; etapa: string | null } | null;
 };
 
 /** Vistas y piques de un pitch (solo agregados), para el perfil. */

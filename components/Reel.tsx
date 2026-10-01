@@ -8,6 +8,7 @@ import { EtiquetasReel } from "@/components/Etiquetas";
 import { cargo as cargoDe } from "@/lib/etiquetas";
 import { dejarDeSeguir, seguir, useSigo } from "@/lib/red";
 import { IconoCorazon, IconoSonido, IconoSubtitulos } from "@/components/Iconos";
+import InsigniaPitch from "@/components/InsigniaPitch";
 import Subtitulos from "@/components/Subtitulos";
 import { formatoCompacto } from "@/lib/formato";
 import { registrarVista } from "@/lib/medicion";
@@ -219,7 +220,8 @@ export default function Reel({
       ref={(el) => registrarRef(indice, el)}
       id={pitch.id}
       data-indice={indice}
-      className="relative mx-auto h-dvh w-full snap-start snap-always overflow-hidden bg-tinta lg:max-w-[calc(100dvh*9/16)] lg:shadow-[0_0_80px_rgb(0_0_0/0.5)]"
+      // ui-fija: el doble toque y el toque largo no seleccionan el texto del reel.
+      className="ui-fija relative mx-auto h-dvh w-full snap-start snap-always overflow-hidden bg-tinta lg:max-w-[calc(100dvh*9/16)] lg:shadow-[0_0_80px_rgb(0_0_0/0.5)]"
     >
       <video
         ref={videoRef}
@@ -372,15 +374,20 @@ export default function Reel({
 
           <EtiquetasReel perfil={perfil} />
 
+          {item.construyendo && <Construyendo hito={item.construyendo} activo={activo} />}
+
+          {/* La insignia va pegada a la descripción: se reconoce el formato al pasar.
+              Los #hashtags llevan a su sección. */}
           <DescripcionConTags
             texto={pitch.descripcion || perfil.descripcion}
             claro
+            prefijo={<InsigniaPitch grande activa={activo} className="mr-2 align-[0.1em]" />}
             className="mt-3 max-w-prose text-sm leading-relaxed text-marfil/90"
           />
 
           <Link
             href={href}
-            className="boton pointer-events-auto mt-4 inline-flex rounded-full bg-arcilla px-5 py-2.5 font-medium text-marfil hover:bg-pecera"
+            className="boton pointer-events-auto mt-4 inline-flex rounded-full bg-naranja px-5 py-2.5 font-semibold text-tinta transition-[background-color,transform] duration-200 ease-pecera hover:bg-pecera active:scale-[0.98]"
           >
             Ver perfil
           </Link>
@@ -424,6 +431,35 @@ function SeguirMini({ item }: { item: ItemFeed }) {
     >
       {sigo ? "✓" : "+"}
     </button>
+  );
+}
+
+/**
+ * Build in Public en el reel: el hito en curso de su empresa, con la barra del
+ * progreso que cargó el equipo. Ámbar, para no confundirse con la insignia del Pitch.
+ */
+function Construyendo({ hito, activo }: { hito: NonNullable<ItemFeed["construyendo"]>; activo: boolean }) {
+  return (
+    <p className="mt-2.5 flex min-w-0 items-center gap-2 text-xs text-marfil">
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-tinta/60 px-2 py-1 font-semibold uppercase tracking-wide">
+        <span aria-hidden className={`size-1.5 rounded-full bg-obra ${activo ? "punto-vivo" : ""}`} />
+        Construyendo
+      </span>
+      <span className="truncate font-medium">{hito.titulo}</span>
+      {hito.progreso !== null && (
+        <span className="flex shrink-0 items-center gap-1.5 tabular-nums">
+          <span aria-hidden className="h-1 w-10 overflow-hidden rounded-full bg-marfil/25">
+            {activo && (
+              <span
+                className="barra-progreso block h-full rounded-full bg-obra"
+                style={{ "--p": hito.progreso / 100 } as CSSProperties}
+              />
+            )}
+          </span>
+          {hito.progreso}%
+        </span>
+      )}
+    </p>
   );
 }
 

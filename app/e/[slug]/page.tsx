@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Avatar from "@/components/Avatar";
 import DescripcionConTags from "@/components/DescripcionConTags";
+import { IconoUbicacion } from "@/components/perfil/IconosMarca";
+import BuildPublico from "@/components/build/BuildPublico";
+import InsigniaBuild from "@/components/build/InsigniaBuild";
+import ProductoPublico from "@/components/empresa/ProductoPublico";
+import Ronda from "@/components/empresa/Ronda";
+import TransparenciaPublica from "@/components/empresa/TransparenciaPublica";
+import PitchDestacado, { PosterPitch } from "@/components/PitchDestacado";
+import Revelar from "@/components/Revelar";
 import Encabezado from "@/components/Encabezado";
 import { BarraEtapa, Etiqueta } from "@/components/Etiquetas";
-import Info from "@/components/Info";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
-import { LogoEmpresa, SUBTITULO } from "@/components/perfil/Bloques";
-import { IconoUbicacion } from "@/components/perfil/IconosMarca";
-import { canalesDe, conProtocolo, hrefInstagram } from "@/lib/contacto";
-import { getEmpresa } from "@/lib/datos";
-import { cargo, industria, labelRonda } from "@/lib/etiquetas";
-import { getConcepto } from "@/lib/glosario";
-import { CATEGORIAS_DATO, defDato } from "@/lib/transparencia";
+import { conProtocolo, hrefInstagram } from "@/lib/contacto";
+import LogoEntidad from "@/components/LogoEntidad";
+import { getApoyos, getDocumentosPublicos, getEmpresa, getLogos } from "@/lib/datos";
+import { defTipo } from "@/lib/portfolio";
+import { ROLES } from "@/lib/rol";
+import { cargo, labelIndustria, labelRonda } from "@/lib/etiquetas";
+import { defDato } from "@/lib/transparencia";
 
 export const revalidate = 60;
 // Las empresas se generan en la primera visita y se revalidan cada minuto.
@@ -30,241 +36,273 @@ export async function generateMetadata({ params }: PageProps<"/e/[slug]">): Prom
   const datos = await getEmpresa(slug);
   if (!datos) return { title: "Empresa no encontrada — Pecera" };
   const title = `${datos.empresa.nombre} — Pecera`;
-  const imagen = datos.empresa.logo_url ?? datos.pitches.find((p) => p.poster_url)?.poster_url;
+  const poster = datos.pitches.find((p) => p.poster_url)?.poster_url;
   return {
     title,
     description: datos.empresa.descripcion,
-    openGraph: { title, description: datos.empresa.descripcion, images: imagen ? [imagen] : undefined },
+    openGraph: {
+      title,
+      description: datos.empresa.descripcion,
+      images: poster ? [poster] : undefined,
+    },
   };
 }
 
+const SUBTITULO = "font-display text-sm font-semibold uppercase tracking-wide text-tinta/50";
+
+/** Cargos que van primero en el equipo. */
+const FUNDADORES = new Set(["ceo", "cto", "cfo", "coo", "cmo", "cpo", "fundador", "cofundador"]);
 const CLASE_CANAL =
-  "boton inline-flex min-h-11 items-center rounded-full border border-tinta/20 px-4 text-sm font-medium text-tinta hover:border-arcilla";
+  "inline-flex min-h-11 items-center rounded-full border border-tinta/25 px-4 text-sm text-tinta transition-colors duration-200 ease-pecera hover:border-arcilla hover:text-arcilla";
 
 export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
   const { slug } = await params;
   const datos = await getEmpresa(slug);
   if (!datos) notFound();
 
-  const { empresa, miembros, pitches } = datos;
+  const { empresa, miembros, pitches, producto, hitos, avances } = datos;
   const ronda = empresa.ronda && empresa.ronda !== "no_busca" ? labelRonda(empresa.ronda) : null;
-  const porCategoria = CATEGORIAS_DATO.map((categoria) => ({
-    categoria,
-    items: datos.datos.map((d) => ({ dato: d, def: defDato(d.clave) })).filter((x) => x.def?.categoria === categoria),
-  })).filter((g) => g.items.length > 0);
+  // El Pitch de la empresa es el más nuevo de su equipo; los demás, debajo.
+  const [principal, ...otros] = [...pitches].sort((a, b) => b.orden - a.orden);
+  const hayBuild = hitos.length > 0 || avances.length > 0;
+  const hayRonda = !!ronda || datos.datos.some((d) => defDato(d.clave)?.categoria === "Ronda");
+  const [documentos, apoyos, logos] = await Promise.all([
+    getDocumentosPublicos(empresa.id),
+    getApoyos(empresa.id),
+    getLogos([empresa.id]),
+  ]);
+  const hayTransparencia = documentos.length > 0 || datos.datos.some((d) => defDato(d.clave)?.categoria !== "Ronda");
 
-  // Fundadores: quienes tienen un cargo de dirección o de fundador; el resto, equipo.
-  const DIRECCION = new Set(["ceo", "cto", "cfo", "coo", "cmo", "cpo", "fundador", "cofundador"]);
-  const fundadores = miembros.filter((m) => m.cargo && DIRECCION.has(m.cargo));
-  const equipo = miembros.filter((m) => !m.cargo || !DIRECCION.has(m.cargo));
-
-  // "Escribile al equipo": el primer miembro con WhatsApp (o email), priorizando al CEO.
-  const ordenados = [...miembros].sort((a, b) => Number(b.cargo === "ceo") - Number(a.cargo === "ceo"));
-  const contacto = ordenados
-    .map((m) => ({
-      miembro: m,
-      canal: canalesDe(m, `¡Hola! Vi ${empresa.nombre} en Pecera`).find((c) => c.clave === "whatsapp" || c.clave === "email"),
-    }))
-    .find((x) => x.canal);
-
-  const redes = [
+  const canales = [
     empresa.web && { label: "Sitio web", href: conProtocolo(empresa.web) },
     empresa.linkedin && { label: "LinkedIn", href: conProtocolo(empresa.linkedin) },
     empresa.instagram && { label: "Instagram", href: hrefInstagram(empresa.instagram) },
   ].filter((c): c is { label: string; href: string } => !!c);
 
+  // Índice de la página: solo las secciones que tienen contenido.
+  const secciones = [
+    producto && { id: "producto", label: producto.tipo === "servicio" ? "Servicio" : "Producto" },
+    principal && { id: "pitch", label: "Pitch" },
+    hayBuild && { id: "build", label: "Build in Public" },
+    miembros.length > 0 && { id: "equipo", label: "Equipo" },
+    apoyos.length > 0 && { id: "apoyos", label: "Inversores y aliados" },
+    hayRonda && { id: "ronda", label: "Ronda" },
+    hayTransparencia && { id: "transparencia", label: "Transparencia" },
+  ].filter((x): x is { id: string; label: string } => !!x);
+
   return (
-    <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
+    <main id="empresa" className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
+      <Revelar />
       <Encabezado variante="perfil" />
-      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl lg:max-w-6xl lg:px-8">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl">
         <EnlaceVolver href="/" />
 
-        <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
-          {/* ---- Tarjeta de la empresa ---- */}
-          <div className="flex flex-col gap-5 lg:sticky lg:top-24">
-            <article className="aparecer overflow-hidden rounded-[2rem] border border-tinta/10 bg-marfil shadow-[0_18px_50px_rgb(28_27_22/0.10)]">
-              <div className="relative h-24 bg-tinta">
-                <span aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgb(248_124_67/0.55),transparent_55%)]" />
-                <span className="absolute left-5 top-4 rounded-full bg-marfil/15 px-2.5 py-0.5 text-xs font-semibold text-marfil ring-1 ring-marfil/20">
-                  Empresa
-                </span>
-              </div>
-              <div className="relative -mt-11 flex flex-col gap-4 px-5 pb-5">
-                <span className="self-start rounded-2xl ring-4 ring-marfil">
-                  <LogoEmpresa nombre={empresa.nombre} logo={empresa.logo_url ?? null} size={88} />
-                </span>
-                <h1 className="font-display text-3xl font-semibold leading-[1.05] text-tinta">{empresa.nombre}</h1>
-                {empresa.ubicacion && (
-                  <p className="-mt-2 flex items-center gap-1.5 text-sm text-tinta/65">
-                    <IconoUbicacion />
-                    {empresa.ubicacion}
-                  </p>
-                )}
-                <BarraEtapa etapa={empresa.etapa} />
-                {(ronda || empresa.industrias.length > 0) && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {ronda && <Etiqueta clase="bg-t-arcilla-suave text-t-arcilla">Busca {ronda}</Etiqueta>}
-                    {empresa.industrias.map((i) => (
-                      <Etiqueta key={i} clase={industria(i).clase}>
-                        {industria(i).label}
-                      </Etiqueta>
-                    ))}
-                  </div>
-                )}
-                <DescripcionConTags texto={empresa.descripcion} className="leading-relaxed text-tinta/90" />
-
-                <dl className="grid grid-cols-3 gap-2 text-center">
-                  {[
-                    [miembros.length, miembros.length === 1 ? "miembro" : "miembros"],
-                    [pitches.length, pitches.length === 1 ? "pitch" : "pitches"],
-                    [datos.datos.length, datos.datos.length === 1 ? "dato abierto" : "datos abiertos"],
-                  ].map(([n, label]) => (
-                    <div key={String(label)} className="rounded-2xl bg-tinta/[0.04] px-2 py-2.5">
-                      <dt className="sr-only">{label}</dt>
-                      <dd className="font-display text-2xl font-semibold tabular-nums text-tinta">{n}</dd>
-                      <dd className="text-xs text-tinta/60">{label}</dd>
-                    </div>
-                  ))}
-                </dl>
-
-                {contacto?.canal && (
-                  <a
-                    href={contacto.canal.href}
-                    {...(contacto.canal.externo && { target: "_blank", rel: "noopener noreferrer" })}
-                    className="boton flex min-h-13 items-center justify-center gap-2 rounded-full bg-arcilla px-5 font-semibold text-marfil shadow-[0_8px_20px_rgb(217_90_34/0.28)]"
-                  >
-                    Escribile al equipo
-                    <span className="text-sm font-normal text-marfil/80">· {contacto.miembro.nombre.split(" ")[0]}</span>
-                  </a>
-                )}
-                {redes.length > 0 && (
-                  <ul className="flex flex-wrap gap-2">
-                    {redes.map((c) => (
-                      <li key={c.label}>
-                        <a href={c.href} target="_blank" rel="noopener noreferrer" className={CLASE_CANAL}>
-                          {c.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </article>
-          </div>
-
-          {/* ---- Contenido ---- */}
-          <div className="flex flex-col gap-8">
-            {[
-              { titulo: "Fundadores", lista: fundadores },
-              { titulo: fundadores.length ? "Equipo" : "El equipo", lista: equipo },
-            ]
-              .filter((g) => g.lista.length > 0)
-              .map((g) => (
-                <section key={g.titulo} aria-label={g.titulo}>
-                  <h2 className={SUBTITULO}>{g.titulo}</h2>
-                  <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {g.lista.map((m, i) => {
-                      const c = cargo(m.cargo);
-                      return (
-                        <li key={m.id} className="aparecer" style={{ "--i": i } as React.CSSProperties}>
-                          <Link
-                            href={`/p/${m.slug}`}
-                            className="boton flex min-h-16 items-center gap-3 rounded-2xl border border-tinta/10 bg-tinta/[0.02] px-3 py-2.5 hover:border-arcilla"
-                          >
-                            <Avatar perfil={m} size={48} />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate font-semibold text-tinta">{m.nombre}</span>
-                              <span className="line-clamp-1 block text-sm text-tinta/60">{m.descripcion}</span>
-                            </span>
-                            {c && <Etiqueta clase={c.clase}>{c.label}</Etiqueta>}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              ))}
-
-            <section aria-label="Pitches">
-              <h2 className={SUBTITULO}>{pitches.length === 1 ? "Su pitch" : "Sus pitches"}</h2>
-              {pitches.length === 0 ? (
-                <p className="mt-3 rounded-2xl border border-dashed border-tinta/20 px-4 py-6 text-center text-sm text-tinta/65">
-                  El equipo todavía no subió su pitch.
+        <header className="entrada mt-6 flex flex-col gap-3">
+          <div className="flex items-center gap-4">
+            <LogoEntidad nombre={empresa.nombre} logoUrl={logos.get(empresa.id) ?? empresa.logo_url ?? undefined} tamano="xl" />
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <span className="self-start rounded-full bg-tinta px-2.5 py-0.5 text-xs font-medium text-marfil">Empresa</span>
+              <h1 className="font-display text-3xl font-semibold leading-tight text-tinta text-balance">{empresa.nombre}</h1>
+              {empresa.ubicacion && (
+                <p className="flex items-center gap-1.5 text-sm text-tinta/65">
+                  <IconoUbicacion />
+                  {empresa.ubicacion}
                 </p>
-              ) : (
-                <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {pitches.map((pitch) => (
-                    <li key={pitch.id}>
-                      <Link
-                        href={`/#${pitch.id}`}
-                        className="group block overflow-hidden rounded-2xl bg-tinta"
-                        aria-label={`Ver el pitch de ${pitch.autor.nombre} en el feed`}
-                      >
-                        {pitch.poster_url ? (
-                          <Image
-                            src={pitch.poster_url}
-                            alt=""
-                            width={360}
-                            height={640}
-                            className="aspect-[9/16] w-full object-cover transition-transform duration-500 ease-pecera group-hover:scale-[1.04]"
-                          />
-                        ) : (
-                          <span className="flex aspect-[9/16] w-full items-center justify-center text-2xl text-marfil">▶</span>
-                        )}
-                      </Link>
-                      <p className="mt-2 text-xs font-medium text-tinta/60">{pitch.autor.nombre}</p>
-                      {pitch.descripcion && (
-                        <DescripcionConTags texto={pitch.descripcion} className="mt-0.5 line-clamp-3 text-sm leading-snug text-tinta/80" />
-                      )}
-                    </li>
-                  ))}
-                </ul>
               )}
-            </section>
-
-            {porCategoria.length > 0 && (
-              <section aria-label="Transparencia">
-                <h2 className={SUBTITULO}>Transparencia</h2>
-                <p className="mt-1 text-sm text-tinta/65">Datos que el equipo eligió compartir.</p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {porCategoria.map(({ categoria, items }) => (
-                    <div key={categoria} className="rounded-2xl border border-tinta/10 px-4 py-3">
-                      <h3 className="text-xs font-semibold uppercase tracking-wide text-tinta/60">{categoria}</h3>
-                      <dl className="mt-2 flex flex-col divide-y divide-tinta/10">
-                        {items.map(({ dato, def }) => {
-                          const concepto = def?.concepto ? getConcepto(def.concepto) : undefined;
-                          return (
-                            <div key={dato.clave} className="relative flex items-center justify-between gap-4 py-2.5">
-                              <dt className="flex items-center gap-2 text-sm text-tinta/80">
-                                {def?.label}
-                                {concepto && (
-                                  <Info titulo={`Qué es ${concepto.termino}`}>
-                                    {concepto.definicion}
-                                  </Info>
-                                )}
-                              </dt>
-                              <dd className="min-w-0 text-right text-sm font-semibold text-tinta">
-                                {dato.url ? (
-                                  <a href={dato.url} target="_blank" rel="noopener noreferrer nofollow" className="underline underline-offset-4 hover:text-arcilla">
-                                    {dato.valor || "Ver documento"}
-                                  </a>
-                                ) : (
-                                  dato.valor
-                                )}
-                              </dd>
-                            </div>
-                          );
-                        })}
-                      </dl>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+            </div>
           </div>
-        </div>
+          <BarraEtapa etapa={empresa.etapa} />
+          {(ronda || empresa.industrias.length > 0) && (
+            <div className="flex flex-wrap gap-1.5">
+              {ronda && <Etiqueta clase="bg-t-azul-suave text-t-azul">Levantando {ronda}</Etiqueta>}
+              {empresa.industrias.map((i) => (
+                <Etiqueta key={i}>{labelIndustria(i)}</Etiqueta>
+              ))}
+            </div>
+          )}
+        </header>
 
-        <PieLegal tono="claro" className="mt-12 pb-8" />
+        <DescripcionConTags
+          texto={empresa.descripcion}
+          className="mt-5 font-editorial text-[1.0625rem] leading-relaxed text-tinta/90"
+        />
+
+        {canales.length > 0 && (
+          <ul className="mt-5 flex flex-wrap gap-2">
+            {canales.map((c) => (
+              <li key={c.label}>
+                <a href={c.href} target="_blank" rel="noopener noreferrer" className={CLASE_CANAL}>
+                  {c.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {secciones.length > 1 && (
+          <nav aria-label="Secciones de la empresa" className="no-scrollbar -mx-5 mt-6 flex gap-1.5 overflow-x-auto px-5">
+            {secciones.map((s) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                className="inline-flex min-h-10 shrink-0 items-center rounded-full border border-tinta/15 px-3.5 text-sm text-tinta transition-colors duration-200 ease-pecera hover:border-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+              >
+                {s.label}
+              </a>
+            ))}
+          </nav>
+        )}
+
+        {producto && (
+          <section id="producto" aria-labelledby="producto-titulo" className="mt-8 scroll-mt-24">
+            <h2 id="producto-titulo" className={SUBTITULO}>
+              Qué ofrece
+            </h2>
+            <ProductoPublico producto={producto} slug={empresa.slug} />
+          </section>
+        )}
+
+        {principal && (
+          <section id="pitch" aria-labelledby="pitch-titulo" className="mt-8 scroll-mt-24">
+            <h2 id="pitch-titulo" className={SUBTITULO}>
+              Pitch
+            </h2>
+            <div data-revelar className="mt-3">
+              <PitchDestacado pitch={principal} nombre={principal.autor.nombre}>
+                <p className="text-xs font-medium text-tinta/60">Por {principal.autor.nombre}</p>
+              </PitchDestacado>
+            </div>
+            {otros.length > 0 && (
+              <h3 className="mt-5 text-xs font-semibold uppercase tracking-wide text-tinta/60">Más pitches del equipo</h3>
+            )}
+            {otros.length > 0 && (
+              <ul className="mt-2 grid grid-cols-3 gap-2.5">
+                {otros.map((pitch) => (
+                  <li key={pitch.id}>
+                    <Link
+                      href={`/#${pitch.id}`}
+                      className="block overflow-hidden rounded-xl bg-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+                      aria-label={`Ver el pitch de ${pitch.autor.nombre} en el feed`}
+                    >
+                      <PosterPitch pitch={pitch} />
+                    </Link>
+                    <p className="mt-1.5 truncate text-xs font-medium text-tinta/60">{pitch.autor.nombre}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {hayBuild && (
+          <section id="build" aria-labelledby="build-titulo" className="mt-8 scroll-mt-24">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="build-titulo" className={SUBTITULO}>
+                Build in Public
+              </h2>
+              <InsigniaBuild />
+            </div>
+            <BuildPublico hitos={hitos} avances={avances} ahora={new Date()} />
+          </section>
+        )}
+
+        {miembros.length > 0 && (
+          <section id="equipo" aria-labelledby="equipo-titulo" className="mt-8 scroll-mt-24">
+            <h2 id="equipo-titulo" className={SUBTITULO}>
+              El equipo
+            </h2>
+            <ul data-revelar className="mt-3 flex flex-col gap-2">
+              {[...miembros]
+                .sort((a, b) => Number(FUNDADORES.has(b.cargo ?? "")) - Number(FUNDADORES.has(a.cargo ?? "")))
+                .map((m) => {
+                const c = cargo(m.cargo);
+                return (
+                  <li key={m.id}>
+                    <Link
+                      href={`/p/${m.slug}`}
+                      className="flex min-h-14 items-center gap-3 rounded-2xl border border-tinta/10 px-3 py-2 transition-colors duration-200 ease-pecera hover:border-arcilla"
+                    >
+                      <Avatar perfil={m} size={44} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-tinta">{m.nombre}</span>
+                        <span className="block truncate text-sm text-tinta/60">{m.descripcion}</span>
+                      </span>
+                      {c && <Etiqueta clase={c.clase}>{c.label}</Etiqueta>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {apoyos.length > 0 && (
+          <section id="apoyos" aria-labelledby="apoyos-titulo" className="mt-8 scroll-mt-24">
+            <h2 id="apoyos-titulo" className={SUBTITULO}>
+              Inversores y aliados
+            </h2>
+            <p className="mt-1 text-sm text-tinta/70">Quienes muestran en su portfolio que trabajan o trabajaron con la empresa.</p>
+            <ul data-revelar className="mt-3 flex flex-col gap-2">
+              {apoyos.map((a) => (
+                <li key={a.id}>
+                  <Link
+                    href={`/p/${a.perfil.slug}`}
+                    className="flex min-h-14 items-center gap-3 rounded-2xl border border-tinta/10 px-3 py-2 transition-colors duration-200 ease-pecera hover:border-arcilla"
+                  >
+                    <Avatar perfil={a.perfil} size={44} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-tinta">{a.perfil.nombre}</span>
+                      <span className="block truncate text-sm text-tinta/65">
+                        {defTipo(a.tipo)?.verbo ?? "Trabajó con"} la empresa
+                        {a.estado !== "actual" ? " (antes)" : ""} · {ROLES[a.perfil.rol].label}
+                      </span>
+                    </span>
+                    {a.confirmacion === "confirmada" ? (
+                      <span className="shrink-0 rounded-full bg-t-verde-suave px-2 py-0.5 text-[0.6875rem] font-semibold text-t-verde">Confirmado</span>
+                    ) : (
+                      <span className="shrink-0 rounded-full border border-tinta/15 px-2 py-0.5 text-[0.6875rem] font-medium text-tinta/65">Declarado</span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {hayRonda && (
+          <section id="ronda" aria-labelledby="ronda-titulo" className="mt-8 scroll-mt-24">
+            <h2 id="ronda-titulo" className={SUBTITULO}>
+              Ronda
+            </h2>
+            <Ronda ronda={empresa.ronda} datos={datos.datos} />
+          </section>
+        )}
+
+        {hayTransparencia && (
+          <section id="transparencia" aria-labelledby="transparencia-titulo" className="mt-8 scroll-mt-24">
+            <h2 id="transparencia-titulo" className={SUBTITULO}>
+              Transparencia
+            </h2>
+            <p className="mt-1 text-sm text-tinta/70">Datos que el equipo eligió compartir. Pecera no los verifica.</p>
+            <TransparenciaPublica datos={datos.datos} />
+            {documentos.length > 0 && (
+              <Link
+                href={`/e/${empresa.slug}/dataroom`}
+                className="mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-tinta px-4 py-3 text-marfil transition-opacity duration-200 ease-pecera hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+              >
+                <span>
+                  <span className="block font-medium">Ver el Dataroom</span>
+                  <span className="block text-sm text-marfil/75">
+                    {documentos.length} {documentos.length === 1 ? "documento transparente" : "documentos transparentes"}
+                  </span>
+                </span>
+                <span aria-hidden>&rarr;</span>
+              </Link>
+            )}
+          </section>
+        )}
+
+        <PieLegal tono="claro" className="mt-10 pb-8" />
       </div>
     </main>
   );

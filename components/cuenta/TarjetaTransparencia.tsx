@@ -169,12 +169,12 @@ function FilaDato({
             aria-hidden
             className="relative h-6 w-10 shrink-0 rounded-full bg-tinta/20 transition-colors duration-200 ease-pecera peer-checked:bg-t-verde peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-arcilla after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-marfil after:transition-transform after:duration-200 after:ease-pecera peer-checked:after:translate-x-4"
           />
-          {visible ? "Compartido en la página" : "Privado"}
+          {visible ? "Transparente" : "Privado"}
         </label>
         <button
           type="submit"
           disabled={guardando}
-          className="inline-flex min-h-11 items-center rounded-full bg-tinta px-4 text-sm font-medium text-marfil transition-opacity duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-70"
+          className="inline-flex min-h-11 items-center rounded-full bg-naranja px-4 text-sm font-semibold text-tinta transition-[background-color,transform] duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-70 hover:bg-pecera active:scale-[0.98]"
         >
           {guardando ? "Guardando…" : "Guardar"}
         </button>

@@ -113,10 +113,11 @@ export function BloqueCofundador({ perfil }: { perfil: Perfil }) {
   );
 }
 
-/** Portafolio: inversiones, casos, servicios, logros, prensa y documentos. */
-export function BloquePortafolio({ items, rol }: { items: ItemPortafolio[]; rol: Perfil["rol"] }) {
+/** Links y documentos del perfil (casos, servicios, logros, prensa…). El Portfolio de
+ * inversiones y clientes es otro (components/portfolio). */
+export function BloquePortafolio({ items }: { items: ItemPortafolio[] }) {
   if (items.length === 0) return null;
-  const titulo = rol === "inversor" ? "Portafolio" : rol === "aliado" ? "Casos y servicios" : "Logros y documentos";
+  const titulo = "Links y documentos";
   return (
     <section aria-label={titulo}>
       <h2 className={SUBTITULO}>{titulo}</h2>
