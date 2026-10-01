@@ -394,9 +394,7 @@ video {
 /* ============================================================
    Landing /sumate. El JS vive en components/landing/Movimiento.tsx.
    Dirección: editorial del ecosistema. Papel Marfil, tinta y un solo acento
-   naranja; el agua se insinúa (ondas, corrientes), nunca se dibuja. La firma
-   son los dos peces del isotipo, que giran uno alrededor del otro y se encajan
-   en la S: dos partes del ecosistema que se encuentran.
+   naranja; el agua se insinúa, nunca se dibuja.
    ============================================================ */
 
 /* Entradas de 550 ms con fade + 14 px: al cargar (en cascada con
@@ -432,75 +430,6 @@ html[data-revelar] [data-revelar]:not([data-visible]) :is(.barra-progreso, .cont
 html[data-revelar] [data-revelar]:not([data-visible]) .palabra {
   opacity: 0;
   transform: translateY(55%);
-}
-
-/* Grano de papel en el hero: textura apenas visible, una sola pintura. */
-.grano::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
-  opacity: 0.05;
-  mix-blend-mode: multiply;
-}
-
-/* --- Firma: los dos peces. Cada mitad es el isotipo recortado por el hueco
-   blanco de la S; quietos, encajados (sin animación de encuentro). --- */
-.peces {
-  position: relative;
-  aspect-ratio: 600 / 388;
-}
-.peces > span {
-  position: absolute;
-  inset: 0;
-  background: url(/brand/isotipo-naranja.png) center / contain no-repeat;
-}
-.pez-izq {
-  clip-path: polygon(0 0, 38.3% 0, 38.7% 42%, 61.7% 56.2%, 62% 100%, 0 100%);
-}
-.pez-der {
-  clip-path: polygon(38.3% 0, 100% 0, 100% 100%, 62% 100%, 61.7% 56.2%, 38.7% 42%);
-}
-/* Fuera del hero, la onda espera a que su bloque aparezca. */
-html[data-revelar] [data-revelar]:not([data-visible]) .ondas > span {
-  animation-play-state: paused;
-}
-/* Ondas: una lenta, cada tanto, mientras la página vive. */
-.ondas > span {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 100%;
-  aspect-ratio: 1;
-  border: 1px solid rgb(248 124 67 / 0.5);
-  border-radius: 50%;
-  translate: -50% -50%;
-  opacity: 0;
-  pointer-events: none;
-  animation: onda 3200ms ease-out 2s infinite;
-}
-@keyframes onda {
-  from { opacity: 0.9; scale: 0.4; }
-  to { opacity: 0; scale: 1.9; }
-}
-
-/* --- Pulso: un punto naranja recorre una línea (mapa del ecosistema). --- */
-.pulso {
-  fill: none;
-  stroke: var(--color-pecera);
-  stroke-width: 1.1;
-  stroke-linecap: round;
-  stroke-dasharray: 0.002 0.998;
-  opacity: 0;
-  animation: pulso 5s linear var(--d, 2600ms) infinite;
-}
-@keyframes pulso {
-  0% { stroke-dashoffset: 0; opacity: 0; }
-  8% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { stroke-dashoffset: -1; opacity: 0; }
 }
 
 /* --- Desparramado → en Pecera: las herramientas sueltas se ordenan. --- */
@@ -560,27 +489,6 @@ html:not([data-revelar]) .hito-bip { opacity: 1; translate: 0 0; }
 [data-visible] .racha-punto[data-lleno],
 html:not([data-revelar]) .racha-punto[data-lleno] { background-color: var(--color-obra); scale: 1.1; }
 
-/* --- Recorridos (inversión, Academy → Dataroom): una línea que se dibuja. --- */
-.recorrido-linea {
-  transform-origin: left;
-  scale: 0 1;
-  transition: scale 1600ms var(--ease-pecera) 250ms;
-}
-@media (max-width: 63.99rem) {
-  .recorrido-linea { transform-origin: top; scale: 1 0; }
-}
-[data-visible] .recorrido-linea,
-html:not([data-revelar]) .recorrido-linea { scale: 1 1; }
-
-/* --- Mapa del ecosistema: las ramas del grupo activo se encienden. --- */
-.rama {
-  fill: none;
-  stroke: rgb(28 27 22 / 0.16);
-  stroke-width: 1.2;
-  transition: stroke var(--duracion) var(--ease-pecera), stroke-width var(--duracion) var(--ease-pecera);
-}
-.rama[data-activa] { stroke: var(--color-pecera); stroke-width: 2; }
-
 /* Botones: brillo que los recorre al hover e imán hacia el cursor. */
 .brillo {
   position: relative;
@@ -612,25 +520,7 @@ html:not([data-revelar]) .recorrido-linea { scale: 1 1; }
 .elegir-rol[open] > div { animation: entrada 420ms var(--ease-pecera) both; }
 .elegir-rol[open]::backdrop { animation: fundido 300ms var(--ease-pecera) both; }
 
-/* Cierre: el acuario, apagado, detrás del texto. */
-.cierre-video {
-  filter: grayscale(0.35) brightness(0.5) contrast(1.05);
-}
-
-/* Preguntas: apertura suave donde hay soporte. */
-@supports (interpolate-size: allow-keywords) {
-  .preguntas { interpolate-size: allow-keywords; }
-  .preguntas details::details-content {
-    block-size: 0;
-    overflow: clip;
-    transition:
-      block-size 300ms var(--ease-pecera),
-      content-visibility 300ms allow-discrete;
-  }
-  .preguntas details[open]::details-content { block-size: auto; }
-}
-
-/* CTA fijo: aparece cuando los CTA del hero y del cierre no están en pantalla. */
+/* CTA fijo: aparece cuando los CTA de la página (hero y cierre de Build in Public) no están en pantalla. */
 #cta-fijo {
   transition:
     opacity 250ms var(--ease-pecera),
@@ -654,7 +544,6 @@ html:not([data-revelar]) .recorrido-linea { scale: 1 1; }
   .popup-pique::backdrop {
     animation: none !important;
   }
-  .pulso { display: none; }
   /* La pista aparece y se va sin moverse. */
   .pista-pique {
     animation: pista-quieta 4200ms linear 900ms both !important;
@@ -1142,6 +1031,97 @@ html .tema-fijo {
   --color-naranja-texto: #a9441a;
   --color-celeste-suave: #dde8f1;
   --color-obra-suave: #f8ebcb;
+}
+
+/* --- El pez (landing): luz en capas sobre el video, sin velo negro. ---
+   Color propio del video, rayos de sol, resplandor cálido donde nada, viñeta suave y
+   burbujas. Todo CSS: no suma peso. Con "reducir movimiento" queda quieto. */
+.pez-video {
+  filter: saturate(1.22) contrast(1.08) brightness(1.1);
+}
+.pez-rayos {
+  position: absolute;
+  inset: -25% -10% 25% -10%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background:
+    linear-gradient(105deg, transparent 17%, rgb(190 235 255 / 0.2) 23%, transparent 31%),
+    linear-gradient(100deg, transparent 37%, rgb(190 235 255 / 0.15) 43%, transparent 52%),
+    linear-gradient(108deg, transparent 61%, rgb(255 236 214 / 0.17) 68%, transparent 77%);
+  transform-origin: 50% 0;
+  animation: pez-rayos 14s ease-in-out infinite alternate;
+}
+@keyframes pez-rayos {
+  from { transform: rotate(-2.2deg) translateX(-2%); opacity: 0.45; }
+  to { transform: rotate(2.2deg) translateX(2%); opacity: 0.8; }
+}
+.pez-calido {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  background: radial-gradient(55% 60% at 55% 55%, rgb(248 124 67 / 0.7), transparent 70%);
+  animation: pez-respira 7s ease-in-out infinite alternate;
+}
+@keyframes pez-respira {
+  from { opacity: 0.35; }
+  to { opacity: 0.65; }
+}
+.pez-vineta {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(125% 105% at 50% 45%, transparent 58%, rgb(4 9 13 / 0.5) 100%),
+    linear-gradient(to bottom, rgb(4 9 13 / 0.3), transparent 20%, transparent 80%, rgb(4 9 13 / 0.85));
+}
+.pez-burbujas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  container-type: size;
+}
+.pez-burbujas i {
+  position: absolute;
+  top: 100%;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 30% 30%, rgb(255 255 255 / 0.9), rgb(190 235 255 / 0.28) 60%, transparent 72%);
+  opacity: 0;
+  animation: pez-sube linear infinite;
+}
+@keyframes pez-sube {
+  0% { transform: translate3d(0, 0, 0) scale(0.6); opacity: 0; }
+  12% { opacity: 0.75; }
+  85% { opacity: 0.45; }
+  100% { transform: translate3d(14px, -112cqh, 0) scale(1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pez-rayos,
+  .pez-calido { animation: none; }
+  .pez-burbujas { display: none; }
+}
+
+/* --- Build in Public: registro de actividad que rota (4 novedades x 3 s). --- */
+.actividad-bip {
+  display: grid;
+}
+.actividad-bip > * {
+  grid-area: 1 / 1;
+  opacity: 0;
+  animation: actividad-bip 12s var(--ease-pecera) infinite;
+  animation-delay: calc(var(--i) * 3s - 12s);
+}
+@keyframes actividad-bip {
+  0% { opacity: 0; transform: translateY(10px); }
+  4%, 23% { opacity: 1; transform: translateY(0); }
+  27% { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+html[data-revelar] [data-revelar]:not([data-visible]) .actividad-bip > * { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .actividad-bip > * { animation: none; }
+  .actividad-bip > :first-child { opacity: 1; }
 }
 
 /* ===========================================================================

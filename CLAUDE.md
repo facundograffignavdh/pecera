@@ -239,22 +239,22 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/explorar` (startups, inversores, aliados y hashtags), `/t/[tag]` y `/t/[tag]/feed`
   (sección por hashtag; `#feria21` = la feria), `/cofundadores` (cofounder match),
   `/red` (Mi red: los perfiles que seguís, en el celular)
-- `/sumate` → landing de adquisición (ISR 60 s), armada en `components/landing/`: Hero
-  (agua interactiva `components/ui/caustic-pool.tsx` de fondo y titular rotativo
-  Construí / Fondeá / Invertí en; sin tarjetas de ejemplo), después franjas que alternan
-  blanca y naranja (`Banda` en page.tsx; colores en `globals.css`, bloque "Landing en
-  franjas alternas": sin bloques negros, en la blanca pasan a naranja y en la naranja a
-  blanco; las islas de imagen llevan `paleta-original`), Desparramado (problema → solución), demo,
-  SegunQuienSos (pestañas por rol), MapaEcosistema (Descubrir/Construir/Conectar/Fondear/
-  Aprender), BuildEnPublico, CaminoInversion, AcademyDataroom, ExplorarBusqueda (form real a
-  `/explorar`), Confianza (datos en vivo), Diferencia, Preguntas (también JSON-LD), Cierre
-  (video del acuario apagado) y PieLanding. Todos los CTA abren `ElegirRol` ("¿Qué te trae
-  a Pecera?") y llevan a `/cuenta?rol=…`; "Solo quiero mirar" va al feed. CTA fijo
-  `#cta-fijo` que se esconde donde hay otro CTA (`data-cta-zona`). Movimiento solo CSS +
-  `Movimiento.tsx` (`data-revelar`, `data-escena`, `data-profundidad`, `data-magnetic`,
-  barra de lectura); con reducir movimiento todo aparece ya armado.
-
-## Datos
+- `/sumate` → landing de adquisición, una historia corta armada en `components/landing/`:
+  Hero (agua interactiva `components/ui/caustic-pool.tsx` y titular rotativo Construí / Fondeá /
+  Invertí en; **la primera parte —hero, "Valuá tu startup" y 01-02— no se toca**) →
+  Desparramado (problema → solución) → SegunQuienSos (03, fondo blanco, pestañas por rol con
+  el color del rol: naranja emprendedores, azul inversores, verde aliados) → PezCinematico
+  (el video del pez sin velo negro, con luz en capas CSS, y el lema "Las bocas cerradas no se
+  alimentan.") → BuildEnPublico (04: recorrido en cuatro pasos y tarjeta de ejemplo con
+  actividad que rota; cierra la página con el único CTA) → PieLanding. Franjas que alternan
+  blanca y naranja (`Banda` en page.tsx; colores en `globals.css`, bloque "Landing en franjas
+  alternas": sin bloques negros, las islas de imagen llevan `paleta-original`). Todos los
+  CTA abren `ElegirRol` y llevan a `/cuenta?rol=…`. CTA fijo `#cta-fijo` que se esconde donde
+  hay otro CTA (`data-cta-zona`). `VideoFondo`: póster responsivo (webp), el video baja y corre
+  solo cuando se ve, y no se carga con ahorro de datos ni con reducir movimiento. Movimiento
+  solo CSS + `Movimiento.tsx`; con reducir movimiento todo aparece ya armado. Se eliminaron
+  Video demo, Mapa, Inversión, Academy/Dataroom, Explorar, Confianza, Por qué Pecera y
+  Preguntas (con su FAQPage); la página es estática (no lee la base).
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,
   angel, fondo, coach), rol (emprendedor | inversor | aliado), descripcion,
   avatar_url, whatsapp, email, linkedin, instagram, web, publicado, origen_id,

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import MaquetaReel from "@/components/landing/MaquetaReel";
 import { Flecha, Tilde } from "@/components/landing/Seccion";
-import { boton } from "@/lib/ui";
 import type { Rol } from "@/types/pecera";
 
 type Vista = {
@@ -13,6 +12,11 @@ type Vista = {
   titulo: string;
   puntos: string[];
   cta: string;
+  /** Color del rol: píldora activa y botón (fondo), tilde (texto) y resplandor (rgb). Naranja
+   *  = emprendedores, azul = inversores, verde = aliados. */
+  fondo: string;
+  texto: string;
+  brillo: string;
   punto: string;
   visual: ReactNode;
 };
@@ -133,6 +137,9 @@ const VISTAS: Vista[] = [
     pestana: "Emprendo",
     titulo: "Mostrá lo que construís y llegá preparado a la ronda.",
     punto: "bg-arcilla",
+    fondo: "bg-naranja-texto",
+    texto: "text-naranja-texto",
+    brillo: "217 90 34",
     puntos: [
       "Tu pitch de 90 segundos en el feed, con subtítulos automáticos.",
       "La página de tu empresa: equipo, producto, One Pager y pitches de todos.",
@@ -166,6 +173,9 @@ const VISTAS: Vista[] = [
     pestana: "Invierto",
     titulo: "Descubrí temprano y mostrá lo que ya hiciste.",
     punto: "bg-inversor",
+    fondo: "bg-inversor",
+    texto: "text-inversor",
+    brillo: "12 106 168",
     puntos: [
       "Pitches de 90 segundos de startups de la región, uno atrás del otro.",
       "Tu tesis: rondas, ticket, industrias y geografías.",
@@ -181,6 +191,9 @@ const VISTAS: Vista[] = [
     pestana: "Acompaño",
     titulo: "Mostrá cómo ayudás y que te encuentren cuando te necesitan.",
     punto: "bg-aliado",
+    fondo: "bg-aliado",
+    texto: "text-aliado",
+    brillo: "31 122 82",
     puntos: [
       "Tus servicios, con categoría y para quién son.",
       "Las startups que acompañaste: mentoría, aceleración, clientes.",
@@ -218,7 +231,7 @@ export default function SegunQuienSos() {
       <div
         role="tablist"
         aria-label="Elegí qué hacés"
-        className="grid w-full grid-cols-3 gap-1 rounded-full border border-tinta/15 bg-marfil p-1 sm:inline-grid sm:w-auto"
+        className="grid w-full grid-cols-3 gap-1 rounded-full border border-tinta/15 bg-superficie p-1 sm:inline-grid sm:w-auto"
       >
         {VISTAS.map((v, i) => (
           <button
@@ -235,7 +248,7 @@ export default function SegunQuienSos() {
             onClick={() => setActiva(i)}
             onKeyDown={(e) => alTeclear(e, i)}
             className={`flex min-h-11 items-center justify-center gap-2 rounded-full px-2 text-[15px] font-semibold transition-colors duration-[var(--duracion)] ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla sm:px-6 ${
-              i === activa ? "bg-tinta text-marfil" : "text-tinta/70 hover:text-tinta"
+              i === activa ? `${v.fondo} text-white shadow-sm` : "text-tinta/70 hover:text-tinta"
             }`}
           >
             <span aria-hidden className={`size-2 shrink-0 rounded-full ${v.punto}`} />
@@ -256,20 +269,29 @@ export default function SegunQuienSos() {
           <ul className="mt-6 flex flex-col gap-3.5">
             {vista.puntos.map((p) => (
               <li key={p} className="flex gap-3 text-[17px] leading-snug text-tinta/80">
-                <Tilde className="mt-0.5 text-aliado" />
+                <Tilde className={`mt-0.5 ${vista.texto}`} />
                 {p}
               </li>
             ))}
           </ul>
-          <Link href={`/cuenta?rol=${vista.rol}`} className={`${boton("oscuro", "lg")} group mt-8`}>
+          <Link
+            href={`/cuenta?rol=${vista.rol}`}
+            className={`group mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 font-semibold text-white transition-[filter,transform] duration-[var(--duracion-rapida)] ease-pecera hover:brightness-110 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${vista.fondo}`}
+          >
             {vista.cta}
             <Flecha className="h-5 w-5 transition-transform duration-[var(--duracion)] ease-pecera group-hover:translate-x-1" />
           </Link>
         </div>
         <div className="entrada flex justify-center" style={{ animationDelay: "90ms" }}>
-          <figure className="flex flex-col items-center gap-3">
-            {vista.visual}
-            <figcaption className="text-xs text-tinta/65">Perfil de ejemplo</figcaption>
+          <figure className="relative flex w-full flex-col items-center gap-3 overflow-hidden rounded-[2rem] bg-superficie px-5 pb-6 pt-10 sm:px-10">
+            {/* Un resplandor del color del rol: el fondo es blanco, la tarjeta flota encima. */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{ background: `radial-gradient(70% 55% at 50% 28%, rgb(${vista.brillo} / 0.2), transparent 72%)` }}
+            />
+            <div className="relative">{vista.visual}</div>
+            <figcaption className="relative text-xs text-tinta/65">Perfil de ejemplo</figcaption>
           </figure>
         </div>
       </div>

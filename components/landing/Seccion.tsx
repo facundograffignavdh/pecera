@@ -57,7 +57,6 @@ export function Seccion({
   bajada,
   children,
   className = "",
-  oscura = false,
 }: {
   id: string;
   numero?: string;
@@ -66,17 +65,16 @@ export function Seccion({
   bajada?: ReactNode;
   children: ReactNode;
   className?: string;
-  oscura?: boolean;
 }) {
   return (
     <section
       id={id}
       aria-labelledby={`${id}-titulo`}
-      className={`scroll-mt-20 px-5 py-20 sm:px-8 sm:py-28 ${oscura ? "bg-tinta text-marfil" : ""} ${className}`}
+      className={`scroll-mt-20 px-5 py-20 sm:px-8 sm:py-28 ${className}`}
     >
       <div className="mx-auto w-full max-w-6xl">
         <div data-revelar className="max-w-3xl">
-          <Etiqueta numero={numero} clara={oscura}>
+          <Etiqueta numero={numero}>
             {etiqueta}
           </Etiqueta>
           <h2
@@ -86,7 +84,7 @@ export function Seccion({
             <Palabras texto={titulo} />
           </h2>
           {bajada && (
-            <p className={`mt-5 max-w-2xl text-lg leading-relaxed text-pretty ${oscura ? "text-marfil/80" : "text-tinta/75"}`}>
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-pretty text-tinta/75">
               {bajada}
             </p>
           )}
@@ -123,22 +121,5 @@ export function Tilde({ className = "", tamano = "size-[18px]" }: { className?: 
         strokeLinejoin="round"
       />
     </svg>
-  );
-}
-
-/** Los dos peces del isotipo que se encuentran (la firma). Decorativo. */
-export function Peces({ className = "", ondas = false }: { className?: string; ondas?: boolean }) {
-  return (
-    <span aria-hidden className={`relative block ${className}`}>
-      {ondas && (
-        <span className="ondas absolute inset-0">
-          <span />
-        </span>
-      )}
-      <span className="peces block">
-        <span className="pez-izq" />
-        <span className="pez-der" />
-      </span>
-    </span>
   );
 }

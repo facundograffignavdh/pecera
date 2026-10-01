@@ -1,29 +1,19 @@
 import type { Metadata } from "next";
 import Encabezado from "@/components/Encabezado";
-import AcademyDataroom from "@/components/landing/AcademyDataroom";
 import BotonForm from "@/components/landing/BotonForm";
 import BuildEnPublico from "@/components/landing/BuildEnPublico";
-import CaminoInversion from "@/components/landing/CaminoInversion";
-import Cierre from "@/components/landing/Cierre";
-import Confianza from "@/components/landing/Confianza";
 import Desparramado from "@/components/landing/Desparramado";
-import Diferencia from "@/components/landing/Diferencia";
 import ElegirRol from "@/components/landing/ElegirRol";
-import ExplorarBusqueda from "@/components/landing/ExplorarBusqueda";
 import Hero from "@/components/landing/Hero";
 import ValuaStartup from "@/components/landing/ValuaStartup";
-import MapaEcosistema from "@/components/landing/MapaEcosistema";
 import Movimiento from "@/components/landing/Movimiento";
+import PezCinematico from "@/components/landing/PezCinematico";
 import PieLanding from "@/components/landing/PieLanding";
-import Preguntas, { PREGUNTAS } from "@/components/landing/Preguntas";
 import { Seccion } from "@/components/landing/Seccion";
 import SegunQuienSos from "@/components/landing/SegunQuienSos";
-import { getPulsoEcosistema } from "@/lib/datos";
-import { LECCIONES } from "@/lib/essentials";
-import { PLANTILLAS } from "@/lib/plantillas";
 
-// Los números de "Confianza" y la vitrina de pitches salen de la base.
-export const revalidate = 60;
+// La página es estática: no lee la base.
+export const revalidate = 3600;
 
 const TITULO = "Pecera — Startups, inversores y aliados de Latinoamérica";
 const DESCRIPCION =
@@ -70,34 +60,24 @@ const DATOS_ESTRUCTURADOS = {
         "query-input": "required name=search_term_string",
       },
     },
-    {
-      "@type": "FAQPage",
-      mainEntity: PREGUNTAS.map((p) => ({
-        "@type": "Question",
-        name: p.pregunta,
-        acceptedAnswer: { "@type": "Answer", text: p.respuesta },
-      })),
-    },
   ],
 };
 
 const ID_SCROLL = "landing";
 
-/**
- * Landing de adquisición. El recorrido: qué es y para quién (hero) → el problema
- * y cómo lo ordena Pecera → cómo se ve → qué cambia según tu rol → el mapa de
- * módulos → Build in Public, inversión, Academy → Dataroom y Explorar → lo que se
- * puede comprobar → por qué Pecera → preguntas → un solo CTA. Todos los "Sumate"
- * abren la misma elección de rol (ElegirRol) y de ahí, el alta con Google.
- */
 /** Una franja de la landing: fondo y letras de su tono (los tokens, en globals.css). */
 function Banda({ tono, children }: { tono: "blanca" | "naranja"; children: React.ReactNode }) {
   return <div className={`${tono === "naranja" ? "banda-naranja" : "banda-blanca"} bg-marfil text-tinta`}>{children}</div>;
 }
 
-export default async function SumatePage() {
-  const pulso = await getPulsoEcosistema();
-
+/**
+ * Landing de adquisición, contada como una historia: qué es y para quién (hero) → el
+ * problema y cómo lo ordena Pecera → qué cambia según tu rol → el pez y el lema ("Las
+ * bocas cerradas no se alimentan.") → Build in Public, que cierra con un solo llamado.
+ * Todos los "Sumate" abren la misma elección de rol (ElegirRol) y de ahí, el alta con
+ * Google.
+ */
+export default function SumatePage() {
   return (
     <main
       id={ID_SCROLL}
@@ -113,7 +93,8 @@ export default async function SumatePage() {
       <ElegirRol />
 
       <Hero />
-      {/* Franjas que alternan: blanca (letras negras y naranjas) y naranja (letras blancas). */}
+      {/* La primera parte (hero, "Valuá tu startup" y 01-02) no se toca. Después, una historia:
+          para quién es → el pez y el lema → Build in Public → un solo llamado. */}
       <Banda tono="blanca">
         <ValuaStartup />
       </Banda>
@@ -122,70 +103,16 @@ export default async function SumatePage() {
       </Banda>
 
       <Banda tono="blanca">
-      <Seccion
-        id="como-se-ve"
-        numero="03"
-        etiqueta="Cómo se ve"
-        titulo="Así se ve Pecera en 30 segundos."
-        bajada="El feed, un pique y el perfil de contacto de un proyecto, recreados desde la app real."
-        className="border-t border-tinta/10"
-      >
-        <div
-          data-revelar
-          className="paleta-original mx-auto mt-12 max-w-4xl overflow-hidden rounded-[var(--radius-bloque)] bg-tinta shadow-[0_1px_2px_rgb(28_27_22/0.12),0_24px_56px_rgb(28_27_22/0.18)]"
-        >
-          <iframe
-            src="/demo-video/index.html"
-            title="Video demo de Pecera: el feed, un pique y el perfil de contacto"
-            loading="lazy"
-            className="aspect-video w-full"
-            style={{ border: 0 }}
-          />
-        </div>
-      </Seccion>
+        <Seccion id="segun-quien-sos" numero="03" etiqueta="Para vos" titulo="Pecera cambia según quién sos.">
+          <SegunQuienSos />
+        </Seccion>
       </Banda>
+
+      <PezCinematico />
 
       <Banda tono="naranja">
-      <Seccion id="segun-quien-sos" numero="04" etiqueta="Para vos" titulo="Pecera cambia según quién sos.">
-        <SegunQuienSos />
-      </Seccion>
-      </Banda>
-
-      <Banda tono="blanca">
-      <Seccion
-        id="mapa"
-        numero="05"
-        etiqueta="El ecosistema"
-        titulo="Todo lo que pasa en la Pecera, conectado."
-        bajada="Cinco cosas que hacés acá. Elegí una para ver con qué se hace."
-      >
-        <MapaEcosistema lecciones={LECCIONES.length} templates={PLANTILLAS.length} />
-      </Seccion>
-      </Banda>
-
-      {/* Build in Public es una sección negra: en una franja blanca pasa a naranja. */}
-      <Banda tono="blanca">
         <BuildEnPublico />
       </Banda>
-      <Banda tono="blanca">
-        <CaminoInversion />
-      </Banda>
-      <Banda tono="naranja">
-        <AcademyDataroom />
-      </Banda>
-      <Banda tono="blanca">
-        <ExplorarBusqueda />
-      </Banda>
-      <Banda tono="naranja">
-        <Confianza pulso={pulso} />
-      </Banda>
-      <Banda tono="blanca">
-        <Diferencia />
-      </Banda>
-      <Banda tono="naranja">
-        <Preguntas />
-      </Banda>
-      <Cierre />
       <PieLanding />
 
       <div
