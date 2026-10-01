@@ -148,7 +148,10 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
               </PitchDestacado>
             </div>
             {otros.length > 0 && (
-              <ul className="mt-4 grid grid-cols-3 gap-2.5">
+              <h3 className="mt-5 text-xs font-semibold uppercase tracking-wide text-tinta/60">Más pitches del equipo</h3>
+            )}
+            {otros.length > 0 && (
+              <ul className="mt-2 grid grid-cols-3 gap-2.5">
                 {otros.map((pitch) => (
                   <li key={pitch.id}>
                     <Link

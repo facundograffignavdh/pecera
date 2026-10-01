@@ -81,7 +81,7 @@ export const PLANTILLAS: Plantilla[] = [
       {
         titulo: "El problema",
         campos: [
-          { id: "problema", label: "¿Qué problema resolvés?", tipo: "largo", requerido: true, max: 600, placeholder: "Ej.: Las huertas de balcón fracasan porque la tierra de vivero se compacta y no retiene agua…" },
+          { id: "problema", label: "¿Qué problema resolvés?", tipo: "largo", requerido: true, max: 600, placeholder: "Ej.: Las huertas de balcón se abandonan porque la tierra de vivero se compacta y no retiene agua…" },
           { id: "quien", label: "¿A quién le duele?", tipo: "texto", requerido: true, placeholder: "Ej.: Personas que viven en departamentos y quieren cultivar" },
           { id: "hoy", label: "¿Cómo lo resuelven hoy?", tipo: "largo", requerido: true, max: 600, ayuda: "Las alternativas actuales, aunque sean planillas o “no hacer nada”." },
         ],
@@ -154,7 +154,7 @@ export const PLANTILLAS: Plantilla[] = [
         bajada: "Un inversor mira más el razonamiento que el número.",
         campos: [
           { id: "metodo", label: "Método", tipo: "seleccion", requerido: true, opciones: [{ valor: "bottom_up", label: "De abajo hacia arriba (clientes × precio)" }, { valor: "top_down", label: "De arriba hacia abajo (informes de mercado)" }, { valor: "ambos", label: "Los dos" }] },
-          { id: "supuestos", label: "Supuestos", tipo: "largo", requerido: true, max: 800, placeholder: "Ej.: 9.000 tambos en Argentina × USD 1.200 al año de suscripción…" },
+          { id: "supuestos", label: "Supuestos", tipo: "largo", requerido: true, max: 800, placeholder: "Ej.: cantidad de clientes posibles × precio anual, y de dónde sale cada número…" },
           { id: "fuentes", label: "Fuentes", tipo: "largo", max: 500, ayuda: "Censos, cámaras, informes. Con link si hay." },
         ],
       },

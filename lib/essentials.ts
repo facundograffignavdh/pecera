@@ -41,7 +41,7 @@ export const LECCIONES: Leccion[] = [
     porQueImporta:
       "Es lo primero que un inversor quiere entender y lo que más se repite en un pitch. Si el problema no es claro, todo lo que viene después (mercado, modelo, ronda) pierde fuerza.",
     ejemplo:
-      "“El 60% de las huertas de balcón se abandona el primer año porque la tierra de vivero se compacta. Hoy la gente compra tierra cada temporada. Nuestro sustrato con borra de café retiene agua y no se compacta.”",
+      "“En nuestras entrevistas, la mayoría de quienes abandonaron su huerta de balcón contó que la tierra de vivero se compacta. Hoy la gente compra tierra cada temporada. Nuestro sustrato con borra de café retiene agua y no se compacta.”",
     errores: [
       "Empezar por la solución y buscarle un problema después.",
       "Describir un problema de todos (“la gente pierde tiempo”) en vez de uno de alguien concreto.",
@@ -135,7 +135,7 @@ export const LECCIONES: Leccion[] = [
     porQueImporta:
       "Un fondo necesita que algunas inversiones devuelvan muchas veces lo invertido: eso solo pasa en mercados grandes. Pero un número inflado resta credibilidad; el razonamiento importa más que la cifra.",
     ejemplo:
-      "De abajo hacia arriba: 9.000 tambos en Argentina × USD 1.200 al año = USD 10,8 M de SAM. Si en 4 años llegás al 8%, el SOM es de unos USD 860 mil al año.",
+      "De abajo hacia arriba, con cifras de ejemplo: si hubiera 9.000 establecimientos a los que tu canal llega y cada uno pagara USD 1.200 al año, el SAM sería de USD 10,8 M. Si en 4 años llegás al 8%, el SOM es de unos USD 860 mil al año.",
     errores: [
       "Calcular solo de arriba hacia abajo (“el 1% de un mercado de miles de millones”).",
       "No citar fuentes.",
@@ -273,7 +273,7 @@ export const LECCIONES: Leccion[] = [
       "Una presentación corta de tu startup: quién sos, el problema, tu solución, la tracción y qué buscás. En Pecera es un video vertical de hasta 90 segundos que aparece en el feed y en tu perfil.",
     porQueImporta:
       "Es tu primera impresión. Un pitch claro hace que un inversor quiera conocer más; uno confuso cierra la puerta aunque el negocio sea bueno.",
-    ejemplo: "“Soy Ana, de Raíz Verde. El 60% de las huertas de balcón se abandona el primer año… Ya vendimos 1.200 bolsas. Buscamos USD 150 mil para llegar a 3 provincias.”",
+    ejemplo: "“Soy Ana, de Raíz Verde. Las huertas de balcón se abandonan porque la tierra se compacta… Ya vendimos 1.200 bolsas. Buscamos USD 150 mil para llegar a 3 provincias.”",
     errores: [
       "Arrancar con la historia personal y llegar tarde al problema.",
       "Meter todos los números: elegí los 2 que más dicen.",
