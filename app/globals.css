@@ -486,63 +486,7 @@ html[data-revelar] [data-revelar]:not([data-visible]) .ondas > span {
   to { opacity: 0; scale: 1.9; }
 }
 
-/* --- Ecosistema vivo (hero): tarjetas de producto unidas por corrientes. --- */
-.eco-marco { container-type: inline-size; }
-.eco {
-  position: relative;
-  aspect-ratio: 580 / 540;
-  font-size: clamp(10.5px, 2.45cqw, 14px);
-}
-@media (max-width: 30rem) {
-  .eco { aspect-ratio: 360 / 410; font-size: clamp(10.5px, 3.05cqw, 13px); }
-}
-.eco-nodo {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: var(--w, 42%);
-  translate: -50% -50%;
-  transform: translate3d(calc(var(--px, 0) * var(--z, 0) * 1px), calc(var(--py, 0) * var(--z, 0) * 1px), 0);
-  transition: transform 700ms var(--ease-pecera);
-}
-.eco-tarjeta {
-  animation:
-    tarjeta-entra 800ms var(--ease-pecera) var(--d, 0ms) both,
-    deriva 9s ease-in-out calc(var(--d, 0ms) + 900ms) infinite;
-  transition: box-shadow var(--duracion) var(--ease-pecera), border-color var(--duracion) var(--ease-pecera);
-}
-.eco-nodo:hover .eco-tarjeta {
-  border-color: rgb(248 124 67 / 0.55);
-  box-shadow: 0 1px 2px rgb(28 27 22 / 0.08), 0 18px 40px rgb(28 27 22 / 0.14);
-}
-@keyframes tarjeta-entra {
-  from { opacity: 0; transform: translateY(12px) scale(0.94); }
-}
-@keyframes deriva {
-  50% { translate: 0 -5px; }
-}
-.eco-aviso {
-  animation:
-    aviso 700ms var(--ease-pecera) var(--d, 0ms) both,
-    deriva 7s ease-in-out calc(var(--d, 0ms) + 800ms) infinite;
-}
-@keyframes aviso {
-  from { opacity: 0; transform: translateY(8px) scale(0.85); }
-}
-
-/* Corrientes: se trazan después del encuentro; un punto naranja las recorre. */
-.corriente {
-  fill: none;
-  stroke: rgb(28 27 22 / 0.24);
-  stroke-width: 0.3;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: trazar 1100ms var(--ease-pecera) var(--d, 1500ms) forwards;
-  transition: stroke var(--duracion) var(--ease-pecera), opacity var(--duracion) var(--ease-pecera);
-}
-.corriente[data-punteada] { stroke-dasharray: 0.012 0.012; stroke-dashoffset: 0; animation: aparecer 900ms var(--ease-pecera) var(--d, 1500ms) both; }
-@keyframes trazar { to { stroke-dashoffset: 0; } }
-@keyframes aparecer { from { opacity: 0; } }
+/* --- Pulso: un punto naranja recorre una línea (mapa del ecosistema). --- */
 .pulso {
   fill: none;
   stroke: var(--color-pecera);
@@ -557,16 +501,6 @@ html[data-revelar] [data-revelar]:not([data-visible]) .ondas > span {
   8% { opacity: 1; }
   85% { opacity: 1; }
   100% { stroke-dashoffset: -1; opacity: 0; }
-}
-/* Al pasar por una tarjeta se encienden sus relaciones y se apaga el resto. */
-.eco:has([data-nodo]:hover) .corriente { opacity: 0.35; }
-.eco:has([data-nodo]:hover) .pulso { visibility: hidden; }
-.eco:has([data-nodo="pitch"]:hover) .corriente[data-de~="pitch"],
-.eco:has([data-nodo="inversor"]:hover) .corriente[data-de~="inversor"],
-.eco:has([data-nodo="empresa"]:hover) .corriente[data-de~="empresa"],
-.eco:has([data-nodo="aliado"]:hover) .corriente[data-de~="aliado"] {
-  opacity: 1;
-  stroke: var(--color-pecera);
 }
 
 /* --- Desparramado → en Pecera: las herramientas sueltas se ordenan. --- */

@@ -240,8 +240,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   (sección por hashtag; `#feria21` = la feria), `/cofundadores` (cofounder match),
   `/red` (Mi red: los perfiles que seguís, en el celular)
 - `/sumate` → landing de adquisición (ISR 60 s), armada en `components/landing/`: Hero
-  (con `EcosistemaVivo`: tarjetas de ejemplo unidas por corrientes y el isotipo quieto en
-  el centro), Desparramado (problema → solución), demo,
+  (agua interactiva `components/ui/caustic-pool.tsx` de fondo y titular rotativo
+  Construí / Fondeá / Invertí en; sin tarjetas de ejemplo), Desparramado (problema → solución), demo,
   SegunQuienSos (pestañas por rol), MapaEcosistema (Descubrir/Construir/Conectar/Fondear/
   Aprender), BuildEnPublico, CaminoInversion, AcademyDataroom, ExplorarBusqueda (form real a
   `/explorar`), Confianza (datos en vivo), Diferencia, Preguntas (también JSON-LD), Cierre

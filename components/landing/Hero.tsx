@@ -1,7 +1,6 @@
 import Link from "next/link";
 import "@/components/landing/titular.css";
 import BotonForm from "@/components/landing/BotonForm";
-import EcosistemaVivo from "@/components/landing/EcosistemaVivo";
 import { EVENTO_ACTUAL, momentoEvento } from "@/lib/eventos";
 import { FEED_DESDE_LANDING } from "@/lib/landing";
 import CausticPool, { type CausticParams } from "@/components/ui/caustic-pool";
@@ -39,7 +38,7 @@ export default function Hero() {
   return (
     <section
       aria-labelledby="hero-titulo"
-      className="relative isolate overflow-hidden bg-tinta px-5 pb-16 pt-[calc(max(0.75rem,env(safe-area-inset-top))+5.25rem)] sm:px-8 lg:pb-24"
+      className="relative isolate flex min-h-[38rem] items-center overflow-hidden bg-tinta px-5 pb-16 pt-[calc(max(0.75rem,env(safe-area-inset-top))+5.25rem)] sm:px-8 lg:min-h-[min(50rem,100svh)] lg:pb-24"
     >
       {/* Agua con cáusticas que se revuelve al pasar el mouse o arrastrar el dedo.
           Es decoración (aria-hidden); el contenido va encima y deja pasar el puntero. */}
@@ -49,7 +48,7 @@ export default function Hero() {
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(28_27_22/0.62),rgb(28_27_22/0.18)_60%,transparent)]" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-marfil to-transparent" />
       </div>
-      <div className="pointer-events-none mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:gap-10">
+      <div className="pointer-events-none mx-auto w-full max-w-6xl">
         <div className="max-w-xl text-marfil [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
           {feria ? (
             <Link
@@ -135,10 +134,6 @@ export default function Hero() {
               </li>
             ))}
           </ul>
-        </div>
-
-        <div className="pointer-events-auto mx-auto w-full max-w-[34rem] lg:max-w-none">
-          <EcosistemaVivo />
         </div>
       </div>
     </section>
