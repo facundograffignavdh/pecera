@@ -13,7 +13,11 @@ import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
 import TarjetaBuild from "@/components/cuenta/TarjetaBuild";
 import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
+import RelacionesPendientes, { type RelacionPendiente } from "@/components/cuenta/RelacionesPendientes";
 import TarjetaNewsletter from "@/components/cuenta/TarjetaNewsletter";
+import TarjetaPortfolio from "@/components/cuenta/TarjetaPortfolio";
+import TarjetaServicios from "@/components/cuenta/TarjetaServicios";
+import TarjetaTesis from "@/components/cuenta/TarjetaTesis";
 import TarjetaProducto, { type ImagenPropia } from "@/components/cuenta/TarjetaProducto";
 import TarjetaTransparencia from "@/components/cuenta/TarjetaTransparencia";
 import { entrar } from "@/app/cuenta/acciones";
@@ -24,6 +28,7 @@ import { faltaMigracion } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
 import type { NewsletterLink } from "@/lib/newsletter";
+import { COLUMNAS_PORTFOLIO, type EntradaPortfolio, type Servicio, type Tesis } from "@/lib/portfolio";
 import type { Producto } from "@/lib/producto";
 import { ROLES } from "@/lib/rol";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
@@ -91,7 +96,12 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     }
   }
 
-  const news = perfil ? await leerNewsletter(supabase, perfil.id) : null;
+  const conPortfolio = perfil?.rol === "inversor" || perfil?.rol === "aliado";
+  const [news, portfolio, pendientes] = await Promise.all([
+    perfil ? leerNewsletter(supabase, perfil.id) : null,
+    perfil && conPortfolio ? leerPortfolio(supabase, perfil.id) : null,
+    perfil?.empresa_id ? leerPendientes(supabase) : [],
+  ]);
 
   // Dato chico y público para la píldora y el "Editar perfil" de las páginas
   // estáticas. Nada de email ni ids.
@@ -174,6 +184,13 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                 perfil={perfil}
                 pitches={misPitches}
                 conEmpresa={extras?.disponible ? !!extras.empresa : null}
+                portfolio={
+                  portfolio && {
+                    entradas: portfolio.entradas.length,
+                    servicios: portfolio.servicios.length,
+                    tesis: !!portfolio.tesis?.texto,
+                  }
+                }
               />
             )}
 
@@ -236,6 +253,16 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   <TarjetaTransparencia datos={extras.datos} slugEmpresa={extras.empresa.slug} />
                 )}
                 <TarjetaEvento participa={extras.participa} rol={perfil.rol} />
+              </>
+            )}
+
+            <RelacionesPendientes relaciones={pendientes} />
+
+            {perfil && portfolio && (
+              <>
+                {perfil.rol === "inversor" && <TarjetaTesis tesis={portfolio.tesis} />}
+                {perfil.rol === "aliado" && <TarjetaServicios servicios={portfolio.servicios} />}
+                <TarjetaPortfolio rol={perfil.rol} entradas={portfolio.entradas} />
               </>
             )}
 
@@ -348,6 +375,55 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
     datos: (datos.data as DatoEmpresa[] | null) ?? [],
     participa: !!filaEvento?.participa,
   };
+}
+
+type DatosPortfolio = {
+  entradas: EntradaPortfolio[];
+  servicios: Servicio[];
+  tesis: Tesis | null;
+};
+
+/** Portfolio, servicios y tesis propios (inversores y aliados). null sin la migración. */
+async function leerPortfolio(
+  supabase: Awaited<ReturnType<typeof supabaseConSesion>>,
+  perfilId: string
+): Promise<DatosPortfolio | null> {
+  const [entradas, servicios, tesis] = await Promise.all([
+    supabase
+      .from("portfolio")
+      .select(`${COLUMNAS_PORTFOLIO}, empresa:empresas(slug, nombre)`)
+      .eq("perfil_id", perfilId)
+      .order("created_at", { ascending: false })
+      .overrideTypes<EntradaPortfolio[], { merge: false }>(),
+    supabase
+      .from("perfil_servicios")
+      .select("id, nombre, categoria, descripcion, modalidad, precio")
+      .eq("perfil_id", perfilId)
+      .order("orden")
+      .overrideTypes<Servicio[], { merge: false }>(),
+    supabase
+      .from("perfil_tesis")
+      .select("texto, geografias, modelos, busca")
+      .eq("perfil_id", perfilId)
+      .maybeSingle()
+      .overrideTypes<Tesis | null, { merge: false }>(),
+  ]);
+  const error = entradas.error ?? servicios.error ?? tesis.error;
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (leerPortfolio): ${error.message}`);
+    return null;
+  }
+  return { entradas: entradas.data ?? [], servicios: servicios.data ?? [], tesis: tesis.data };
+}
+
+/** Relaciones que nombran a la empresa propia y esperan respuesta. Vacío si no hay. */
+async function leerPendientes(supabase: Awaited<ReturnType<typeof supabaseConSesion>>): Promise<RelacionPendiente[]> {
+  const { data, error } = await supabase.rpc("relaciones_pendientes");
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (relaciones_pendientes): ${error.message}`);
+    return [];
+  }
+  return (data as RelacionPendiente[] | null) ?? [];
 }
 
 /** Link a la newsletter propia. `disponible` es false si la base no tiene la migración. */

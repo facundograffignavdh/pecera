@@ -22,10 +22,13 @@ export default function CompletarPerfil({
   perfil,
   pitches,
   conEmpresa,
+  portfolio,
 }: {
   perfil: PerfilPropio;
   pitches: MiPitch[];
   conEmpresa: boolean | null;
+  /** Inversores y aliados, si la base tiene el Portfolio. */
+  portfolio?: { entradas: number; servicios: number; tesis: boolean } | null;
 }) {
   const pitchPublicado = pitches.some((p) => p.estado === "publicado");
   const pitchEnCamino = pitches.some((p) => p.estado === "procesando" || p.estado === "en_espera");
@@ -43,6 +46,15 @@ export default function CompletarPerfil({
   ];
   if (perfil.rol === "emprendedor" && conEmpresa !== null) {
     pasos.push({ clave: "empresa", label: "Tu empresa", hecho: conEmpresa, href: "#tarjeta-tu-empresa" });
+  }
+  if (portfolio && perfil.rol === "inversor") {
+    pasos.push({ clave: "tesis", label: "Tu tesis de inversión", hecho: portfolio.tesis, href: "#tarjeta-tu-tesis-de-inversi-n" });
+  }
+  if (portfolio && perfil.rol === "aliado") {
+    pasos.push({ clave: "servicios", label: "Tus servicios", hecho: portfolio.servicios > 0, href: "#tarjeta-tus-servicios" });
+  }
+  if (portfolio) {
+    pasos.push({ clave: "portfolio", label: "Tu portfolio", hecho: portfolio.entradas > 0, href: "#tarjeta-tu-portfolio" });
   }
   pasos.push({
     clave: "pitch",
