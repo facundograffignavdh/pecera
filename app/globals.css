@@ -696,3 +696,45 @@ html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
   border-color: var(--color-arcilla);
   box-shadow: 0 0 0 3px rgb(217 90 34 / 0.18);
 }
+
+/* Hojas para imprimir o guardar como PDF (One Pager, Dataroom): A4, sin la interfaz
+   de la app y sin el scroll de pantalla completa. */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+@media print {
+  body,
+  main {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .no-imprimir {
+    display: none !important;
+  }
+  .hoja {
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .hoja a {
+    text-decoration: none;
+  }
+  .sin-corte {
+    break-inside: avoid;
+  }
+  /* Las insignias y barras conservan su color; el fondo de la página no se imprime. */
+  .hoja * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+  html[data-revelar] [data-revelar]:not([data-visible]) {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

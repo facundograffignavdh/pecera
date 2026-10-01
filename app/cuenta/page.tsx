@@ -13,6 +13,7 @@ import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
 import TarjetaBuild from "@/components/cuenta/TarjetaBuild";
 import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
+import TarjetaProducto, { type ImagenPropia } from "@/components/cuenta/TarjetaProducto";
 import TarjetaTransparencia from "@/components/cuenta/TarjetaTransparencia";
 import { entrar } from "@/app/cuenta/acciones";
 import { type Avance, type Hito, calcularRacha } from "@/lib/build";
@@ -21,6 +22,7 @@ import type { CuentaLocal } from "@/lib/cuenta-local";
 import { faltaMigracion } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
+import type { Producto } from "@/lib/producto";
 import { ROLES } from "@/lib/rol";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 import type { DatoEmpresa, Rol } from "@/types/pecera";
@@ -195,6 +197,13 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             {perfil && extras?.disponible && (
               <>
                 <TarjetaEmpresa empresa={extras.empresa} />
+                {extras.empresa && extras.producto && (
+                  <TarjetaProducto
+                    producto={extras.producto.producto}
+                    imagenes={extras.producto.imagenes}
+                    slugEmpresa={extras.empresa.slug}
+                  />
+                )}
                 {extras.empresa && extras.build && (
                   <TarjetaBuild
                     hitos={extras.build.hitos}
@@ -239,7 +248,29 @@ type Extras = {
   participa: boolean;
   /** null: la base todavía no tiene Build in Public (o falló la lectura). */
   build: { hitos: Hito[]; avances: Avance[] } | null;
+  /** null: la base todavía no tiene productos. `producto` null: no lo cargaron. */
+  producto: { producto: Producto | null; imagenes: ImagenPropia[] } | null;
 };
+
+async function leerProducto(
+  supabase: Awaited<ReturnType<typeof supabaseConSesion>>,
+  empresaId: string
+): Promise<Extras["producto"]> {
+  const { data, error } = await supabase
+    .from("empresa_productos")
+    .select("tipo, nombre, propuesta, problema, solucion, para_quien, caracteristicas, como_usar, demo_url, imagenes")
+    .eq("empresa_id", empresaId)
+    .maybeSingle()
+    .overrideTypes<Producto | null, { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (leerProducto): ${error.message}`);
+    return null;
+  }
+  return {
+    producto: data,
+    imagenes: (data?.imagenes ?? []).map((clave) => ({ clave, url: urlMedia(clave) })),
+  };
+}
 
 /** Build in Public de la empresa propia (los miembros lo leen aunque no sea visible). */
 async function leerBuild(
@@ -275,7 +306,7 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
     supabase.rpc("mi_evento", { p_evento: EVENTO_ACTUAL.slug }),
   ]);
   if (faltaMigracion(empresa.error)) {
-    return { disponible: false, empresa: null, datos: [], participa: false, build: null };
+    return { disponible: false, empresa: null, datos: [], participa: false, build: null, producto: null };
   }
   for (const [donde, r] of [
     ["mi_empresa", empresa],
@@ -288,7 +319,11 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
   const miEmpresa = ((empresa.data as MiEmpresa[] | null) ?? [])[0] ?? null;
   return {
     disponible: true,
-    build: miEmpresa ? await leerBuild(supabase, miEmpresa.id) : null,
+    ...(miEmpresa
+      ? await Promise.all([leerBuild(supabase, miEmpresa.id), leerProducto(supabase, miEmpresa.id)]).then(
+          ([build, producto]) => ({ build, producto })
+        )
+      : { build: null, producto: null }),
     empresa: miEmpresa,
     datos: (datos.data as DatoEmpresa[] | null) ?? [],
     participa: !!filaEvento?.participa,
