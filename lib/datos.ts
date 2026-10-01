@@ -218,6 +218,21 @@ export async function getSeguidores(slug: string): Promise<number> {
   return typeof data === "number" ? data : 0;
 }
 
+/** Todos los perfiles visibles (con o sin pitch), para Explorar. En cascada por migración. */
+export async function getPerfilesVisibles(): Promise<Perfil[]> {
+  const { data, error } = await enCascada(NIVELES_PERFIL, (columnas) =>
+    supabase
+      .from("perfiles")
+      .select(columnas)
+      .eq("publicado", true)
+      .eq("oculto", false)
+      .order("created_at", { ascending: false })
+      .overrideTypes<Perfil[], { merge: false }>()
+  );
+  if (error) fallo("getPerfilesVisibles", error);
+  return data.map(conUrlsPerfil);
+}
+
 /** Perfiles visibles que buscan cofundador/a (/cofundadores). Sin migración, vacío. */
 export async function getCofundadores(): Promise<Perfil[]> {
   const { data, error } = await supabase

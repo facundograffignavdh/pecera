@@ -8,6 +8,11 @@ import { normalizarTag } from "@/lib/hashtags";
 export const revalidate = 60;
 export const dynamicParams = true;
 
+// Se generan en la primera visita y quedan en caché (ISR), como /t/[tag].
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: PageProps<"/t/[tag]/feed">): Promise<Metadata> {
   const { tag } = await params;
   return { title: `#${normalizarTag(decodeURIComponent(tag))} en video — Pecera` };

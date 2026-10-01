@@ -4,7 +4,6 @@ import Link from "next/link";
 import Avatar from "@/components/Avatar";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
-import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { getPitchesDeTag, getTags } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { TAG_FERIA, normalizarTag } from "@/lib/hashtags";
@@ -41,7 +40,9 @@ export default async function TagPage({ params }: PageProps<"/t/[tag]">) {
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
       <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-3xl lg:max-w-6xl lg:px-8">
-        <EnlaceVolver href="/explorar" />
+        <Link href="/explorar" className="inline-flex items-center gap-2 text-sm text-tinta/70 transition-colors duration-200 ease-pecera hover:text-arcilla">
+          <span aria-hidden>&larr;</span> Explorar
+        </Link>
 
         <header className="aparecer mt-6 flex flex-col gap-4 rounded-[2rem] bg-tinta px-6 py-7 text-marfil sm:flex-row sm:items-end sm:justify-between">
           <div>

@@ -878,7 +878,7 @@ export default function FormPerfil({
         <div hidden={actual.id !== "listo"} className="flex flex-col gap-5">
           <div className="overflow-hidden rounded-3xl border border-tinta/10 bg-marfil shadow-[0_10px_30px_rgb(28_27_22/0.08)]">
             <div className={`h-16 ${rol ? ROLES[rol].bg : "bg-tinta"} opacity-90`} />
-            <div className="-mt-10 flex flex-col gap-3 px-4 pb-5">
+            <div className="relative -mt-10 flex flex-col gap-3 px-4 pb-5">
               <span className="self-start rounded-full ring-4 ring-marfil">
                 <Avatar perfil={{ nombre: valores.nombre || "?", rol: rolAvatar, avatar_url: avatar }} size={72} />
               </span>

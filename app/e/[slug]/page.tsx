@@ -83,7 +83,7 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
                   Empresa
                 </span>
               </div>
-              <div className="-mt-11 flex flex-col gap-4 px-5 pb-5">
+              <div className="relative -mt-11 flex flex-col gap-4 px-5 pb-5">
                 <span className="self-start rounded-2xl ring-4 ring-marfil">
                   <LogoEmpresa nombre={empresa.nombre} logo={empresa.logo_url ?? null} size={88} />
                 </span>

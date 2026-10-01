@@ -808,3 +808,29 @@ html .tema-fijo {
     animation-duration: 2.4s;
   }
 }
+
+/* Imágenes por tema (logos): la de tinta en modo luz, la de marfil en modo noche.
+   Lo que es .tema-fijo (feed, landing) se queda siempre con la versión clara. */
+.solo-noche {
+  display: none;
+}
+html[data-tema="noche"] .solo-luz {
+  display: none;
+}
+html[data-tema="noche"] .solo-noche {
+  display: revert;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-tema="luz"]) .solo-luz {
+    display: none;
+  }
+  html:not([data-tema="luz"]) .solo-noche {
+    display: revert;
+  }
+}
+html .tema-fijo .solo-luz {
+  display: revert !important;
+}
+html .tema-fijo .solo-noche {
+  display: none !important;
+}

@@ -36,7 +36,11 @@ export default function LogoInicio({ variante }: { variante: "feed" | "perfil" |
       {variante === "feed" ? (
         <Image src="/brand/isotipo-naranja.png" alt="" width={43} height={28} preload />
       ) : (
-        <Image src="/brand/logo-combinado-tinta.png" alt="" width={112} height={24} preload />
+        <>
+          {/* Tinta en modo luz, Marfil en modo noche (lo decide el CSS, sin parpadeo). */}
+          <Image src="/brand/logo-combinado-tinta.png" alt="" width={112} height={24} preload className="solo-luz" />
+          <Image src="/brand/logo-combinado-marfil.png" alt="" width={112} height={24} className="solo-noche" />
+        </>
       )}
     </Link>
   );

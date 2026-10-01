@@ -135,7 +135,8 @@ export default function AccionesPerfil({
             ) : (
               <Icono d="M4 6h16v12H4zM4 7l8 6 8-6" />
             )}
-            {principal.clave === "whatsapp" ? "Escribile por WhatsApp" : "Escribile un email"}
+            Escribile
+            <span className="sr-only">{principal.clave === "whatsapp" ? " por WhatsApp" : " por email"}</span>
           </a>
         )}
         <button

@@ -97,7 +97,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
                   </span>
                 )}
               </div>
-              <div className="-mt-12 flex flex-col gap-4 px-5 pb-5">
+              <div className="relative -mt-12 flex flex-col gap-4 px-5 pb-5">
                 <span className="self-start rounded-full ring-4 ring-marfil">
                   <Avatar perfil={perfil} size={96} />
                 </span>
@@ -133,6 +133,19 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
               <section aria-label={pitches.length === 1 ? "Su pitch" : "Sus pitches"}>
                 <h2 className={SUBTITULO}>{pitches.length === 1 ? "Su pitch" : `Sus pitches · ${pitches.length}`}</h2>
                 <GrillaPitches slug={perfil.slug} nombre={perfil.nombre} pitches={pitches} metricas={metricas} />
+              </section>
+            )}
+
+            {pitches.length === 0 && (
+              <section className="flex flex-col items-center gap-2 rounded-3xl border border-dashed border-tinta/20 px-6 py-10 text-center">
+                <span aria-hidden className="text-3xl">
+                  🎬
+                </span>
+                <p className="font-display text-xl font-semibold text-tinta">Todavía no subió su pitch</p>
+                <p className="max-w-sm text-sm leading-relaxed text-tinta/65">
+                  Tocá <strong className="font-semibold">Seguir</strong>: cuando suba uno, lo vas a ver en la pestaña
+                  Stakeholding del feed.
+                </p>
               </section>
             )}
 

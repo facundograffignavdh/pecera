@@ -3,7 +3,7 @@ import Link from "next/link";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
 import BuscadorExplorar, { type PerfilExplorar } from "@/components/explorar/BuscadorExplorar";
-import { getFeed, getTags } from "@/lib/datos";
+import { getFeed, getPerfilesVisibles, getTags } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { TAG_FERIA } from "@/lib/hashtags";
 
@@ -16,15 +16,14 @@ export const metadata: Metadata = {
 
 /** Buscador de hashtags y perfiles con pitch, con la sección de la feria arriba. */
 export default async function ExplorarPage() {
-  const [feed, tags] = await Promise.all([getFeed(), getTags()]);
+  const [feed, tags, visibles] = await Promise.all([getFeed(), getTags(), getPerfilesVisibles()]);
 
+  // Todos los perfiles visibles (en la feria muchos todavía no tienen pitch),
+  // con cuántos pitches tiene cada uno.
+  const pitchesPorPerfil = new Map<string, number>();
+  for (const { perfil } of feed) pitchesPorPerfil.set(perfil.id, (pitchesPorPerfil.get(perfil.id) ?? 0) + 1);
   const porPerfil = new Map<string, PerfilExplorar>();
-  for (const { perfil } of feed) {
-    const previo = porPerfil.get(perfil.id);
-    if (previo) {
-      previo.pitches++;
-      continue;
-    }
+  for (const perfil of visibles) {
     porPerfil.set(perfil.id, {
       id: perfil.id,
       slug: perfil.slug,
@@ -34,7 +33,7 @@ export default async function ExplorarPage() {
       descripcion: perfil.descripcion,
       industrias: perfil.industrias ?? [],
       especialidades: perfil.especialidades ?? [],
-      pitches: 1,
+      pitches: pitchesPorPerfil.get(perfil.id) ?? 0,
     });
   }
   const perfiles = [...porPerfil.values()].sort((a, b) => b.pitches - a.pitches || a.nombre.localeCompare(b.nombre));
