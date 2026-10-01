@@ -1,5 +1,6 @@
 "use client";
 
+import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
@@ -235,6 +236,7 @@ function EstadoSesion({
   if (!estado.conSesion) {
     return (
       <form action={entrar} className="flex flex-col gap-2 rounded-2xl bg-tinta px-4 py-4 text-marfil">
+        <AvisoNavegadorInterno />
         <input type="hidden" name="next" value={`/eventos/${evento}#votacion`} />
         <p className="text-sm">¡La votación está abierta! Entrá con Google para votar: un voto por persona.</p>
         <button

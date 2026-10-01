@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { guardarDato } from "@/app/cuenta/empresa";
 import { Aviso, INPUT, Tarjeta } from "@/components/cuenta/ui";
 import type { Resultado } from "@/lib/errores-base";
+import { getConcepto } from "@/lib/glosario";
 import { CATEGORIAS_DATO, DATOS, type DefDato } from "@/lib/transparencia";
 import type { DatoEmpresa } from "@/types/pecera";
 
@@ -83,6 +84,41 @@ export default function TarjetaTransparencia({
   );
 }
 
+/**
+ * El concepto del glosario, adentro de la cuenta de empresa: definición y ejemplo
+ * sin salir de la página. El link lleva al glosario completo.
+ */
+function Concepto({ slug }: { slug?: string }) {
+  const concepto = slug ? getConcepto(slug) : undefined;
+  if (!concepto) return null;
+  return (
+    <details className="group rounded-xl bg-tinta/[0.04] text-sm">
+      <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 px-3 text-tinta/75 hover:text-tinta [&::-webkit-details-marker]:hidden">
+        <span
+          aria-hidden
+          className="flex size-5 items-center justify-center rounded-full border border-tinta/40 font-display text-[11px] font-bold italic"
+        >
+          i
+        </span>
+        ¿Qué es {concepto.termino}?
+      </summary>
+      <div className="flex flex-col gap-2 px-3 pb-3 leading-relaxed">
+        <p className="text-tinta/85">{concepto.definicion}</p>
+        <p className="rounded-lg bg-t-ocre-suave px-3 py-2 text-t-ocre">
+          <span className="font-semibold">Ejemplo: </span>
+          {concepto.ejemplo}
+        </p>
+        <Link
+          href={`/docs/conceptos#${concepto.slug}`}
+          className="self-start text-xs font-medium text-tinta underline decoration-tinta/30 underline-offset-4"
+        >
+          Ver en el glosario
+        </Link>
+      </div>
+    </details>
+  );
+}
+
 function FilaDato({
   def,
   dato,
@@ -105,20 +141,11 @@ function FilaDato({
     <form action={accion} className="flex flex-col gap-2">
       <input type="hidden" name="clave" value={def.clave} />
       <input type="hidden" name="slug_empresa" value={slugEmpresa} />
-      <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-sm font-medium text-tinta">
-          {def.label}
-        </label>
-        {def.concepto && (
-          <Link
-            href={`/docs/conceptos#${def.concepto}`}
-            className="shrink-0 text-xs text-tinta/70 underline underline-offset-4 hover:text-arcilla"
-          >
-            ¿Qué es?
-          </Link>
-        )}
-      </div>
+      <label htmlFor={id} className="text-sm font-medium text-tinta">
+        {def.label}
+      </label>
       <p className="-mt-1 text-sm text-tinta/70">{def.ayuda}</p>
+      <Concepto slug={def.concepto} />
       <input
         id={id}
         name={campo}

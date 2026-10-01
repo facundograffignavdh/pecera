@@ -386,7 +386,7 @@ export default function SumatePage() {
   return (
     <main
       id={ID_SCROLL}
-      className="h-dvh overflow-y-auto overflow-x-clip overscroll-y-contain scroll-smooth bg-marfil text-tinta"
+      className="tema-fijo h-dvh overflow-y-auto overflow-x-clip overscroll-y-contain scroll-smooth bg-marfil text-tinta"
     >
       <div
         id="progreso"

@@ -571,3 +571,266 @@ html[data-revelar] .pasos:not([data-anim]) .paso { opacity: 0; }
   border-color: var(--color-arcilla);
   box-shadow: 0 0 0 3px rgb(217 90 34 / 0.18);
 }
+
+/* ===========================================================================
+   Modo noche. Las utilidades leen las variables al usarse (bg-marfil,
+   text-tinta/70…), así que alcanza con redefinirlas: Marfil pasa a ser el fondo
+   oscuro y Tinta el texto claro. "Auto" sigue al sistema; "luz" y "noche" los
+   elige la persona (data-tema en <html>, lo pone el script del layout).
+   =========================================================================== */
+html {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-tema="luz"]) {
+    color-scheme: dark;
+    --color-marfil: #13120f;
+    --color-tinta: #f1eee3;
+    --color-inversor: #5aa9e0;
+    --color-aliado: #4fb888;
+    --color-t-arcilla: #f3b08e;
+    --color-t-arcilla-suave: #3b2014;
+    --color-t-azul: #9ccbef;
+    --color-t-azul-suave: #132a3d;
+    --color-t-verde: #93d6b0;
+    --color-t-verde-suave: #122a1e;
+    --color-t-ocre: #e6c77a;
+    --color-t-ocre-suave: #2f2610;
+    --color-t-ciruela: #efa6cb;
+    --color-t-ciruela-suave: #34172b;
+    --color-t-violeta: #c3b4f2;
+    --color-t-violeta-suave: #241d3b;
+    --color-t-petroleo: #8fd3d3;
+    --color-t-petroleo-suave: #102b2b;
+    --color-t-tierra: #dcc3a3;
+    --color-t-tierra-suave: #2d251a;
+  }
+}
+html[data-tema="noche"] {
+  color-scheme: dark;
+  --color-marfil: #13120f;
+  --color-tinta: #f1eee3;
+  --color-inversor: #5aa9e0;
+  --color-aliado: #4fb888;
+  --color-t-arcilla: #f3b08e;
+  --color-t-arcilla-suave: #3b2014;
+  --color-t-azul: #9ccbef;
+  --color-t-azul-suave: #132a3d;
+  --color-t-verde: #93d6b0;
+  --color-t-verde-suave: #122a1e;
+  --color-t-ocre: #e6c77a;
+  --color-t-ocre-suave: #2f2610;
+  --color-t-ciruela: #efa6cb;
+  --color-t-ciruela-suave: #34172b;
+  --color-t-violeta: #c3b4f2;
+  --color-t-violeta-suave: #241d3b;
+  --color-t-petroleo: #8fd3d3;
+  --color-t-petroleo-suave: #102b2b;
+  --color-t-tierra: #dcc3a3;
+  --color-t-tierra-suave: #2d251a;
+}
+
+/* Vidrio de noche: oscuro translúcido. */
+html[data-tema="noche"] .vidrio {
+  background: rgba(19, 18, 15, 0.9);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-tema="noche"] .vidrio {
+    background: rgba(19, 18, 15, 0.6);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-tema="luz"]) .vidrio {
+    background: rgba(19, 18, 15, 0.9);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    html:not([data-tema="luz"]) .vidrio {
+      background: rgba(19, 18, 15, 0.6);
+    }
+  }
+}
+
+/* Lo que va sobre video (feed, pop-up, landing) se diseñó para la paleta clara:
+   queda fija en cualquier tema. */
+.tema-fijo,
+html .tema-fijo {
+  color-scheme: light;
+  --color-marfil: #f5f4ec;
+  --color-tinta: #1c1b16;
+  --color-inversor: #0c6aa8;
+  --color-aliado: #1f7a52;
+  --color-t-arcilla: #8a3310;
+  --color-t-arcilla-suave: #f6dccb;
+  --color-t-azul: #0b4f7c;
+  --color-t-azul-suave: #d6e6f4;
+  --color-t-verde: #16603f;
+  --color-t-verde-suave: #d8eedf;
+  --color-t-ocre: #6b4f06;
+  --color-t-ocre-suave: #f3e6c4;
+  --color-t-ciruela: #8a2358;
+  --color-t-ciruela-suave: #f1d9e6;
+  --color-t-violeta: #4b3690;
+  --color-t-violeta-suave: #e4ddf3;
+  --color-t-petroleo: #1e5e5e;
+  --color-t-petroleo-suave: #d5eaea;
+  --color-t-tierra: #5c4424;
+  --color-t-tierra-suave: #ede3d2;
+}
+
+/* ===========================================================================
+   Movimiento: respuesta táctil de botones, entrada de pasos y secciones.
+   Todo con el easing de marca y apagado con "reducir movimiento".
+   =========================================================================== */
+.boton {
+  transition:
+    transform 180ms var(--ease-pecera),
+    background-color 200ms var(--ease-pecera),
+    border-color 200ms var(--ease-pecera),
+    box-shadow 250ms var(--ease-pecera),
+    opacity 200ms var(--ease-pecera);
+  -webkit-tap-highlight-color: transparent;
+}
+.boton:active:not(:disabled) {
+  transform: scale(0.96);
+}
+@media (hover: hover) {
+  .boton:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgb(28 27 22 / 0.14);
+  }
+  .boton:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+}
+
+.tarjeta-opcion {
+  transition:
+    border-color 200ms var(--ease-pecera),
+    box-shadow 300ms var(--ease-pecera),
+    transform 200ms var(--ease-pecera);
+}
+.tarjeta-opcion:active {
+  transform: scale(0.985);
+}
+
+@keyframes paso-entra {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.paso-entra {
+  animation: paso-entra 460ms var(--ease-pecera) both;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+}
+.aparecer {
+  animation: aparecer 600ms var(--ease-pecera) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.girando {
+  animation: girar 800ms linear infinite;
+}
+
+/* Brillo que cruza un botón destacado (subir pitch). */
+@keyframes brillo-cruza {
+  0%,
+  60% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+  }
+}
+.boton-brillo {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.boton-brillo::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  animation: brillo-cruza 3.2s var(--ease-pecera) infinite;
+  z-index: -1;
+}
+
+/* Llama de la racha: late suave. */
+@keyframes llama {
+  0%,
+  100% {
+    transform: scale(1) rotate(-2deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(3deg);
+  }
+}
+.llama {
+  display: inline-block;
+  animation: llama 1.6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boton,
+  .tarjeta-opcion {
+    transition-property: background-color, border-color, opacity;
+  }
+  .boton:active:not(:disabled),
+  .boton:hover:not(:disabled),
+  .tarjeta-opcion:active {
+    transform: none;
+  }
+  .paso-entra,
+  .aparecer,
+  .llama {
+    animation: none;
+  }
+  .boton-brillo::after {
+    display: none;
+  }
+  .girando {
+    animation-duration: 2.4s;
+  }
+}
+
+/* Imágenes por tema (logos): la de tinta en modo luz, la de marfil en modo noche.
+   Lo que es .tema-fijo (feed, landing) se queda siempre con la versión clara. */
+.solo-noche {
+  display: none;
+}
+html[data-tema="noche"] .solo-luz {
+  display: none;
+}
+html[data-tema="noche"] .solo-noche {
+  display: revert;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-tema="luz"]) .solo-luz {
+    display: none;
+  }
+  html:not([data-tema="luz"]) .solo-noche {
+    display: revert;
+  }
+}
+html .tema-fijo .solo-luz {
+  display: revert !important;
+}
+html .tema-fijo .solo-noche {
+  display: none !important;
+}

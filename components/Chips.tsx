@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Info from "@/components/Info";
 
 /**
  * Chips de selección del formulario. Por dentro son radios o checkboxes nativos
@@ -39,6 +40,7 @@ function Grupo({
   id,
   legend,
   ayuda,
+  info,
   error,
   contador,
   children,
@@ -46,6 +48,8 @@ function Grupo({
   id: string;
   legend: string;
   ayuda?: ReactNode;
+  /** Explicación detrás del ícono "i". */
+  info?: ReactNode;
   error?: string;
   contador?: string;
   children: ReactNode;
@@ -55,8 +59,11 @@ function Grupo({
       className="flex flex-col gap-2"
       aria-describedby={[ayuda && `${id}-ayuda`, error && `${id}-error`].filter(Boolean).join(" ") || undefined}
     >
-      <legend className="flex w-full items-baseline justify-between gap-2 text-sm font-medium text-tinta">
-        <span>{legend}</span>
+      <legend className="relative flex w-full items-center justify-between gap-2 text-sm font-medium text-tinta">
+        <span className="flex items-center gap-2">
+          {legend}
+          {info && <Info titulo={`Qué es: ${legend}`}>{info}</Info>}
+        </span>
         {contador && <span className="text-xs font-normal tabular-nums text-tinta/60">{contador}</span>}
       </legend>
       {ayuda && (
@@ -84,6 +91,7 @@ export function ChipsUnico({
   valor,
   onCambiar,
   ayuda,
+  info,
   error,
   permitirNinguno = false,
 }: {
@@ -94,12 +102,13 @@ export function ChipsUnico({
   valor: string;
   onCambiar: (valor: string) => void;
   ayuda?: ReactNode;
+  info?: ReactNode;
   error?: string;
   /** Tocar el elegido lo desmarca (para campos opcionales). */
   permitirNinguno?: boolean;
 }) {
   return (
-    <Grupo id={id} legend={legend} ayuda={ayuda} error={error}>
+    <Grupo id={id} legend={legend} ayuda={ayuda} info={info} error={error}>
       {opciones.map((o) => {
         const elegido = valor === o.valor;
         return (
@@ -137,6 +146,7 @@ export function ChipsMultiple({
   onCambiar,
   max,
   ayuda,
+  info,
   error,
 }: {
   id: string;
@@ -147,6 +157,7 @@ export function ChipsMultiple({
   onCambiar: (valores: string[]) => void;
   max?: number;
   ayuda?: ReactNode;
+  info?: ReactNode;
   error?: string;
 }) {
   const lleno = max !== undefined && valores.length >= max;
@@ -155,6 +166,7 @@ export function ChipsMultiple({
       id={id}
       legend={legend}
       ayuda={ayuda}
+      info={info}
       error={error}
       contador={max ? `${valores.length}/${max}` : undefined}
     >
@@ -199,12 +211,14 @@ export function SelectorEtapa({
   etapas,
   valor,
   onCambiar,
+  info,
   error,
 }: {
   id: string;
   nombre: string;
   legend: string;
   etapas: ReadonlyArray<{ valor: string; label: string; ayuda: string }>;
+  info?: ReactNode;
   valor: string;
   onCambiar: (valor: string) => void;
   error?: string;
@@ -213,7 +227,7 @@ export function SelectorEtapa({
   const elegida = indice >= 0 ? etapas[indice] : null;
 
   return (
-    <Grupo id={id} legend={legend} error={error}>
+    <Grupo id={id} legend={legend} info={info} error={error}>
       <div className="w-full">
         <div className="grid w-full grid-cols-5 gap-1.5">
           {etapas.map((e, i) => {

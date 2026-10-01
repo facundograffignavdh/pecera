@@ -24,7 +24,14 @@ export default function PieLegal({
   const { src, texto, enlace } = TONOS[tono];
   return (
     <footer className={`flex flex-col items-center gap-3 ${className}`}>
-      <Image src={src} alt="Pecera" width={147} height={32} />
+      {tono === "claro" ? (
+        <>
+          <Image src={src} alt="Pecera" width={147} height={32} className="solo-luz" />
+          <Image src={TONOS.oscuro.src} alt="Pecera" width={147} height={32} className="solo-noche" />
+        </>
+      ) : (
+        <Image src={src} alt="Pecera" width={147} height={32} />
+      )}
       <p className={`max-w-md text-center text-xs leading-relaxed ${texto}`}>{LEGAL}</p>
       <nav aria-label="Legales" className={`-mt-2 flex items-center text-xs ${enlace}`}>
         <Link href="/privacidad" className={CLASE_ENLACE}>

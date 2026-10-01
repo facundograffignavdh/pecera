@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import Avatar from "@/components/Avatar";
+import DescripcionConTags from "@/components/DescripcionConTags";
 import { EtiquetasReel } from "@/components/Etiquetas";
+import { cargo as cargoDe } from "@/lib/etiquetas";
+import { dejarDeSeguir, seguir, useSigo } from "@/lib/red";
 import { IconoCorazon, IconoSonido, IconoSubtitulos } from "@/components/Iconos";
 import Subtitulos from "@/components/Subtitulos";
 import { formatoCompacto } from "@/lib/formato";
@@ -216,7 +219,7 @@ export default function Reel({
       ref={(el) => registrarRef(indice, el)}
       id={pitch.id}
       data-indice={indice}
-      className="relative h-dvh w-full snap-start snap-always overflow-hidden bg-tinta"
+      className="relative mx-auto h-dvh w-full snap-start snap-always overflow-hidden bg-tinta lg:max-w-[calc(100dvh*9/16)] lg:shadow-[0_0_80px_rgb(0_0_0/0.5)]"
     >
       <video
         ref={videoRef}
@@ -331,13 +334,12 @@ export default function Reel({
         {/* Margen derecho del ancho de la columna: un texto largo nunca queda debajo. */}
         <div className="mt-3 pr-14">
           <div className="flex items-center gap-3">
-            <Link
-              href={href}
-              aria-label={`Ver el perfil de ${perfil.nombre}`}
-              className="pointer-events-auto"
-            >
-              <Avatar perfil={perfil} size={48} />
-            </Link>
+            <span className="relative shrink-0">
+              <Link href={href} aria-label={`Ver el perfil de ${perfil.nombre}`} className="pointer-events-auto block">
+                <Avatar perfil={perfil} size={48} />
+              </Link>
+              <SeguirMini item={item} />
+            </span>
             <div className="min-w-0">
               <Link
                 href={href}
@@ -345,6 +347,18 @@ export default function Reel({
               >
                 {perfil.nombre}
               </Link>
+              {(item.racha ?? 0) > 1 && (
+                <span
+                  title={`Racha de ${item.racha} días subiendo pitches`}
+                  className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-tinta/55 px-1.5 py-0.5 align-middle text-xs font-semibold ring-1 ring-marfil/20"
+                >
+                  <span aria-hidden className="llama">
+                    🔥
+                  </span>
+                  {item.racha}
+                  <span className="sr-only"> días de racha</span>
+                </span>
+              )}
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-medium ${rol.bg}`}
@@ -358,13 +372,15 @@ export default function Reel({
 
           <EtiquetasReel perfil={perfil} />
 
-          <p className="mt-3 max-w-prose text-sm leading-relaxed text-marfil/90">
-            {pitch.descripcion || perfil.descripcion}
-          </p>
+          <DescripcionConTags
+            texto={pitch.descripcion || perfil.descripcion}
+            claro
+            className="mt-3 max-w-prose text-sm leading-relaxed text-marfil/90"
+          />
 
           <Link
             href={href}
-            className="pointer-events-auto mt-4 inline-flex rounded-full bg-arcilla px-5 py-2.5 font-medium text-marfil transition-colors duration-200 ease-pecera hover:bg-pecera"
+            className="boton pointer-events-auto mt-4 inline-flex rounded-full bg-arcilla px-5 py-2.5 font-medium text-marfil hover:bg-pecera"
           >
             Ver perfil
           </Link>
@@ -375,6 +391,41 @@ export default function Reel({
 }
 
 type Corazon = { id: number; x: number; y: number; giro: number };
+
+/** "+" sobre el avatar, como en TikTok: seguir sin salir del feed. */
+function SeguirMini({ item }: { item: ItemFeed }) {
+  const { perfil } = item;
+  const sigo = useSigo(perfil.id);
+  return (
+    <button
+      type="button"
+      aria-pressed={sigo}
+      aria-label={sigo ? `Dejar de seguir a ${perfil.nombre}` : `Seguir a ${perfil.nombre}`}
+      onClick={() => {
+        if (sigo) {
+          dejarDeSeguir(perfil.id);
+          return;
+        }
+        const c = cargoDe(perfil.cargo);
+        seguir({
+          id: perfil.id,
+          slug: perfil.slug,
+          nombre: perfil.nombre,
+          rol: perfil.rol,
+          avatar_url: perfil.avatar_url,
+          descripcion: perfil.descripcion,
+          detalle: perfil.empresa ? `${c?.label ?? "Equipo"} en ${perfil.empresa.nombre}` : null,
+        });
+        navigator.vibrate?.(10);
+      }}
+      className={`boton pointer-events-auto absolute -bottom-1.5 left-1/2 flex size-6 -translate-x-1/2 items-center justify-center rounded-full text-sm font-bold ring-2 ring-tinta after:absolute after:-inset-2 ${
+        sigo ? "bg-marfil text-tinta" : "bg-arcilla text-marfil"
+      }`}
+    >
+      {sigo ? "✓" : "+"}
+    </button>
+  );
+}
 
 /** 0 muestra el nombre del gesto; desde 1000, "1,2 mil". */
 function formatoPiques(n: number): string {

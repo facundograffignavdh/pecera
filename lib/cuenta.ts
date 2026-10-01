@@ -1,11 +1,21 @@
 import {
+  APORTES,
   CARGOS,
+  DEDICACIONES,
+  EDUCACION_MAX,
   ESPECIALIDADES,
   ETAPAS,
+  EXPERIENCIA_MAX,
   INDUSTRIAS,
   MAX_ESPECIALIDADES,
   MAX_INDUSTRIAS_INTERES,
   MAX_INDUSTRIAS_PROYECTO,
+  MAX_NECESIDADES,
+  MAX_SKILLS,
+  NECESIDADES,
+  NOTA_COFUNDADOR_MAX,
+  SKILL_MAX,
+  UBICACION_MAX,
   RONDAS,
   RONDAS_INTERES,
   TICKETS,
@@ -64,17 +74,31 @@ export const OPCIONES_ROL = Object.entries(ROLES).map(
   ([valor, { label }]) => [valor, label] as [Rol, string]
 );
 
-/** "¿Qué sos?" según el rol: menos ruido que las 7 opciones juntas. */
+/** "¿Qué sos?" según el rol: menos ruido que todas las opciones juntas. */
 export const TIPOS_POR_ROL: Record<Rol, TipoPerfil[]> = {
   emprendedor: ["startup", "emprendimiento"],
-  inversor: ["angel", "fondo", "aceleradora"],
-  aliado: ["aceleradora", "incubadora", "coach"],
+  inversor: ["angel", "fondo", "aceleradora", "empresa"],
+  aliado: ["profesional", "coach", "aceleradora", "incubadora", "empresa", "institucion"],
+};
+
+/** Una línea que explica cada "¿Qué sos?" (el ícono de info del formulario). */
+export const AYUDA_TIPO: Record<TipoPerfil, string> = {
+  startup: "Producto escalable, pensado para crecer rápido y levantar inversión.",
+  emprendimiento: "Negocio propio que crece a su ritmo: comercio, servicio, producción.",
+  angel: "Invertís plata propia en proyectos que recién arrancan.",
+  fondo: "Invertís plata de terceros desde un fondo de capital de riesgo.",
+  aceleradora: "Programa con fecha que acompaña (y a veces invierte en) startups.",
+  incubadora: "Espacio y formación para ideas y proyectos tempranos.",
+  coach: "Acompañás founders con tu experiencia: mentoría o coaching.",
+  profesional: "Ofrecés un servicio: marketing, desarrollo, diseño, legal, finanzas…",
+  empresa: "Empresa o corporación que busca innovación, proveedores o invertir.",
+  institucion: "Universidad, gobierno, cámara u ONG que apoya al ecosistema.",
 };
 
 export const DESCRIPCION_ROL: Record<Rol, string> = {
   emprendedor: "Tengo una startup o un proyecto y quiero mostrarlo.",
   inversor: "Busco proyectos para invertir y quiero escribirles directo.",
-  aliado: "Acompaño proyectos: mentoría, coaching, aceleración o servicios.",
+  aliado: "Sumo a los proyectos: mentoría, servicios profesionales, aceleración o apoyo institucional.",
 };
 
 /**
@@ -117,12 +141,25 @@ export type CampoSimple =
   | "etapa"
   | "ronda"
   | "cargo"
-  | "ticket";
+  | "ticket"
+  | "cofundador_aporta"
+  | "cofundador_dedicacion"
+  | "cofundador_nota"
+  | "ubicacion"
+  | "experiencia"
+  | "educacion";
 
-/** Campos de varias opciones (chips). */
-export type CampoLista = "industrias" | "especialidades" | "rondas_interes";
+/** Campos de varias opciones (chips o tags). */
+export type CampoLista =
+  | "industrias"
+  | "especialidades"
+  | "rondas_interes"
+  | "cofundador_busca"
+  | "skills"
+  | "busca"
+  | "ofrece";
 
-export type CampoPerfil = CampoSimple | CampoLista | "slug" | "consentimiento";
+export type CampoPerfil = CampoSimple | CampoLista | "slug" | "consentimiento" | "busca_cofundador";
 
 export const CAMPOS_SIMPLES: CampoSimple[] = [
   "nombre",
@@ -138,11 +175,25 @@ export const CAMPOS_SIMPLES: CampoSimple[] = [
   "ronda",
   "cargo",
   "ticket",
+  "cofundador_aporta",
+  "cofundador_dedicacion",
+  "cofundador_nota",
+  "ubicacion",
+  "experiencia",
+  "educacion",
 ];
-export const CAMPOS_LISTA: CampoLista[] = ["industrias", "especialidades", "rondas_interes"];
+export const CAMPOS_LISTA: CampoLista[] = [
+  "industrias",
+  "especialidades",
+  "rondas_interes",
+  "cofundador_busca",
+  "skills",
+  "busca",
+  "ofrece",
+];
 
 export type EntradaPerfil = Partial<Record<CampoSimple, string>> &
-  Partial<Record<CampoLista, string[]>>;
+  Partial<Record<CampoLista, string[]>> & { busca_cofundador?: boolean };
 
 /** Lo que existe desde v2-cuentas: si la base no tiene la migración nueva, se guarda esto. */
 export type DatosBase = {
@@ -168,7 +219,32 @@ export type DatosRol = {
   rondas_interes: string[];
 };
 
-export type DatosEditables = DatosBase & DatosRol;
+/** Cofounder match (migración feria_pro). Sin la búsqueda prendida, todo vacío. */
+export type DatosCofundador = {
+  busca_cofundador: boolean;
+  cofundador_aporta: string | null;
+  cofundador_busca: string[];
+  cofundador_dedicacion: string | null;
+  cofundador_nota: string | null;
+};
+
+/** Perfil profesional y preferencias (feria_pro). Todo opcional. */
+export type DatosProfesionales = {
+  ubicacion: string | null;
+  experiencia: string | null;
+  educacion: string | null;
+  skills: string[];
+  busca: string[];
+  ofrece: string[];
+};
+
+export type DatosEditables = DatosBase & DatosRol & DatosCofundador & DatosProfesionales;
+
+/**
+ * WhatsApp: Argentina se guarda como 10 dígitos (área + número, sin 0 ni 15);
+ * el resto, internacional con "+" (hasta 15 dígitos). Espejo del guardián.
+ */
+export const WHATSAPP = /^([1-9]\d{9}|\+[1-9]\d{7,14})$/;
 
 export type Errores = Partial<Record<CampoPerfil, string>>;
 
@@ -207,9 +283,12 @@ export function validarPerfil(entrada: EntradaPerfil): { datos: DatosEditables; 
     errores.descripcion = `Hasta ${DESCRIPCION_MAX} caracteres.`;
   }
 
-  const whatsapp = opcional(v("whatsapp").replace(/\D/g, ""));
-  if (whatsapp && !/^[1-9]\d{9}$/.test(whatsapp)) {
-    errores.whatsapp = "Son 10 dígitos: código de área sin 0 y número sin 15.";
+  const crudo = v("whatsapp").trim();
+  const whatsapp = opcional(crudo.startsWith("+") ? `+${crudo.replace(/\D/g, "")}` : crudo.replace(/\D/g, ""));
+  if (whatsapp && !WHATSAPP.test(whatsapp)) {
+    errores.whatsapp = whatsapp.startsWith("+")
+      ? "Revisá el número: código de país y número, sin espacios."
+      : "Son 10 dígitos: código de área sin 0 y número sin 15.";
   }
 
   const email = opcional(v("email"));
@@ -231,10 +310,89 @@ export function validarPerfil(entrada: EntradaPerfil): { datos: DatosEditables; 
   }
 
   const rolDatos = validarRol(rol, entrada, errores);
+  const cofundador = validarCofundador(entrada, errores);
+  const profesionales = validarProfesionales(entrada, errores);
 
   return {
-    datos: { nombre, tipo, rol, descripcion, whatsapp, email, linkedin, instagram, web, ...rolDatos },
+    datos: {
+      nombre,
+      tipo,
+      rol,
+      descripcion,
+      whatsapp,
+      email,
+      linkedin,
+      instagram,
+      web,
+      ...rolDatos,
+      ...cofundador,
+      ...profesionales,
+    },
     errores,
+  };
+}
+
+/** Ubicación, experiencia, educación, skills y qué busca/ofrece: todo opcional. */
+function validarProfesionales(entrada: EntradaPerfil, errores: Errores): DatosProfesionales {
+  const texto = (campo: CampoSimple) => (entrada[campo] ?? "").trim();
+  const ubicacion = texto("ubicacion");
+  const experiencia = texto("experiencia");
+  const educacion = texto("educacion");
+  if (ubicacion.length > UBICACION_MAX) errores.ubicacion = `Hasta ${UBICACION_MAX} caracteres.`;
+  if (experiencia.length > EXPERIENCIA_MAX) errores.experiencia = `Hasta ${EXPERIENCIA_MAX} caracteres.`;
+  if (educacion.length > EDUCACION_MAX) errores.educacion = `Hasta ${EDUCACION_MAX} caracteres.`;
+
+  // Skills: sin repetidos (sin importar mayúsculas), cortas y hasta 10.
+  const vistas = new Set<string>();
+  const skills: string[] = [];
+  for (const crudo of entrada.skills ?? []) {
+    const skill = crudo.trim().replace(/\s+/g, " ").slice(0, SKILL_MAX);
+    const clave = skill.toLowerCase();
+    if (!skill || vistas.has(clave)) continue;
+    vistas.add(clave);
+    skills.push(skill);
+  }
+  if (skills.length > MAX_SKILLS) errores.skills = `Hasta ${MAX_SKILLS} skills.`;
+
+  const busca = limpiarLista(entrada.busca, NECESIDADES);
+  const ofrece = limpiarLista(entrada.ofrece, NECESIDADES);
+  if (busca.length > MAX_NECESIDADES) errores.busca = `Hasta ${MAX_NECESIDADES}.`;
+  if (ofrece.length > MAX_NECESIDADES) errores.ofrece = `Hasta ${MAX_NECESIDADES}.`;
+
+  return {
+    ubicacion: ubicacion || null,
+    experiencia: experiencia || null,
+    educacion: educacion || null,
+    skills: skills.slice(0, MAX_SKILLS),
+    busca,
+    ofrece,
+  };
+}
+
+/** Cofounder match: opcional para todos los roles. Apagado = todo vacío. */
+function validarCofundador(entrada: EntradaPerfil, errores: Errores): DatosCofundador {
+  if (!entrada.busca_cofundador) {
+    return {
+      busca_cofundador: false,
+      cofundador_aporta: null,
+      cofundador_busca: [],
+      cofundador_dedicacion: null,
+      cofundador_nota: null,
+    };
+  }
+  const aporta = (entrada.cofundador_aporta ?? "").trim();
+  const busca = limpiarLista(entrada.cofundador_busca, APORTES);
+  const dedicacion = (entrada.cofundador_dedicacion ?? "").trim();
+  const nota = (entrada.cofundador_nota ?? "").trim();
+  if (!esValor(APORTES, aporta)) errores.cofundador_aporta = "Elegí qué aportás vos.";
+  if (!busca.length) errores.cofundador_busca = "Elegí qué perfil buscás.";
+  if (nota.length > NOTA_COFUNDADOR_MAX) errores.cofundador_nota = `Hasta ${NOTA_COFUNDADOR_MAX} caracteres.`;
+  return {
+    busca_cofundador: true,
+    cofundador_aporta: esValor(APORTES, aporta) ? aporta : null,
+    cofundador_busca: busca,
+    cofundador_dedicacion: esValor(DEDICACIONES, dedicacion) ? dedicacion : null,
+    cofundador_nota: nota || null,
   };
 }
 
@@ -308,6 +466,20 @@ function validarRol(rol: Rol, entrada: EntradaPerfil, errores: Errores): DatosRo
   }
 
   return vacio;
+}
+
+/** Todo menos el cofounder match: para guardar si la base no tiene feria_pro. */
+export function sinCofundador(datos: DatosEditables): DatosBase & DatosRol {
+  return {
+    ...soloBase(datos),
+    etapa: datos.etapa,
+    ronda: datos.ronda,
+    cargo: datos.cargo,
+    ticket: datos.ticket,
+    industrias: datos.industrias,
+    especialidades: datos.especialidades,
+    rondas_interes: datos.rondas_interes,
+  };
 }
 
 /** Separa lo de siempre de lo nuevo, para guardar sin la migración si hace falta. */

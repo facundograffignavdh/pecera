@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
 import Link from "next/link";
 import BotonCopiar from "@/components/BotonCopiar";
 import Encabezado from "@/components/Encabezado";
@@ -69,6 +70,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
 function SinSesion() {
   return (
     <form action={entrar} className="mt-6 flex flex-col gap-3">
+      <AvisoNavegadorInterno />
       <input type="hidden" name="next" value="/admin" />
       <p className="text-tinta/80">Entrá con la cuenta de Google del equipo.</p>
       <button

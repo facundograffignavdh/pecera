@@ -7,7 +7,11 @@ export type TipoPerfil =
   | "incubadora"
   | "angel"
   | "fondo"
-  | "coach";
+  | "coach"
+  // feria_pro: aliados (y corporativos que invierten) más allá de mentor/coach.
+  | "profesional"
+  | "empresa"
+  | "institucion";
 
 export type Perfil = {
   id: string;
@@ -33,12 +37,25 @@ export type Perfil = {
   ticket?: string | null;
   rondas_interes?: string[];
   empresa_id?: string | null;
+  // Cofounder match (migración feria_pro).
+  busca_cofundador?: boolean;
+  cofundador_aporta?: string | null;
+  cofundador_busca?: string[];
+  cofundador_dedicacion?: string | null;
+  cofundador_nota?: string | null;
+  // Perfil profesional y preferencias (feria_pro).
+  ubicacion?: string | null;
+  experiencia?: string | null;
+  educacion?: string | null;
+  skills?: string[];
+  busca?: string[];
+  ofrece?: string[];
   /** Solo en las consultas que lo piden (perfil público, feed). */
   empresa?: EmpresaResumen | null;
 };
 
 /** Lo mínimo de una empresa para mostrarla junto a una persona. */
-export type EmpresaResumen = { slug: string; nombre: string };
+export type EmpresaResumen = { slug: string; nombre: string; logo_url?: string | null };
 
 export type Empresa = {
   id: string;
@@ -51,6 +68,20 @@ export type Empresa = {
   industrias: string[];
   etapa: string | null;
   ronda: string | null;
+  /** Clave de R2 (o URL ya armada en lib/datos). Opcional: feria_pro. */
+  logo_url?: string | null;
+  ubicacion?: string | null;
+};
+
+/** Un ítem del portafolio de un perfil (inversión, caso, servicio, logro…). */
+export type ItemPortafolio = {
+  id: string;
+  tipo: string;
+  titulo: string;
+  descripcion: string | null;
+  url: string | null;
+  visible: boolean;
+  orden: number;
 };
 
 /** Métrica o documento de una empresa (transparencia). */
@@ -73,6 +104,8 @@ export type Pitch = {
   publicado: boolean;
   /** Del Form de pitches. Si falta, el feed muestra la del perfil. */
   descripcion: string | null;
+  /** Cuándo se publicó (para la racha de progreso). */
+  created_at?: string;
   /** Solo lo trae el feed. `null` o `[]`: no hay subtítulos para mostrar. */
   subtitulos?: Subtitulo[] | null;
 };
@@ -83,6 +116,8 @@ export type ItemFeed = {
   perfil: Perfil;
   /** Piques del pitch según el último ISR; el cliente lo refresca al montar. */
   piques: number;
+  /** Días seguidos con pitch nuevo del perfil (racha de progreso). */
+  racha?: number;
 };
 
 /** Vistas y piques de un pitch (solo agregados), para el perfil. */

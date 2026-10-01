@@ -9,6 +9,9 @@ Cómo usar el cambio y operar la feria: [`GUIA-FERIA.md`](./GUIA-FERIA.md).
 
 ---
 
+> **Actualización 1/10 (rama `feria-21-pro`):** auditoría de la segunda vuelta, troubleshooting
+> y veredicto del council en [`FERIA-PRO.md`](./FERIA-PRO.md), secciones 3 y 4.
+
 ## 1. Resumen ejecutivo
 
 **Qué queremos lograr en la feria.** Que cada proyecto salga de la Feria 21 con un perfil
