@@ -3,6 +3,7 @@ import type { Avance, Hito, HitoActual } from "@/lib/build";
 import type { Documento } from "@/lib/dataroom";
 import { urlMedia } from "@/lib/media";
 import type { NewsletterLink } from "@/lib/newsletter";
+import { COLUMNAS_PORTFOLIO, type EntradaPortfolio, type Servicio, type Tesis } from "@/lib/portfolio";
 import type { Producto } from "@/lib/producto";
 import { supabase } from "@/lib/supabase";
 import type { DatoEmpresa, Empresa, ItemFeed, Metricas, Perfil, Pitch } from "@/types/pecera";
@@ -205,6 +206,68 @@ export const getNewsletter = cache(async (perfilId: string): Promise<NewsletterL
     return null;
   }
   return data;
+});
+
+export type PortfolioPublico = { entradas: EntradaPortfolio[]; servicios: Servicio[]; tesis: Tesis | null };
+
+/**
+ * Lo público del portfolio de un perfil visible: entradas públicas, servicios y
+ * tesis. Lo de "solo cuentas" lo pide el navegador con sesión. No lanza.
+ */
+export const getPortfolio = cache(async (perfilId: string): Promise<PortfolioPublico | null> => {
+  const [entradas, servicios, tesis] = await Promise.all([
+    supabase
+      .from("portfolio")
+      .select(`${COLUMNAS_PORTFOLIO}, empresa:empresas(slug, nombre)`)
+      .eq("perfil_id", perfilId)
+      .eq("visibilidad", "publico")
+      .order("created_at", { ascending: false })
+      .limit(60)
+      .overrideTypes<EntradaPortfolio[], { merge: false }>(),
+    supabase
+      .from("perfil_servicios")
+      .select("id, nombre, categoria, descripcion, modalidad, precio")
+      .eq("perfil_id", perfilId)
+      .order("orden")
+      .overrideTypes<Servicio[], { merge: false }>(),
+    supabase
+      .from("perfil_tesis")
+      .select("texto, geografias, modelos, busca")
+      .eq("perfil_id", perfilId)
+      .maybeSingle()
+      .overrideTypes<Tesis | null, { merge: false }>(),
+  ]);
+  const error = entradas.error ?? servicios.error ?? tesis.error;
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getPortfolio): ${error.message}`);
+    return null;
+  }
+  return { entradas: entradas.data ?? [], servicios: servicios.data ?? [], tesis: tesis.data };
+});
+
+export type Apoyo = Pick<EntradaPortfolio, "id" | "tipo" | "estado" | "rol" | "confirmacion"> & {
+  perfil: Pick<Perfil, "slug" | "nombre" | "rol" | "tipo" | "avatar_url">;
+};
+
+/**
+ * Inversores y aliados que muestran públicamente una relación con esta empresa (las
+ * que la empresa rechazó, no). Confirmadas primero. No lanza.
+ */
+export const getApoyos = cache(async (empresaId: string): Promise<Apoyo[]> => {
+  const { data, error } = await supabase
+    .from("portfolio")
+    .select("id, tipo, estado, rol, confirmacion, perfil:perfiles!inner(slug, nombre, rol, tipo, avatar_url)")
+    .eq("empresa_id", empresaId)
+    .eq("visibilidad", "publico")
+    .neq("confirmacion", "rechazada")
+    .overrideTypes<Apoyo[], { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getApoyos): ${error.message}`);
+    return [];
+  }
+  return (data ?? [])
+    .map((a) => ({ ...a, perfil: { ...a.perfil, avatar_url: a.perfil.avatar_url && urlMedia(a.perfil.avatar_url) } }))
+    .sort((a, b) => Number(b.confirmacion === "confirmada") - Number(a.confirmacion === "confirmada"));
 });
 
 /** Slugs publicados, para `generateStaticParams`. */

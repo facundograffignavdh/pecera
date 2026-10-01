@@ -8,6 +8,7 @@ import { EVENTO_ACTUAL } from "@/lib/eventos";
 
 const ENLACES = [
   { href: "/", label: "Feed", bajada: "Los pitches en video" },
+  { href: "/explorar", label: "Explorar", bajada: "Startups, inversores y aliados" },
   { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "Programa y votación" },
   { href: "/academy", label: "Academy", bajada: "Aprendé y prepará tu startup" },
   { href: "/sumate", label: "Sumate", bajada: "Qué es Pecera y cómo entrar" },

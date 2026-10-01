@@ -14,7 +14,9 @@ import { BarraEtapa, Etiqueta } from "@/components/Etiquetas";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { conProtocolo, hrefInstagram } from "@/lib/contacto";
-import { getDocumentosPublicos, getEmpresa } from "@/lib/datos";
+import { getApoyos, getDocumentosPublicos, getEmpresa } from "@/lib/datos";
+import { defTipo } from "@/lib/portfolio";
+import { ROLES } from "@/lib/rol";
 import { cargo, labelIndustria, labelRonda } from "@/lib/etiquetas";
 import { defDato } from "@/lib/transparencia";
 
@@ -58,7 +60,7 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
   const [principal, ...otros] = [...pitches].sort((a, b) => b.orden - a.orden);
   const hayBuild = hitos.length > 0 || avances.length > 0;
   const hayRonda = !!ronda || datos.datos.some((d) => defDato(d.clave)?.categoria === "Ronda");
-  const documentos = await getDocumentosPublicos(empresa.id);
+  const [documentos, apoyos] = await Promise.all([getDocumentosPublicos(empresa.id), getApoyos(empresa.id)]);
   const hayTransparencia = documentos.length > 0 || datos.datos.some((d) => defDato(d.clave)?.categoria !== "Ronda");
 
   const canales = [
@@ -73,6 +75,7 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
     principal && { id: "pitch", label: "Pitch" },
     hayBuild && { id: "build", label: "Build in Public" },
     miembros.length > 0 && { id: "equipo", label: "Equipo" },
+    apoyos.length > 0 && { id: "apoyos", label: "Inversores y aliados" },
     hayRonda && { id: "ronda", label: "Ronda" },
     hayTransparencia && { id: "transparencia", label: "Transparencia" },
   ].filter((x): x is { id: string; label: string } => !!x);
@@ -205,6 +208,39 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
                   </li>
                 );
               })}
+            </ul>
+          </section>
+        )}
+
+        {apoyos.length > 0 && (
+          <section id="apoyos" aria-labelledby="apoyos-titulo" className="mt-8 scroll-mt-24">
+            <h2 id="apoyos-titulo" className={SUBTITULO}>
+              Inversores y aliados
+            </h2>
+            <p className="mt-1 text-sm text-tinta/70">Quienes muestran en su portfolio que trabajan o trabajaron con la empresa.</p>
+            <ul data-revelar className="mt-3 flex flex-col gap-2">
+              {apoyos.map((a) => (
+                <li key={a.id}>
+                  <Link
+                    href={`/p/${a.perfil.slug}`}
+                    className="flex min-h-14 items-center gap-3 rounded-2xl border border-tinta/10 px-3 py-2 transition-colors duration-200 ease-pecera hover:border-arcilla"
+                  >
+                    <Avatar perfil={a.perfil} size={44} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-tinta">{a.perfil.nombre}</span>
+                      <span className="block truncate text-sm text-tinta/65">
+                        {defTipo(a.tipo)?.verbo ?? "Trabajó con"} la empresa
+                        {a.estado !== "actual" ? " (antes)" : ""} · {ROLES[a.perfil.rol].label}
+                      </span>
+                    </span>
+                    {a.confirmacion === "confirmada" ? (
+                      <span className="shrink-0 rounded-full bg-t-verde-suave px-2 py-0.5 text-[0.6875rem] font-semibold text-t-verde">Confirmado</span>
+                    ) : (
+                      <span className="shrink-0 rounded-full border border-tinta/15 px-2 py-0.5 text-[0.6875rem] font-medium text-tinta/65">Declarado</span>
+                    )}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </section>
         )}

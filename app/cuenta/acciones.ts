@@ -104,6 +104,7 @@ function errorDeLaBase(error: PostgrestError, errores: Errores): EstadoGuardar {
 
 function revalidar(slug: string) {
   revalidatePath("/");
+  revalidatePath("/explorar");
   revalidatePath(`/p/${slug}`);
   revalidatePath("/cuenta");
 }

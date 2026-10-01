@@ -32,6 +32,7 @@ async function conSesion() {
 function refrescar(slug?: string) {
   revalidatePath("/cuenta");
   revalidatePath("/");
+  revalidatePath("/explorar");
   if (slug) revalidatePath(`/e/${slug}`);
 }
 

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { type Resultado, SIN_SESION, traducir } from "@/lib/errores-base";
 import { ESPECIALIDADES, INDUSTRIAS, esValor } from "@/lib/etiquetas";
 import {
+  COLUMNAS_PORTFOLIO,
+  type EntradaPortfolio,
   GEOGRAFIAS,
   LIMITES_PORTFOLIO as L,
   MODALIDADES,
@@ -222,4 +224,21 @@ export async function guardarTesis(d: {
   if (error) return traducir(error, "guardar_tesis");
   await refrescar(supabase, user.id);
   return { ok: true, mensaje: "Tesis guardada." };
+}
+
+/**
+ * Entradas "solo cuentas de Pecera" de un perfil, para quien entró con su cuenta.
+ * La RLS decide: sin sesión, vacío.
+ */
+export async function portfolioMiembros(perfilId: string): Promise<EntradaPortfolio[]> {
+  if (!UUID.test(perfilId)) return [];
+  const { supabase, user } = await conSesion();
+  if (!user) return [];
+  const { data } = await supabase
+    .from("portfolio")
+    .select(`${COLUMNAS_PORTFOLIO}, empresa:empresas(slug, nombre)`)
+    .eq("perfil_id", perfilId)
+    .eq("visibilidad", "miembros")
+    .order("created_at", { ascending: false });
+  return (data as EntradaPortfolio[] | null) ?? [];
 }

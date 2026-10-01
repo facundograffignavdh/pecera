@@ -13,7 +13,8 @@ import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
 import BuildPublico from "@/components/build/BuildPublico";
 import NewsletterPerfil from "@/components/newsletter/NewsletterPerfil";
 import Revelar from "@/components/Revelar";
-import { getBuildEmpresa, getMetricasPerfil, getNewsletter, getPerfil, getSlugs } from "@/lib/datos";
+import PortfolioPublico from "@/components/portfolio/PortfolioPublico";
+import { getBuildEmpresa, getMetricasPerfil, getNewsletter, getPerfil, getPortfolio, getSlugs } from "@/lib/datos";
 import { cargo } from "@/lib/etiquetas";
 import { ROLES, TIPOS } from "@/lib/rol";
 
@@ -58,9 +59,11 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
 
   const { perfil, pitches } = datos;
   const rol = ROLES[perfil.rol];
-  const [build, newsletter] = await Promise.all([
+  const conPortfolio = perfil.rol === "inversor" || perfil.rol === "aliado";
+  const [build, newsletter, portfolio] = await Promise.all([
     perfil.empresa_id ? getBuildEmpresa(perfil.empresa_id) : null,
     getNewsletter(perfil.id),
+    conPortfolio ? getPortfolio(perfil.id) : null,
   ]);
 
   return (
@@ -135,6 +138,8 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
             </p>
           )}
         </section>
+
+        {portfolio && <PortfolioPublico rol={perfil.rol} perfilId={perfil.id} datos={portfolio} />}
 
         {build && perfil.empresa && (build.hitos.length > 0 || build.avances.length > 0) && (
           <section aria-labelledby="build-titulo" className="mt-7">
