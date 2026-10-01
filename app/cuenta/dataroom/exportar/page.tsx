@@ -39,7 +39,7 @@ export default async function ExportarPage() {
   if (docs.error) throw new Error(`Supabase (exportar): ${docs.error.message}`);
 
   return (
-    <Marco volver="/cuenta/dataroom" textoVolver="Volver al Dataroom" ancho="max-w-2xl">
+    <Marco volver="/cuenta/dataroom" textoVolver="Volver al Dataroom" ancho="max-w-2xl lg:max-w-3xl">
       <header className="no-imprimir mt-6 flex flex-col gap-2">
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-tinta/55">Dataroom · {empresa.nombre}</p>
         <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">Exportar para un inversor</h1>

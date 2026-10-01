@@ -8,7 +8,7 @@ import { EnlaceVolver } from "@/components/VolverAlFeed";
 export default function Marco({
   volver,
   textoVolver,
-  ancho = "max-w-md",
+  ancho = "max-w-md md:max-w-2xl lg:max-w-3xl",
   children,
 }: {
   volver: string;

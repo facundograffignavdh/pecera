@@ -127,11 +127,11 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="cuenta" />
       <RecordarCuenta cuenta={cuentaLocal} />
-      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl lg:max-w-6xl lg:px-8">
         <EnlaceVolver href="/" />
 
         {!user ? (
-          <section className="mt-8 flex flex-col gap-4">
+          <section className="mx-auto mt-8 flex max-w-md flex-col gap-4">
             <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">
               Tu perfil en Pecera
             </h1>
@@ -172,7 +172,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             </form>
           </section>
         ) : (
-          <section className="mt-8 flex flex-col gap-6">
+          <section className="mt-8 flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
+            <div className="no-scrollbar flex flex-col gap-6 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:pb-2">
             <div className="flex flex-col gap-2">
               <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">
                 {perfil ? "Mi perfil" : "Creá tu perfil"}
@@ -202,7 +203,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               />
             )}
             {perfil && <TarjetaNFC slug={perfil.slug} completo={null} />}
+            </div>
 
+            <div className="flex min-w-0 flex-col gap-6">
             <MisPitches
               pitches={misPitches}
               email={user.email ?? ""}
@@ -291,6 +294,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             )}
 
             <BotonSalir />
+            </div>
           </section>
         )}
 

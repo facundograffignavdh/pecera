@@ -30,10 +30,10 @@ export default async function ExplorarPage() {
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
-      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-3xl lg:max-w-6xl lg:px-8">
         <EnlaceVolver href="/" />
         <header className="mt-6 flex flex-col gap-1.5">
-          <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">Explorar</h1>
+          <h1 className="font-display text-3xl font-semibold leading-tight text-tinta lg:text-5xl">Explorar</h1>
           <p className="leading-relaxed text-tinta/80">
             Startups, inversores y aliados. Buscá por lo que hacen y por con quién trabajaron.
           </p>
@@ -49,6 +49,7 @@ export default async function ExplorarPage() {
           <h2 id="hashtags" className="font-display text-sm font-semibold uppercase tracking-wide text-tinta/50">
             Hashtags
           </h2>
+          <div className="lg:grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start lg:gap-8">
           <Link
             href={`/t/${TAG_FERIA}`}
             className="boton group mt-3 flex items-center justify-between gap-4 rounded-[2rem] bg-tinta px-6 py-6 text-marfil"
@@ -79,6 +80,7 @@ export default async function ExplorarPage() {
               ))}
             </ul>
           )}
+          </div>
         </section>
 
         <PieLegal tono="claro" className="mt-10 pb-8" />

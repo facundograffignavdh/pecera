@@ -138,7 +138,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
         />
       </div>
 
-      <div role="tablist" aria-label="Qué mirar" className="flex gap-1 rounded-full bg-tinta/[0.06] p-1">
+      <div role="tablist" aria-label="Qué mirar" className="flex gap-1 rounded-full bg-tinta/[0.06] p-1 lg:max-w-2xl">
         {VISTAS.map((v) => (
           <button
             key={v.id}
@@ -155,7 +155,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
         ))}
       </div>
 
-      <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+      <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
         <select aria-label="Industria" value={industria} onChange={(e) => { setIndustria(e.target.value); setPagina(1); }} className={SELECT}>
           <option value="">Toda industria</option>
           {INDUSTRIAS.map((i) => (
@@ -240,16 +240,16 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
           No encontramos nada con esos filtros. Probá con menos palabras o sacá un filtro.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3 xl:grid-cols-3">
           {visibles.map((f) => (
-            <li key={`${f.clase}-${f.slug}`}>
+            <li key={`${f.clase}-${f.slug}`} className="lg:h-full">
               <Ficha f={f} />
             </li>
           ))}
         </ul>
       )}
       {visibles.length < resultados.length && (
-        <button type="button" onClick={() => setPagina((p) => p + 1)} className="min-h-12 rounded-full border border-tinta/30 px-5 font-medium text-tinta hover:border-tinta">
+        <button type="button" onClick={() => setPagina((p) => p + 1)} className="min-h-12 rounded-full border border-tinta/30 px-5 font-medium text-tinta hover:border-tinta lg:self-center lg:px-8">
           Ver más ({resultados.length - visibles.length})
         </button>
       )}
@@ -276,7 +276,7 @@ function Ficha({ f }: { f: FichaDirectorio }) {
   return (
     <Link
       href={href}
-      className="flex items-start gap-3 rounded-2xl border border-tinta/10 bg-marfil px-3.5 py-3 transition-colors duration-200 ease-pecera hover:border-tinta/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+      className="flex h-full items-start gap-3 rounded-2xl border border-tinta/10 bg-marfil px-3.5 py-3 transition-colors duration-200 ease-pecera hover:border-tinta/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
     >
       {f.clase === "empresa" ? (
         <LogoEntidad nombre={f.nombre} logoUrl={f.avatar_url} tamano="md" />

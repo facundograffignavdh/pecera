@@ -94,10 +94,14 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
     <main id="empresa" className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Revelar />
       <Encabezado variante="perfil" />
-      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl lg:max-w-6xl lg:px-8">
         <EnlaceVolver href="/" />
 
-        <header className="entrada mt-6 flex flex-col gap-3">
+        {/* En la compu: la tarjeta de la empresa fija a la izquierda y el contenido a la derecha. */}
+        <div className="lg:mt-5 lg:grid lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:items-start lg:gap-12">
+        <aside className="lg:sticky lg:top-24 lg:rounded-[2rem] lg:border lg:border-tinta/10 lg:p-6 lg:shadow-[0_18px_50px_rgb(28_27_22/0.08)]">
+
+        <header className="entrada mt-6 flex flex-col gap-3 lg:mt-0">
           <div className="flex items-center gap-4">
             <LogoEntidad nombre={empresa.nombre} logoUrl={logos.get(empresa.id) ?? empresa.logo_url ?? undefined} tamano="xl" />
             <div className="flex min-w-0 flex-col gap-1.5">
@@ -140,7 +144,7 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
         )}
 
         {secciones.length > 1 && (
-          <nav aria-label="Secciones de la empresa" className="no-scrollbar -mx-5 mt-6 flex gap-1.5 overflow-x-auto px-5">
+          <nav aria-label="Secciones de la empresa" className="no-scrollbar -mx-5 mt-6 flex gap-1.5 overflow-x-auto px-5 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
             {secciones.map((s) => (
               <a
                 key={s.id}
@@ -153,6 +157,9 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
           </nav>
         )}
 
+        </aside>
+
+        <div className="min-w-0 lg:[&>section:first-child]:mt-0">
         {producto && (
           <section id="producto" aria-labelledby="producto-titulo" className="mt-8 scroll-mt-24">
             <h2 id="producto-titulo" className={SUBTITULO}>
@@ -301,6 +308,9 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
             )}
           </section>
         )}
+
+        </div>
+        </div>
 
         <PieLegal tono="claro" className="mt-10 pb-8" />
       </div>

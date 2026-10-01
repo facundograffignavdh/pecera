@@ -22,7 +22,7 @@ export default function AcademyDocsPage() {
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
-      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-3xl lg:max-w-6xl lg:px-8">
         <EnlaceVolver href="/" />
         <CabeceraAcademy actual="docs" />
 
@@ -42,7 +42,7 @@ export default function AcademyDocsPage() {
           <h2 id="propios-titulo" className={SUBTITULO}>
             Tus documentos
           </h2>
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
             <Link href="/cuenta/dataroom/nuevo?tipo=escrito" className="flex min-h-24 flex-col justify-between gap-2 rounded-2xl border border-tinta/10 px-4 py-3 hover:border-tinta/40">
               <span className="font-medium text-tinta">Escribir desde cero</span>
               <span className="text-xs text-tinta/60">Texto propio, con guardado automático</span>
@@ -62,7 +62,7 @@ export default function AcademyDocsPage() {
           <h2 id="referencia-titulo" className={SUBTITULO}>
             Para consultar
           </h2>
-          <ul className="mt-3 flex flex-col gap-2">
+          <ul className="mt-3 flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3">
             <li>
               <Link href="/docs/legales" className="flex flex-col gap-1 rounded-3xl bg-t-azul-suave px-5 py-4 text-t-azul transition-transform duration-200 ease-pecera hover:-translate-y-0.5">
                 <span className="font-display text-xl font-semibold">Documentos legales</span>

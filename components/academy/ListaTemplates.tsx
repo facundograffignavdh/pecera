@@ -13,14 +13,14 @@ export default function ListaTemplates() {
       {CATEGORIAS_DATAROOM.filter((c) => PLANTILLAS.some((p) => p.categoria === c.valor)).map((c) => (
         <div key={c.valor} className="flex flex-col gap-2">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-tinta/60">{c.label}</h3>
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3 xl:grid-cols-3">
             {PLANTILLAS.filter((p) => p.categoria === c.valor).map((p) => {
               const estado = progreso?.plantillas[p.id];
               return (
-                <li key={p.id}>
+                <li key={p.id} className="lg:h-full">
                   <Link
                     href={`/cuenta/dataroom/plantilla/${p.id}`}
-                    className="flex min-h-16 items-center gap-3 rounded-2xl border border-tinta/10 bg-marfil px-4 py-3 transition-colors duration-200 ease-pecera hover:border-tinta/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+                    className="flex h-full min-h-16 items-center gap-3 rounded-2xl border border-tinta/10 bg-marfil px-4 py-3 transition-colors duration-200 ease-pecera hover:border-tinta/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block font-medium text-tinta">{p.nombre}</span>

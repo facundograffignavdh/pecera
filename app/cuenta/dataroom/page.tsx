@@ -69,7 +69,7 @@ export default async function DataroomPage() {
   const vacio = activos.length === 0 && datos.length === 0;
 
   return (
-    <Marco volver="/cuenta" textoVolver="Volver a Mi perfil">
+    <Marco volver="/cuenta" textoVolver="Volver a Mi perfil" ancho="max-w-md md:max-w-3xl lg:max-w-5xl">
       <EscucharDataroom empresaId={empresa.id} />
       <header className="mt-6 flex flex-col gap-2">
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-tinta/55">Transparencia · {empresa.nombre}</p>
@@ -131,7 +131,7 @@ export default async function DataroomPage() {
         </section>
       )}
 
-      <ul className="mt-6 flex flex-col gap-3">
+      <ul className="mt-6 flex flex-col gap-3 lg:grid lg:grid-cols-2">
         {porCategoria.map(({ cat, documentos, deDatos, sugeridas, estado }) => (
           <li key={cat.valor}>
             <details id={cat.valor} className="group scroll-mt-24 rounded-3xl border border-tinta/10 bg-tinta/[0.03]">

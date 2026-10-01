@@ -14,7 +14,7 @@ export default function ConceptosPage() {
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
-      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl">
         <Link href="/academy/docs" className="inline-flex items-center gap-2 text-sm text-tinta/70 hover:text-arcilla">
           <span aria-hidden>&larr;</span> Academy · Docs
         </Link>

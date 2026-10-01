@@ -10,14 +10,14 @@ export default function CabeceraAcademy({ actual }: { actual: "essentials" | "do
     <header className="mt-6 flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-tinta/55">Academy</p>
-        <h1 className="font-display text-3xl font-semibold leading-tight text-tinta text-balance">
+        <h1 className="font-display text-3xl font-semibold leading-tight text-tinta text-balance lg:text-5xl">
           Aprendé. Construí. Prepará tu startup.
         </h1>
         <p className="leading-relaxed text-tinta/80">
           Lo esencial para emprender, con templates que se guardan en el Dataroom de tu empresa.
         </p>
       </div>
-      <nav aria-label="Secciones de Academy" className="flex gap-1 rounded-full bg-tinta/[0.06] p-1">
+      <nav aria-label="Secciones de Academy" className="flex gap-1 rounded-full bg-tinta/[0.06] p-1 lg:max-w-md">
         {pestanas.map((p) => (
           <Link
             key={p.id}

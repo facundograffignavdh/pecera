@@ -21,7 +21,7 @@ export default function ListaEssentials({ lecciones }: { lecciones: Leccion[] })
     <div className="flex flex-col gap-6">
       <Resumen progreso={progreso} completos={completos} total={conTemplate.length} />
 
-      <div role="group" aria-label="Filtrar por módulo" className="no-scrollbar -mx-5 flex gap-1.5 overflow-x-auto px-5">
+      <div role="group" aria-label="Filtrar por módulo" className="no-scrollbar -mx-5 flex gap-1.5 overflow-x-auto px-5 lg:mx-0 lg:flex-wrap lg:px-0">
         {(["todos", ...MODULOS] as const).map((m) => (
           <button
             key={m}
@@ -42,15 +42,15 @@ export default function ListaEssentials({ lecciones }: { lecciones: Leccion[] })
           <h2 id={`modulo-${im}`} className="font-display text-sm font-semibold uppercase tracking-wide text-tinta/50">
             {MODULOS.indexOf(m) + 1}. {m}
           </h2>
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3 xl:grid-cols-3">
             {lecciones
               .filter((l) => l.modulo === m)
               .map((l) => {
                 const estado = l.accion.tipo === "plantilla" ? progreso?.plantillas[l.accion.id] : undefined;
                 const plantilla = l.accion.tipo === "plantilla" ? PLANTILLAS.find((p) => p.id === (l.accion as { id: string }).id) : undefined;
                 return (
-                  <li key={l.slug}>
-                    <article className="flex flex-col gap-3 rounded-3xl border border-tinta/10 bg-tinta/[0.03] px-4 py-4">
+                  <li key={l.slug} className="lg:h-full">
+                    <article className="flex h-full flex-col gap-3 rounded-3xl border border-tinta/10 bg-tinta/[0.03] px-4 py-4">
                       <div className="flex flex-col gap-1">
                         <h3 className="font-display text-lg font-semibold leading-tight text-tinta">{l.titulo}</h3>
                         <p className="text-sm text-tinta/75">{l.bajada}</p>
@@ -113,7 +113,7 @@ function Resumen({
   }
   if (!progreso.sesion || !progreso.conEmpresa) {
     return (
-      <div className="flex flex-col gap-2 rounded-3xl border border-tinta/10 px-4 py-4">
+      <div className="flex flex-col gap-2 rounded-3xl border border-tinta/10 px-4 py-4 lg:max-w-2xl">
         <p className="text-sm text-tinta/80">
           {progreso.sesion
             ? "Para guardar tus templates, creá tu empresa o sumate a la de tu equipo."
@@ -126,7 +126,7 @@ function Resumen({
     );
   }
   return (
-    <div className="flex flex-col gap-2 rounded-3xl border border-tinta/10 bg-tinta/[0.03] px-4 py-4">
+    <div className="flex flex-col gap-2 rounded-3xl border border-tinta/10 bg-tinta/[0.03] px-4 py-4 lg:max-w-2xl">
       <div className="flex items-baseline justify-between gap-3">
         <p className="font-medium text-tinta">
           {completos} de {total} templates completos

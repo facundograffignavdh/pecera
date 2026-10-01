@@ -43,7 +43,7 @@ export default async function DataroomPublicoPage({ params }: PageProps<"/e/[slu
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
-      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-3xl">
         <EnlaceVolver href={`/e/${slug}`} texto="Volver a la empresa" />
         <header className="mt-6 flex flex-col gap-2">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-tinta/55">Dataroom</p>

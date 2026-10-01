@@ -14,12 +14,12 @@ export default function TarjetaNFC({ slug, completo }: { slug: string; completo:
       aria-labelledby="tarjeta-nfc"
       className="tema-fijo overflow-hidden rounded-[2rem] border border-tinta/10 bg-[#f5f4ec] text-tinta shadow-[0_18px_50px_rgb(28_27_22/0.10)]"
     >
-      <div className="grid items-center gap-2 sm:grid-cols-[1fr_auto]">
+      <div className="grid items-center gap-2 sm:grid-cols-[1fr_auto] lg:grid-cols-1">
         <div className="flex flex-col gap-3 px-6 pb-2 pt-6 sm:pb-6">
           <p className="self-start rounded-full bg-[#f87c43] px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.14em] text-white">
             Tu tarjeta NFC
           </p>
-          <h2 id="tarjeta-nfc" className="font-display text-3xl font-semibold leading-tight">
+          <h2 id="tarjeta-nfc" className="font-display text-3xl font-semibold leading-tight lg:text-2xl">
             Acercás el celu y abre tu perfil
           </h2>
           <p className="text-sm leading-relaxed text-tinta/75">
@@ -52,7 +52,7 @@ export default function TarjetaNFC({ slug, completo }: { slug: string; completo:
           width={900}
           height={900}
           // El fondo blanco de la foto se funde con el marfil.
-          className="mx-auto -mb-4 w-56 mix-blend-multiply sm:mb-0 sm:w-64"
+          className="mx-auto -mb-4 w-56 mix-blend-multiply sm:mb-0 sm:w-64 lg:-mb-4 lg:w-44"
         />
       </div>
     </section>

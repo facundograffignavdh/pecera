@@ -41,7 +41,7 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
-      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
+      <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-3xl lg:max-w-6xl lg:px-8">
         <EnlaceVolver href="/" />
 
         {/* Portada */}
@@ -81,6 +81,9 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
           </div>
         </header>
 
+        {/* En la compu: el programa a la izquierda; cómo votar y la votación a la derecha. */}
+        <div className="lg:mt-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start lg:gap-10">
+        <div className="min-w-0 lg:[&>section:first-child]:mt-0">
         {/* Programa */}
         <section aria-labelledby="programa" className="mt-10">
           <h2 id="programa" className={SUBTITULO}>
@@ -131,6 +134,8 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
           </ol>
         </section>
 
+        </div>
+        <div className="lg:sticky lg:top-24">
         {/* Cómo votar */}
         <section aria-labelledby="como-votar" className="mt-4 grid gap-3">
           <h2 id="como-votar" className={SUBTITULO}>
@@ -187,13 +192,16 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
           )}
         </section>
 
+        </div>
+        </div>
+
         {presentes.length > 0 && (
           <section aria-labelledby="presentes" className="mt-10">
             <h2 id="presentes" className={SUBTITULO}>
               También en la feria
             </h2>
             <p className="mt-1 text-sm text-tinta/70">Inversores y aliados que van a estar. Buscalos.</p>
-            <ul className="mt-4 grid grid-cols-1 gap-2">
+            <ul className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
               {presentes.map((p) => (
                 <li key={p.perfil_id}>
                   <Link
