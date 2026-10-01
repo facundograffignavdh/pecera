@@ -38,10 +38,13 @@ de errores.
 ## P0 — Crítico (bloquea que "todo ande")
 
 1. **Dos ramas paralelas que se pisaban** → resuelto en esta rama (ver "Implementado").
-2. **Migraciones sin correr en producción.** Sin ellas, Portfolio, Dataroom, Build in Public,
-   cofounder, logos y tiempo real se ven vacíos (la app no se cae: cae a lo de siempre).
-   Orden: `20261003…pitch_build_producto_newsletter`, `20261004…dataroom`,
-   `20261005…portfolio`, `20261006…logos`, `20261007…feria_pro`. Probadas juntas en ese orden.
+2. **Migraciones del ecosistema sin correr en producción.** `feria_pro` ya corrió (se
+   verificó leyendo la base: existen `busca_cofundador` y `portafolio`). Faltan, en este
+   orden: `20261003…pitch_build_producto_newsletter`, `20261004…dataroom`,
+   `20261005…portfolio`, `20261006…logos`. Sin ellas, Portfolio, Dataroom, Build in Public y
+   logos se ven vacíos (la app no se cae). Se probaron en el orden real (feria_pro primero):
+   200 ok, 0 fallas. Sobre datos existentes solo agregan `pitches.oculto` con valor por
+   defecto y no redefinen ninguna función ya creada.
 3. **Choque de versión de migración** (`20261003120000` repetida) → resuelto: feria_pro pasó a
    `20261007120000` (no había corrido).
 
@@ -154,7 +157,7 @@ táctiles (scroll del feed, video, NFC real) las tiene que probar una persona en
 
 ## Hoja de ruta sugerida
 
-1. Antes del 5/10 (congelar deploys): correr migraciones, unir esta rama, probar en el celular
+1. Antes del 5/10 (congelar deploys): correr las 4 migraciones del ecosistema, unir esta rama, probar en el celular
    el camino NFC → perfil → contacto.
 2. Semana de la feria: solo arreglos. Mirar logs de Vercel a diario.
 3. Después de la feria: borrar cuenta + denunciar/bloquear → notificaciones (seguidores,
