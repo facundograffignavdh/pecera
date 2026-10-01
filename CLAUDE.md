@@ -188,6 +188,11 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   (`components/eventos/Votacion.tsx` pide el estado de la sesión al montar)
 - `/docs`, `/docs/conceptos`, `/docs/legales` → glosario y guía de documentos (estáticas)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
+- `/cuenta/empresa` → cuenta de la empresa: logo, datos, equipo con código, métricas y
+  documentos con el concepto del glosario adentro
+- `/explorar` (hashtags + todos los perfiles visibles), `/t/[tag]` y `/t/[tag]/feed`
+  (sección por hashtag; `#feria21` = la feria), `/cofundadores` (cofounder match),
+  `/red` (Mi red: los perfiles que seguís, en el celular)
 - `/sumate` → landing de captación, basada en la landing anterior (`pecera-vc`). Los CTA
   abren `ElegirRol` y llevan a `/cuenta?rol=…` (un solo alta, con Google). Hero
   con video de acuario (`public/landing/`), que se pausa fuera de pantalla y con
@@ -236,6 +241,17 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `eventos` (votacion_abierta, resultados_visibles, activo), `evento_participantes`, `votos`
   (PK evento + votante). Solo reciben votos perfiles `emprendedor`; nadie se vota ni vota a
   su empresa. Resultados visibles solo si el equipo los muestra (o para admins).
+- feria_pro (`20261003120000_feria_pro.sql`, guía en `docs/FERIA-PRO.md`): tipos de perfil
+  `profesional`, `empresa`, `institucion`; especialidades nuevas; WhatsApp `+E.164` además de
+  los 10 dígitos argentinos; columnas de cofounder (`busca_cofundador`, `cofundador_*`);
+  `empresas.logo_url` (`empresa-<id>-<hash8>.jpg`, `cambiar_logo_empresa`, `mi_empresa_v2`,
+  `miembros_mi_empresa`); `portafolio` (links https, visible por ítem, 12 por perfil, RPCs
+  `mi_portafolio`/`guardar_portafolio`/`borrar_portafolio`); `seguidos` por dispositivo
+  anónimo (`seguir`, `dejar_de_seguir`, `seguidores_de`, límite con `medicion_limitar`).
+  Lecturas en cascada en `lib/datos.ts` (`enCascada`). Racha (`lib/racha.ts`) y hashtags
+  (`lib/hashtags.ts`) se calculan sin migración. Colores con sentido: `AREAS` en
+  `lib/etiquetas.ts` (un color = un área). Modo noche: variables CSS en `globals.css`;
+  `.tema-fijo` para lo que va sobre video.
 - `admins` (email en minúsculas, solo SQL editor): `es_admin()` y las `admin_*` lo exigen;
   para publicar pasan el guardián limpiando los claims del JWT solo en esa transacción.
 

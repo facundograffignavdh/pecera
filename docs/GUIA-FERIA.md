@@ -1,5 +1,9 @@
 # Pecera para la Feria 21 — guía de cambios y de uso
 
+> **Novedades de la rama `feria-21-pro`** (alta en pasos, perfil NFC nuevo, Mi red y feed
+> Stakeholding, racha, hashtags, cofounder match, portafolio, logo de empresa, modo noche):
+> ver [`FERIA-PRO.md`](./FERIA-PRO.md), con la puesta en marcha y la auditoría.
+
 Rama `v2-feria-lista` (sale de `v2-cuentas`, al día con `main` después del PR #2). Esta guía es para el equipo: qué cambió, cómo
 ponerlo en marcha y cómo operar la feria. La auditoría con los pendientes está en
 [`AUDITORIA.md`](./AUDITORIA.md).
