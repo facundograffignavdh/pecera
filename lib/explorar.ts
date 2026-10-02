@@ -25,6 +25,8 @@ export type FichaDirectorio = {
   ticket: string | null;
   especialidades: string[];
   empresa: { slug: string; nombre: string } | null;
+  /** Sus otras empresas visibles (multi_empresa), además de la principal. */
+  otrasEmpresas: string[];
   /** Del portfolio público. */
   inversiones: number;
   apoyos: number;
@@ -55,7 +57,7 @@ type FilaPerfil = {
 };
 
 export async function getDirectorio(): Promise<FichaDirectorio[]> {
-  const [perfiles, empresas, portfolio, servicios, tesis] = await Promise.all([
+  const [perfiles, empresas, portfolio, servicios, tesis, membresias] = await Promise.all([
     supabase
       .from("perfiles")
       .select("id, slug, nombre, rol, tipo, descripcion, avatar_url, industrias, etapa, ronda, rondas_interes, ticket, especialidades, empresa:empresas(slug, nombre)")
@@ -72,12 +74,13 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
     supabase.from("portfolio").select("perfil_id, tipo, industria, nombre").eq("visibilidad", "publico").limit(10000),
     supabase.from("perfil_servicios").select("perfil_id, nombre, categoria").limit(5000),
     supabase.from("perfil_tesis").select("perfil_id, geografias, modelos").limit(2000),
+    supabase.from("empresa_miembros").select("perfil_id, created_at, empresa:empresas(slug, nombre)").order("created_at").limit(10000),
   ]);
   if (perfiles.error) {
     console.error(`Supabase (getDirectorio): ${perfiles.error.message}`);
     return [];
   }
-  for (const r of [empresas, portfolio, servicios, tesis]) {
+  for (const r of [empresas, portfolio, servicios, tesis, membresias]) {
     if (r.error && !faltaMigracion(r.error)) console.error(`Supabase (getDirectorio): ${r.error.message}`);
   }
 
@@ -88,6 +91,9 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
   };
   const pf = porPerfil(portfolio.data as Array<{ perfil_id: string; tipo: string; industria: string | null; nombre: string }> | null);
   const sv = porPerfil(servicios.data as Array<{ perfil_id: string; nombre: string; categoria: string | null }> | null);
+  const mb = porPerfil(
+    membresias.data as unknown as Array<{ perfil_id: string; empresa: { slug: string; nombre: string } | null }> | null
+  );
   const ts = new Map(((tesis.data ?? []) as Array<{ perfil_id: string; geografias: string[]; modelos: string[] }>).map((t) => [t.perfil_id, t]));
 
   const fichasPerfil: FichaDirectorio[] = (perfiles.data ?? []).map((p) => {
@@ -107,6 +113,10 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
       ticket: p.ticket ?? null,
       especialidades: p.especialidades ?? [],
       empresa: p.empresa ?? null,
+      otrasEmpresas: (mb.get(p.id) ?? [])
+        .map((m) => m.empresa)
+        .filter((e): e is { slug: string; nombre: string } => !!e && e.slug !== p.empresa?.slug)
+        .map((e) => e.nombre),
       inversiones: entradas.filter((e) => e.tipo === "inversion").length,
       apoyos: entradas.filter((e) => e.tipo !== "inversion").length,
       industriasPortfolio: [...new Set(entradas.map((e) => e.industria).filter((x): x is string => !!x))],
@@ -135,6 +145,7 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
     ticket: null,
     especialidades: [],
     empresa: null,
+    otrasEmpresas: [],
     inversiones: 0,
     apoyos: 0,
     industriasPortfolio: [],

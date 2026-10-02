@@ -188,6 +188,22 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   La ingesta saltea `origenes_borrados` siempre (también `reprocesar`/`asignar`) y marca las
   respuestas anteriores al borrado que nunca registró. Después: `limpiarNavegador`
   (`lib/borrar-cuenta.ts`, todo `pecera:*` salvo tema y subtítulos) y `AvisoCuentaEliminada`.
+- Multi-empresa (rama `multi-empresa`, migración `20261010120000_multi_empresa.sql`, después de
+  cofundador_conexiones; pruebas `supabase/pruebas/multi_empresa.mjs`; para volver atrás,
+  `supabase/rollback-multi-empresa.sql`, que NO es migración): una persona en hasta 5 empresas.
+  `empresa_miembros` (PK `id` propia a propósito: si la PK fuera empresa+perfil, PostgREST vería un
+  muchos-a-muchos y el embed `empresa:empresas(...)` de main sería ambiguo) es la verdad;
+  `perfiles.empresa_id` queda como la **principal** (la mantienen triggers, el tope de 5 es otro
+  trigger) y `perfiles.cargo` es el cargo en la principal (espejado). Las funciones de siempre
+  (main) siguen con su firma y trabajan sobre la principal; la app nueva usa las `_en(p_empresa, …)`
+  y las de fila por id (hito, avance, documento, relación) autorizan por la empresa de la fila.
+  En /cuenta la empresa va en la URL (`?empresa=slug`) y en cada action (`empresa_id`, contexto
+  `EmpresaActual` + `CampoEmpresa`); nunca una "empresa activa" guardada. Helpers en
+  `lib/cuenta-empresa.ts` (`leerMisEmpresas`, `elegirEmpresa`, `empresaParaAccion`, `rpcEn`, que cae a
+  la función vieja si falta la migración). Reel: la principal y un chip "+N"; perfil: todas.
+  Salir siendo la última integrante borra la empresa (`borrar_empresa_entera`: R2 a `r2_borrar`,
+  portfolio ajeno a 'declarada') solo con ELIMINAR en `/cuenta/empresa/salir`, que ofrece exportar
+  el Dataroom; `borrar_mi_cuenta` aplica la regla a cada empresa.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
@@ -252,8 +268,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/sitemap.xml` y `/robots.txt` → `app/sitemap.ts` y `app/robots.ts` (no indexa cuenta,
   admin, auth ni subir)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
-- `/cuenta/empresa` → cuenta de la empresa: logo, datos, equipo con código, métricas y
-  documentos con el concepto del glosario adentro
+- `/cuenta/empresa` → cuenta de la empresa: logo, datos, equipo con código, cargo propio, métricas y
+  documentos con el concepto del glosario adentro (`?empresa=slug`; sin él, la principal)
+- `/cuenta/empresa/salir` → salir de una empresa (`?empresa=slug`); si es la última integrante,
+  qué se borra, exportar el Dataroom y confirmación con ELIMINAR
 - `/explorar` (startups, inversores, aliados y hashtags), `/t/[tag]` y `/t/[tag]/feed`
   (sección por hashtag; `#feria21` = la feria), `/cofundadores` (cofounder match),
   `/red` (Mi red: los perfiles que seguís, en el celular)
@@ -302,7 +320,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   rondas_interes[], empresa_id. `empresa_id` solo cambia por RPC (trigger
   `perfiles_empresa_guardian` + flag `pecera.empresa_rpc`).
 - `empresas` (slug, nombre, descripcion, redes, industrias, etapa, ronda, dueno_id, oculta):
-  visible si no está oculta y tiene al menos un perfil visible. `empresas_codigos` (privada)
+  visible si no está oculta y tiene al menos un integrante visible (por `empresa_miembros`).
+- `empresa_miembros` (multi_empresa: id, empresa_id, perfil_id, cargo, created_at; único por empresa
+  y perfil; hasta 5 por perfil): anon ve las de perfiles y empresas visibles; nadie la escribe directo.
+  La administración pasa a la integrante más antigua de esa empresa (por `created_at`). `empresas_codigos` (privada)
   y `empresas_intentos` (10 intentos/hora). RPCs: `crear_empresa`, `unirse_empresa` (null si
   el código no existe), `editar_empresa`, `salir_empresa`, `renovar_codigo_empresa`, `mi_empresa`.
 - `empresa_datos` (clave, valor, url https, visible): privado por defecto; anon solo ve lo

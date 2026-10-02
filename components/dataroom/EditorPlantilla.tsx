@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { cambiarVisibilidad, guardarPlantilla, type ResultadoGuardado } from "@/app/cuenta/dataroom";
 import CampoPlantilla from "@/components/dataroom/CampoPlantilla";
 import SwitchTransparencia from "@/components/SwitchTransparencia";
+import { useConEmpresa, useEmpresaId } from "@/components/cuenta/EmpresaActual";
 import { crearBorrador } from "@/lib/borrador";
 import { labelCategoria, type ValorCampo } from "@/lib/dataroom";
 import {
@@ -42,7 +43,13 @@ export default function EditorPlantilla({
   actualizado: number;
 }) {
   const p = buscarPlantilla(plantillaId) as Plantilla;
-  const respaldo = useMemo(() => crearBorrador<Respaldo>(`pecera:plantilla:${plantillaId}`), [plantillaId]);
+  const empresaId = useEmpresaId();
+  const ruta = useConEmpresa();
+  // Un borrador por empresa: el de una nunca se ofrece en otra.
+  const respaldo = useMemo(
+    () => crearBorrador<Respaldo>(empresaId ? `pecera:plantilla:${empresaId}:${plantillaId}` : `pecera:plantilla:${plantillaId}`),
+    [empresaId, plantillaId]
+  );
   const guardadoLocal = respaldo.useGuardado();
 
   const [valores, setValores] = useState<Record<string, ValorCampo>>(inicial);
@@ -74,7 +81,7 @@ export default function EditorPlantilla({
       setEstado("guardando");
       let r: ResultadoGuardado;
       try {
-        r = await guardarPlantilla(plantillaId, valores, esFinal);
+        r = await guardarPlantilla(empresaId, plantillaId, valores, esFinal);
       } catch {
         r = { ok: false, mensaje: "No pudimos guardar. Revisá tu conexión." };
       }
@@ -90,7 +97,7 @@ export default function EditorPlantilla({
         if (esFinal) setFinal(r);
       }
     },
-    [valores, plantillaId, respaldo]
+    [valores, empresaId, plantillaId, respaldo]
   );
 
   // Autosave: después de una pausa al escribir. El respaldo local va enseguida.
@@ -266,7 +273,7 @@ export default function EditorPlantilla({
                 etiqueta={p.nombre}
                 onCambiar={(v) => cambiarVisibilidad(docId, v)}
               />
-              <Link href="/cuenta/dataroom" className="inline-flex min-h-11 items-center self-start rounded-full bg-naranja px-5 text-sm font-semibold text-tinta hover:bg-pecera active:scale-[0.98]">
+              <Link href={ruta("/cuenta/dataroom")} className="inline-flex min-h-11 items-center self-start rounded-full bg-naranja px-5 text-sm font-semibold text-tinta hover:bg-pecera active:scale-[0.98]">
                 Ir al Dataroom
               </Link>
             </>

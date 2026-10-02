@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef } from "react";
 import { IconoCerrar } from "@/components/Iconos";
+import { useConEmpresa } from "@/components/cuenta/EmpresaActual";
 
 const OPCION =
   "flex min-h-16 flex-col justify-center gap-0.5 rounded-2xl border border-tinta/15 px-4 py-3 text-left transition-colors duration-200 ease-pecera hover:border-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla";
@@ -14,6 +15,7 @@ const OPCION =
 export default function AgregarDocumento({ categoria, className }: { categoria?: string; className: string }) {
   const ref = useRef<HTMLDialogElement>(null);
   const q = categoria ? `&categoria=${categoria}` : "";
+  const ruta = useConEmpresa();
   return (
     <>
       <button type="button" onClick={() => ref.current?.showModal()} className={className} aria-haspopup="dialog">
@@ -45,11 +47,11 @@ export default function AgregarDocumento({ categoria, className }: { categoria?:
             <span className="font-medium">Crear con un template</span>
             <span className="text-sm text-tinta/70">Guiado por pasos, con ejemplos. Ideal para empezar.</span>
           </Link>
-          <Link href={`/cuenta/dataroom/nuevo?tipo=escrito${q}`} className={OPCION}>
+          <Link href={ruta(`/cuenta/dataroom/nuevo?tipo=escrito${q}`)} className={OPCION}>
             <span className="font-medium">Escribir desde cero</span>
             <span className="text-sm text-tinta/70">Un texto propio, con guardado automático.</span>
           </Link>
-          <Link href={`/cuenta/dataroom/nuevo?tipo=link${q}`} className={OPCION}>
+          <Link href={ruta(`/cuenta/dataroom/nuevo?tipo=link${q}`)} className={OPCION}>
             <span className="font-medium">Vincular un documento</span>
             <span className="text-sm text-tinta/70">Un PDF, deck o planilla que ya tenés en Drive, Notion o Docsend.</span>
           </Link>

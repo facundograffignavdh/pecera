@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { cambiarVisibilidad, guardarDocumento, type ResultadoGuardado } from "@/app/cuenta/dataroom";
 import SwitchTransparencia from "@/components/SwitchTransparencia";
+import { useConEmpresa, useEmpresaId } from "@/components/cuenta/EmpresaActual";
 import { CATEGORIAS_DATAROOM, LIMITES_DOCUMENTO } from "@/lib/dataroom";
 import { esUrlSegura } from "@/lib/transparencia";
 
@@ -19,6 +20,8 @@ type Inicial = { id: string | null; titulo: string; categoria: string; cuerpo: s
  * no validar un link a medio pegar). Los dos pueden tener un link y una categoría.
  */
 export default function EditorDocumento({ tipo, inicial }: { tipo: "escrito" | "link"; inicial: Inicial }) {
+  const empresaId = useEmpresaId();
+  const ruta = useConEmpresa();
   const [id, setId] = useState(inicial.id);
   const [titulo, setTitulo] = useState(inicial.titulo);
   const [categoria, setCategoria] = useState(inicial.categoria);
@@ -40,7 +43,7 @@ export default function EditorDocumento({ tipo, inicial }: { tipo: "escrito" | "
     setEstado("guardando");
     let r: ResultadoGuardado;
     try {
-      r = await guardarDocumento({ id, tipo, categoria, titulo, cuerpo, url, final });
+      r = await guardarDocumento({ empresaId, id, tipo, categoria, titulo, cuerpo, url, final });
     } catch {
       r = { ok: false, mensaje: "No pudimos guardar. Revisá tu conexión y probá de nuevo." };
     }
@@ -192,7 +195,7 @@ export default function EditorDocumento({ tipo, inicial }: { tipo: "escrito" | "
       {id && (
         <div className="flex flex-col gap-3 rounded-2xl border border-tinta/10 px-4 py-4">
           <SwitchTransparencia visible={inicial.visible} etiqueta={titulo || "Documento"} onCambiar={(v) => cambiarVisibilidad(id, v)} />
-          <Link href="/cuenta/dataroom" className="self-start text-sm font-medium text-tinta underline underline-offset-4">
+          <Link href={ruta("/cuenta/dataroom")} className="self-start text-sm font-medium text-tinta underline underline-offset-4">
             Volver al Dataroom
           </Link>
         </div>

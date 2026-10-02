@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
 import FormEliminarCuenta from "@/components/cuenta/FormEliminarCuenta";
+import { conEmpresa } from "@/lib/cuenta";
 import { faltaMigracion } from "@/lib/datos";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 
@@ -19,6 +20,9 @@ type Previa = {
   pitches: number;
 };
 
+/** Una fila por empresa (multi_empresa). */
+type PreviaEmpresa = { empresa_slug: string; empresa_nombre: string; otros_miembros: number; se_borra: boolean };
+
 /** Qué se borra, qué pasa con la empresa y la confirmación. */
 export default async function EliminarCuentaPage() {
   const supabase = await supabaseConSesion();
@@ -27,10 +31,23 @@ export default async function EliminarCuentaPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/cuenta");
 
-  const { data, error } = await supabase.rpc("antes_de_borrar");
+  const [{ data, error }, porEmpresa] = await Promise.all([
+    supabase.rpc("antes_de_borrar"),
+    supabase.rpc("antes_de_borrar_v2"),
+  ]);
   const sinMigracion = faltaMigracion(error);
   if (error && !sinMigracion) console.error(`Supabase (antes_de_borrar): ${error.message}`);
+  if (porEmpresa.error && !faltaMigracion(porEmpresa.error)) {
+    console.error(`Supabase (antes_de_borrar_v2): ${porEmpresa.error.message}`);
+  }
   const previa = ((data ?? []) as Previa[])[0] ?? null;
+  // Todas sus empresas; sin multi_empresa, la única (de antes_de_borrar).
+  const empresas: PreviaEmpresa[] = porEmpresa.error
+    ? previa?.empresa_slug && previa.empresa_nombre
+      ? [{ empresa_slug: previa.empresa_slug, empresa_nombre: previa.empresa_nombre, otros_miembros: previa.otros_miembros, se_borra: previa.otros_miembros === 0 }]
+      : []
+    : ((porEmpresa.data ?? []) as PreviaEmpresa[]);
+  const seBorran = empresas.filter((e) => e.se_borra);
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
@@ -79,22 +96,50 @@ export default async function EliminarCuentaPage() {
               </ul>
             </section>
 
-            {previa?.empresa_nombre && (
-              <section aria-labelledby="tu-empresa" className="mt-6 flex flex-col gap-2">
-                <h2 id="tu-empresa" className="font-display text-xl font-semibold text-tinta">
-                  Tu empresa: {previa.empresa_nombre}
+            {empresas.length > 0 && (
+              <section aria-labelledby="tus-empresas" className="mt-6 flex flex-col gap-3">
+                <h2 id="tus-empresas" className="font-display text-xl font-semibold text-tinta">
+                  {empresas.length === 1 ? `Tu empresa: ${empresas[0].empresa_nombre}` : "Tus empresas"}
                 </h2>
-                {previa.otros_miembros === 0 ? (
-                  <p className="text-sm leading-relaxed text-tinta">
-                    Sos la única persona del equipo, así que la empresa se borra con todo: su página, logo,
-                    producto, hitos, avances, transparencia y documentos del Dataroom.
-                  </p>
-                ) : (
-                  <p className="text-sm leading-relaxed text-tinta">
-                    La empresa tiene {previa.otros_miembros === 1 ? "1 integrante más" : `${previa.otros_miembros} integrantes más`}
-                    , así que se queda: salís del equipo y, si eras la persona titular, la titularidad pasa a otra
-                    persona del equipo. Lo que escribiste en la empresa queda, sin tu nombre.
-                  </p>
+                <ul className="flex flex-col gap-2">
+                  {empresas.map((e) => (
+                    <li key={e.empresa_slug} className="flex flex-col gap-1 rounded-2xl border border-tinta/10 px-4 py-3">
+                      {empresas.length > 1 && <p className="font-medium text-tinta">{e.empresa_nombre}</p>}
+                      {e.se_borra ? (
+                        <p className="text-sm leading-relaxed text-tinta">
+                          Sos la única persona del equipo, así que la empresa se borra con todo: su página, logo,
+                          producto, hitos, avances, transparencia y documentos del Dataroom.
+                        </p>
+                      ) : (
+                        <p className="text-sm leading-relaxed text-tinta">
+                          Tiene {e.otros_miembros === 1 ? "1 integrante más" : `${e.otros_miembros} integrantes más`}, así
+                          que se queda: salís del equipo y, si la administrabas, pasa a quien está hace más tiempo. Lo
+                          que escribiste en la empresa queda, sin tu nombre.
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {seBorran.length > 0 && (
+                  <div className="flex flex-col gap-2 rounded-2xl bg-tinta/5 px-4 py-3">
+                    <p className="text-sm font-medium text-tinta">
+                      Antes, guardá sus datos afuera: exportá el Dataroom en PDF (se abre en otra pestaña).
+                    </p>
+                    <ul className="flex flex-wrap gap-2">
+                      {seBorran.map((e) => (
+                        <li key={e.empresa_slug}>
+                          <Link
+                            href={conEmpresa("/cuenta/dataroom/exportar", e.empresa_slug)}
+                            target="_blank"
+                            rel="noopener"
+                            className="inline-flex min-h-11 items-center rounded-full border border-tinta/30 px-4 text-sm font-medium text-tinta hover:border-tinta"
+                          >
+                            Exportar {e.empresa_nombre} <span aria-hidden>&nbsp;↗</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </section>
             )}

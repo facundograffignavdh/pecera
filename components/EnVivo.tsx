@@ -12,7 +12,16 @@ import { supabaseNavegador } from "@/lib/supabase-navegador";
  * Sin la migración feria_pro (perfiles fuera de la publicación) simplemente no llega
  * nada.
  */
-export default function EnVivo({ canal, filtro }: { canal: string; filtro: string }) {
+export default function EnVivo({
+  canal,
+  filtro,
+  tabla = "perfiles",
+}: {
+  canal: string;
+  filtro: string;
+  /** perfiles, o empresa_miembros para el equipo de una empresa (multi_empresa). */
+  tabla?: "perfiles" | "empresa_miembros";
+}) {
   const router = useRouter();
 
   useEffect(() => {
@@ -20,7 +29,7 @@ export default function EnVivo({ canal, filtro }: { canal: string; filtro: strin
     let espera: number | null = null;
     const suscripcion = supabase
       .channel(canal)
-      .on("postgres_changes", { event: "*", schema: "public", table: "perfiles", filter: filtro }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: tabla, filter: filtro }, () => {
         // Varios cambios juntos (autoguardado + foto) = un solo refresco.
         if (espera !== null) clearTimeout(espera);
         espera = window.setTimeout(() => {
@@ -33,7 +42,7 @@ export default function EnVivo({ canal, filtro }: { canal: string; filtro: strin
       if (espera !== null) clearTimeout(espera);
       supabase.removeChannel(suscripcion);
     };
-  }, [canal, filtro, router]);
+  }, [canal, filtro, tabla, router]);
 
   return null;
 }

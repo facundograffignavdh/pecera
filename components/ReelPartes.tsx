@@ -4,10 +4,9 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import Avatar from "@/components/Avatar";
 import DescripcionConTags from "@/components/DescripcionConTags";
-import { EtiquetasReel } from "@/components/Etiquetas";
+import { EtiquetasReel, detalleEmpresas } from "@/components/Etiquetas";
 import { IconoCorazon, IconoSonido, IconoSubtitulos } from "@/components/Iconos";
 import InsigniaPitch from "@/components/InsigniaPitch";
-import { cargo as cargoDe } from "@/lib/etiquetas";
 import { formatoCompacto } from "@/lib/formato";
 import { dejarDeSeguir, seguir, useSigo } from "@/lib/red";
 import { ROLES, TIPOS } from "@/lib/rol";
@@ -165,7 +164,6 @@ function SeguirMini({ item }: { item: ItemFeed }) {
           dejarDeSeguir(perfil.id);
           return;
         }
-        const c = cargoDe(perfil.cargo);
         seguir({
           id: perfil.id,
           slug: perfil.slug,
@@ -173,7 +171,7 @@ function SeguirMini({ item }: { item: ItemFeed }) {
           rol: perfil.rol,
           avatar_url: perfil.avatar_url,
           descripcion: perfil.descripcion,
-          detalle: perfil.empresa ? `${c?.label ?? "Equipo"} en ${perfil.empresa.nombre}` : null,
+          detalle: detalleEmpresas(perfil),
         });
         navigator.vibrate?.(10);
       }}

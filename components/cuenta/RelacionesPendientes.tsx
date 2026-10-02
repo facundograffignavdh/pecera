@@ -16,6 +16,8 @@ export type RelacionPendiente = {
   slug: string;
   nombre: string;
   descripcion: string | null;
+  /** multi_empresa: a cuál de tus empresas nombra. */
+  empresa_nombre?: string;
 };
 
 /**
@@ -44,7 +46,10 @@ function Fila({ r }: { r: RelacionPendiente }) {
       <p className="text-sm text-tinta">
         <Link href={`/p/${r.slug}`} className="font-semibold underline-offset-4 hover:underline">{r.nombre}</Link>{" "}
         <span className="text-tinta/60">({ROLES[r.rol_perfil]?.label ?? r.rol_perfil})</span> dice:{" "}
-        <strong className="font-semibold">{defTipo(r.tipo)?.verbo ?? "Trabajó con"} tu empresa</strong>.
+        <strong className="font-semibold">
+          {defTipo(r.tipo)?.verbo ?? "Trabajó con"} {r.empresa_nombre ?? "tu empresa"}
+        </strong>
+        .
       </p>
       {r.descripcion && <p className="text-sm text-tinta/75">“{r.descripcion}”</p>}
       <div className="flex gap-2">

@@ -50,12 +50,20 @@ export type Perfil = {
   skills?: string[];
   busca?: string[];
   ofrece?: string[];
-  /** Solo en las consultas que lo piden (perfil público, feed). */
+  /** Solo en las consultas que lo piden (perfil público, feed). La principal. */
   empresa?: EmpresaResumen | null;
+  /**
+   * Todas sus empresas visibles (multi_empresa), la principal primero, con el cargo
+   * en cada una. Sin la migración, la principal sola. Lo arma lib/datos.ts.
+   */
+  empresas?: EmpresaDePerfil[];
 };
 
 /** Lo mínimo de una empresa para mostrarla junto a una persona. */
 export type EmpresaResumen = { slug: string; nombre: string; logo_url?: string | null };
+
+/** Una empresa de la persona, con su cargo ahí. */
+export type EmpresaDePerfil = EmpresaResumen & { id: string | null; cargo: string | null; principal: boolean };
 
 export type Empresa = {
   id: string;

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { empresaParaAccion, rpcEn } from "@/lib/cuenta-empresa";
 import { type Resultado, SIN_SESION, traducir } from "@/lib/errores-base";
 import { LIMITES_PRODUCTO, MAX_BYTES_IMAGEN_PRODUCTO, esTipoProducto } from "@/lib/producto";
 import { borrarR2, hash8, subirR2 } from "@/lib/r2";
@@ -11,6 +12,9 @@ import { esUrlSegura } from "@/lib/transparencia";
  * Producto / Servicio de la empresa desde /cuenta. Lo edita cualquier miembro. Las
  * imágenes van a R2 con clave `<empresaId>-<hash8>.jpg` (mismas reglas que la foto
  * del perfil) y solo la base decide cuáles quedan. Ninguna tira.
+ *
+ * multi_empresa: la empresa viene del form (`empresa_id`) o, al quitar una imagen, de
+ * su clave. La base verifica que la sesión sea parte.
  */
 
 type Supa = Awaited<ReturnType<typeof supabaseConSesion>>;
@@ -21,12 +25,6 @@ async function conSesion() {
     data: { user },
   } = await supabase.auth.getUser();
   return { supabase, user };
-}
-
-async function miEmpresa(supabase: Supa): Promise<{ id: string; slug: string } | null> {
-  const { data } = await supabase.rpc("mi_empresa");
-  const fila = (data as Array<{ id: string; slug: string }> | null)?.[0];
-  return fila ?? null;
 }
 
 function refrescar(slug: string) {
@@ -75,10 +73,10 @@ export async function guardarProducto(_previo: Resultado, formData: FormData): P
     return { ok: false, mensaje: "El link de la demo tiene que empezar con https://" };
   }
 
-  const empresa = await miEmpresa(supabase);
+  const empresa = await empresaParaAccion(supabase, formData.get("empresa_id"));
   if (!empresa) return { ok: false, mensaje: "Primero creá o sumate a una empresa." };
 
-  const { error } = await supabase.rpc("guardar_producto", {
+  const { error } = await rpcEn(supabase, "guardar_producto_en", "guardar_producto", empresa.id, {
     p_tipo: tipo,
     p_nombre: campos.nombre,
     p_propuesta: campos.propuesta,
@@ -119,7 +117,7 @@ export async function subirImagenProducto(formData: FormData): Promise<Resultado
     return { ok: false, mensaje: "La imagen no es válida." };
   }
 
-  const empresa = await miEmpresa(supabase);
+  const empresa = await empresaParaAccion(supabase, formData.get("empresa_id"));
   if (!empresa) return { ok: false, mensaje: "Primero creá o sumate a una empresa." };
   const actuales = await imagenesActuales(supabase, empresa.id);
   if (!actuales) return { ok: false, mensaje: "Primero guardá el producto; después sumá las imágenes." };
@@ -137,7 +135,9 @@ export async function subirImagenProducto(formData: FormData): Promise<Resultado
     return { ok: false, mensaje: "No pudimos subir la imagen. Probá de nuevo." };
   }
 
-  const { error } = await supabase.rpc("poner_imagenes_producto", { p_imagenes: [...actuales, clave] });
+  const { error } = await rpcEn(supabase, "poner_imagenes_producto_en", "poner_imagenes_producto", empresa.id, {
+    p_imagenes: [...actuales, clave],
+  });
   if (error) {
     // La clave nueva no quedó en ninguna fila: se borra ya.
     await borrarR2(clave).catch((e) => console.error(`R2 (producto): ${(e as Error).message}`));
@@ -151,12 +151,13 @@ export async function subirImagenProducto(formData: FormData): Promise<Resultado
 export async function quitarImagenProducto(clave: string): Promise<Resultado> {
   const { supabase, user } = await conSesion();
   if (!user) return { ok: false, mensaje: SIN_SESION };
-  const empresa = await miEmpresa(supabase);
+  // La clave es `<empresaId>-<hash8>.jpg`: dice de qué empresa es.
+  const empresa = await empresaParaAccion(supabase, clave.slice(0, 36));
   if (!empresa) return { ok: false, mensaje: "Primero creá o sumate a una empresa." };
   const actuales = await imagenesActuales(supabase, empresa.id);
   if (!actuales) return { ok: false, mensaje: "No encontramos el producto." };
 
-  const { error } = await supabase.rpc("poner_imagenes_producto", {
+  const { error } = await rpcEn(supabase, "poner_imagenes_producto_en", "poner_imagenes_producto", empresa.id, {
     p_imagenes: actuales.filter((k) => k !== clave),
   });
   if (error) return traducir(error, "poner_imagenes_producto");

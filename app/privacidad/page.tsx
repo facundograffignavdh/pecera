@@ -87,10 +87,11 @@ export default function PrivacidadPage() {
             subtítulos se generan automáticamente a partir del audio.
           </li>
           <li>
-            <strong className="font-semibold text-tinta">Tu empresa.</strong> Si creás una
-            empresa o te sumás a una: su nombre, descripción, redes, etapa, industrias y ronda,
-            quiénes son parte del equipo y el cargo de cada uno, y su logo. El código de
-            invitación es privado del equipo.
+            <strong className="font-semibold text-tinta">Tus empresas.</strong> Si creás empresas
+            o te sumás a ellas (hasta cinco): de cada una, su nombre, descripción, redes, etapa,
+            industrias y ronda, quiénes son parte del equipo, el cargo de cada uno en esa empresa y
+            desde cuándo, y su logo. También cuál elegiste como tu empresa principal (la que va
+            primero en tu perfil). El código de invitación es privado del equipo.
           </li>
           <li>
             <strong className="font-semibold text-tinta">Producto y Build in Public.</strong> Lo
@@ -188,9 +189,10 @@ export default function PrivacidadPage() {
           Mientras tu perfil esté publicado y no lo ocultes, <strong className="font-semibold text-tinta">cualquier
           persona puede ver</strong> tu nombre, tipo, rol, descripción, foto, los canales de contacto
           que cargaste, tus etiquetas y tus pitches (video, portada, descripción y subtítulos), sin
-          necesidad de tener cuenta. Si sos parte de una empresa, también su página, con tu cargo
-          y lo que el equipo publicó o compartió: logo, producto e imágenes, hitos y avances, y
-          los datos y documentos marcados como transparentes. También tu link de newsletter, tus
+          necesidad de tener cuenta. Si sos parte de una o más empresas, tu perfil las muestra a
+          todas, con tu cargo en cada una, y cada empresa tiene su página, con su equipo, los
+          pitches de quienes la integran y lo que el equipo publicó o compartió: logo, producto e
+          imágenes, hitos y avances, y los datos y documentos marcados como transparentes. También tu link de newsletter, tus
           servicios, tu tesis y las relaciones de tu portfolio que marcaste como visibles para
           cualquiera (las marcadas &quot;solo con cuenta&quot; las ve quien entra con su
           cuenta). Tené en cuenta que quien lo vea puede copiar esos datos o guardarse el
@@ -239,7 +241,11 @@ export default function PrivacidadPage() {
           Guardamos tus datos mientras tu cuenta exista o hasta que nos pidas borrarlos. Cuando
           cambiás tu foto, el logo o las imágenes de un producto, o se reemplaza un video, la
           versión anterior se borra sola en aproximadamente una hora. Los documentos archivados
-          del Dataroom quedan guardados, sin mostrarse, hasta que nos pidas borrarlos. Los piques, las vistas y los contactos se guardan mientras
+          del Dataroom quedan guardados, sin mostrarse, hasta que nos pidas borrarlos. Si salís de
+          una empresa y eras la última integrante, la empresa se borra con todo (su página, logo,
+          producto, Build in Public, transparencia y Dataroom) y sus imágenes se borran de
+          nuestros servidores en la hora siguiente; antes de confirmar te ofrecemos exportar el
+          Dataroom. Los piques, las vistas y los contactos se guardan mientras
           exista el pitch o el perfil al que corresponden. El identificador al azar se queda en
           tu navegador hasta que borres los datos del sitio.
         </p>
@@ -283,9 +289,10 @@ export default function PrivacidadPage() {
             cofundador/a con sus mensajes (los que mandaste y los que recibiste), y los emails de tus
             envíos del formulario. También lo que hiciste desde ese navegador (piques, vistas y a
             quién seguís) y lo que Pecera guardó en él. Tu email queda libre: si volvés, empezás
-            con una cuenta nueva y vacía. Si sos la única persona de tu empresa, la empresa se
-            borra con todo; si hay más integrantes, la empresa se queda, la titularidad pasa a
-            otra persona del equipo y lo que escribiste en ella queda sin tu nombre. Qué guardamos
+            con una cuenta nueva y vacía. Con cada una de tus empresas: si sos la única persona del
+            equipo, la empresa se borra con todo; si hay más integrantes, se queda, la
+            administración pasa a quien está hace más tiempo en el equipo y lo que escribiste en
+            ella queda sin tu nombre. Qué guardamos
             después y por cuánto, en{" "}
             <a href="#conservacion" className={CLASE_ENLACE}>Cuánto tiempo los guardamos</a>.
           </li>
@@ -294,7 +301,8 @@ export default function PrivacidadPage() {
             <Email /> desde el email de tu cuenta y te mandamos una copia. Si no podés entrar a tu
             cuenta, también podés pedirnos por ahí que la borremos. Lo que es de una empresa
             (producto, hitos, avances, documentos) lo maneja su equipo. Salir de una empresa lo
-            podés hacer vos desde Mi perfil.
+            podés hacer vos desde la cuenta de esa empresa; si sos la última integrante, la empresa
+            se borra (te avisamos antes y podés exportar su Dataroom).
           </li>
         </ul>
         <p>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useActionState, useState, useTransition } from "react";
 import { guardarProducto, quitarImagenProducto, subirImagenProducto } from "@/app/cuenta/producto";
+import { CampoEmpresa, useEmpresaId } from "@/components/cuenta/EmpresaActual";
 import { Aviso, BOTON_PRIMARIO, BOTON_SECUNDARIO, INPUT, Tarjeta } from "@/components/cuenta/ui";
 import type { Resultado } from "@/lib/errores-base";
 import { achicarImagen } from "@/lib/imagen-cliente";
@@ -45,6 +46,7 @@ export default function TarjetaProducto({
       bajada="Qué ofrece tu empresa, claro y en concreto. Es lo primero que lee un inversor o un cliente en la página de la empresa."
     >
       <form action={accion} className="flex flex-col gap-4">
+        <CampoEmpresa />
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-medium text-tinta">¿Qué ofrecen?</legend>
           <div className="flex gap-2">
@@ -228,6 +230,7 @@ function Campo({
 
 /** Hasta 4 imágenes. Se achican en el celular y se suben de a una, con su estado. */
 function Imagenes({ imagenes }: { imagenes: ImagenPropia[] }) {
+  const empresaId = useEmpresaId();
   const [pendiente, iniciar] = useTransition();
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [subiendo, setSubiendo] = useState(false);
@@ -248,6 +251,7 @@ function Imagenes({ imagenes }: { imagenes: ImagenPropia[] }) {
     }
     const datos = new FormData();
     datos.set("imagen", blob, "imagen.jpg");
+    datos.set("empresa_id", empresaId);
     iniciar(async () => {
       try {
         setResultado(await subirImagenProducto(datos));

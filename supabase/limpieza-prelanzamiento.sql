@@ -30,6 +30,33 @@ where clave is not null
 on conflict (clave) do update
   set borrar_despues = least(public.r2_borrar.borrar_despues, excluded.borrar_despues);
 
+-- 1b) Lo mismo con los archivos de las empresas (logos e imágenes del producto), solo
+--     si esas tablas o columnas existen.
+do $$
+declare
+  fuente text;
+begin
+  foreach fuente in array array[
+    'select clave from public.empresa_logos',
+    'select logo_url from public.empresas',
+    'select unnest(imagenes) from public.empresa_productos'
+  ] loop
+    begin
+      execute format(
+        'insert into public.r2_borrar (clave, bytes, borrar_despues)
+         select distinct c, 0, now() from (%s) t(c)
+         where c is not null and btrim(c) <> '''' and c !~ ''^(/|https?:)''
+         on conflict (clave) do update
+           set borrar_despues = least(public.r2_borrar.borrar_despues, excluded.borrar_despues)',
+        fuente
+      );
+    exception when undefined_table or undefined_column then
+      null;
+    end;
+  end loop;
+end;
+$$;
+
 -- 2) Tablas de v2-feria-lista, solo si existen (hijas antes que padres).
 --    DELETE (no TRUNCATE) para respetar las FK y no tocar eventos.
 do $$
@@ -43,6 +70,7 @@ begin
     'public.medicion_frecuencia',
     'public.votos',
     'public.evento_participantes',
+    'public.empresa_miembros',
     'public.empresa_datos',
     'public.empresas_codigos',
     'public.empresas_intentos'
@@ -85,7 +113,7 @@ from unnest(array[
   'auth.users', 'public.perfiles', 'public.pitches', 'public.piques',
   'public.piques_frecuencia', 'public.envios', 'public.ingestas',
   'public.empresas', 'public.empresas_codigos', 'public.empresas_intentos',
-  'public.empresa_datos', 'public.evento_participantes', 'public.votos',
+  'public.empresa_datos', 'public.empresa_miembros', 'public.evento_participantes', 'public.votos',
   'public.cofundador_intereses',
   -- conservadas
   'public.r2_borrar', 'public.eventos', 'public.admins', 'public.equipo_ingesta',

@@ -13,6 +13,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const RAIZ = process.argv[2];
+// Pasos extra después de las migraciones (p. ej. el rollback de multi_empresa):
+//   node x.mjs <repo> --con supabase/rollback-multi-empresa.sql
+const iCon = process.argv.indexOf("--con");
+const EXTRA = iCon > 0 ? process.argv[iCon + 1].split(",") : [];
 const db = new PGlite();
 
 const STUBS = `
@@ -50,6 +54,10 @@ const MIGRACIONES = [
   "20261004120000_dataroom.sql",
   "20261005120000_portfolio.sql",
   "20261006120000_logos.sql",
+  "20261007120000_feria_pro.sql",
+  "20261008120000_borrar_cuenta.sql",
+  "20261009120000_cofundador_conexiones.sql",
+  "20261010120000_multi_empresa.sql",
 ];
 
 let ok = 0;
@@ -87,6 +95,15 @@ async function main() {
       console.log(`aplicada ${m}`);
     } catch (e) {
       console.log(`FALLÓ ${m}: ${e.message}`);
+      process.exit(1);
+    }
+  }
+  for (const f of EXTRA) {
+    try {
+      await db.exec(readFileSync(join(RAIZ, f), "utf8"));
+      console.log(`aplicado ${f}`);
+    } catch (e) {
+      console.log(`FALLÓ ${f}: ${e.message}`);
       process.exit(1);
     }
   }

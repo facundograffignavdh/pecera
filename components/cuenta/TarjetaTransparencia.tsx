@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { guardarDato } from "@/app/cuenta/empresa";
+import { CampoEmpresa } from "@/components/cuenta/EmpresaActual";
 import { Aviso, INPUT, Tarjeta } from "@/components/cuenta/ui";
 import type { Resultado } from "@/lib/errores-base";
 import { getConcepto } from "@/lib/glosario";
@@ -141,6 +142,7 @@ function FilaDato({
     <form action={accion} className="flex flex-col gap-2">
       <input type="hidden" name="clave" value={def.clave} />
       <input type="hidden" name="slug_empresa" value={slugEmpresa} />
+      <CampoEmpresa />
       <label htmlFor={id} className="text-sm font-medium text-tinta">
         {def.label}
       </label>

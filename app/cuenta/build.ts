@@ -12,13 +12,19 @@ import {
   esEstadoHito,
   esEtapaBuild,
 } from "@/lib/build";
+import { empresaParaAccion, leerMisEmpresas, rpcEn } from "@/lib/cuenta-empresa";
 import { type Resultado, SIN_SESION, traducir } from "@/lib/errores-base";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 
 /**
  * Build in Public desde /cuenta: hitos y avances de la empresa. Todo por funciones
  * de la base, que verifican que la sesión sea miembro. Ninguna tira.
+ *
+ * multi_empresa: lo nuevo va a la empresa del form (`empresa_id`); un hito o avance
+ * que ya existe se toca por su id y la empresa sale de la fila.
  */
+
+const NO_ES_TUYA = "Esa empresa no está entre las tuyas. Recargá la página.";
 
 type Supa = Awaited<ReturnType<typeof supabaseConSesion>>;
 
@@ -34,13 +40,19 @@ async function conSesion() {
  * El hito en curso sale en el feed, en la empresa y en el perfil de cada miembro:
  * se regeneran todos (los perfiles, en su próxima visita).
  */
-async function refrescar(supabase: Supa) {
+async function refrescar(supabase: Supa, empresaId: string | null | undefined) {
   revalidatePath("/");
   revalidatePath("/cuenta");
   revalidatePath("/p/[slug]", "page");
-  const { data } = await supabase.rpc("mi_empresa");
-  const slug = (data as Array<{ slug: string }> | null)?.[0]?.slug;
+  const { empresas } = await leerMisEmpresas(supabase);
+  const slug = empresas.find((e) => e.id === empresaId)?.slug;
   if (slug) revalidatePath(`/e/${slug}`);
+}
+
+/** De qué empresa es una fila (hito o avance). La RLS deja leer las propias y las visibles. */
+async function empresaDeFila(supabase: Supa, tabla: "empresa_hitos" | "empresa_avances", id: string) {
+  const { data } = await supabase.from(tabla).select("empresa_id").eq("id", id).maybeSingle();
+  return (data?.empresa_id as string | undefined) ?? null;
 }
 
 function texto(formData: FormData, campo: string) {
@@ -72,10 +84,10 @@ function validarHito(d: DatosHito): string | null {
   return null;
 }
 
-async function llamarGuardar(supabase: Supa, d: DatosHito): Promise<Resultado> {
+async function llamarGuardar(supabase: Supa, empresaId: string, d: DatosHito): Promise<Resultado> {
   const invalido = validarHito(d);
   if (invalido) return { ok: false, mensaje: invalido };
-  const { error } = await supabase.rpc("guardar_hito", {
+  const { error } = await rpcEn(supabase, "guardar_hito_en", "guardar_hito", empresaId, {
     p_id: d.id,
     p_titulo: d.titulo,
     p_detalle: d.detalle || null,
@@ -85,7 +97,7 @@ async function llamarGuardar(supabase: Supa, d: DatosHito): Promise<Resultado> {
     p_fecha: d.fecha,
   });
   if (error) return traducir(error, "guardar_hito");
-  await refrescar(supabase);
+  await refrescar(supabase, empresaId);
   return { ok: true, mensaje: "Hito guardado." };
 }
 
@@ -98,7 +110,9 @@ export async function guardarHito(_previo: Resultado, formData: FormData): Promi
   const estado = texto(formData, "estado");
   if (!esEstadoHito(estado)) return { ok: false, mensaje: "Elegí si está logrado, en curso o es el próximo." };
   const progresoCrudo = texto(formData, "progreso");
-  return llamarGuardar(supabase, {
+  const empresa = await empresaParaAccion(supabase, formData.get("empresa_id"));
+  if (!empresa) return { ok: false, mensaje: NO_ES_TUYA };
+  return llamarGuardar(supabase, empresa.id, {
     id: UUID.test(id) ? id : null,
     titulo: texto(formData, "titulo"),
     detalle: texto(formData, "detalle"),
@@ -120,15 +134,15 @@ export async function moverHito(id: string, estado: EstadoHito): Promise<Resulta
 
   const { data: hito, error } = await supabase
     .from("empresa_hitos")
-    .select("id, titulo, detalle, etapa, estado, progreso, fecha, created_at")
+    .select("id, empresa_id, titulo, detalle, etapa, estado, progreso, fecha, created_at")
     .eq("id", id)
     .maybeSingle()
-    .overrideTypes<Hito | null, { merge: false }>();
+    .overrideTypes<(Hito & { empresa_id: string }) | null, { merge: false }>();
   if (error) return traducir(error, "moverHito");
   if (!hito) return { ok: false, mensaje: "Ese hito no existe." };
 
   const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
-  const r = await llamarGuardar(supabase, {
+  const r = await llamarGuardar(supabase, hito.empresa_id, {
     id,
     titulo: hito.titulo,
     detalle: hito.detalle ?? "",
@@ -153,13 +167,13 @@ export async function actualizarProgreso(id: string, progreso: number): Promise<
   if (!user) return { ok: false, mensaje: SIN_SESION };
   const { data: hito, error } = await supabase
     .from("empresa_hitos")
-    .select("id, titulo, detalle, etapa, estado, progreso, fecha, created_at")
+    .select("id, empresa_id, titulo, detalle, etapa, estado, progreso, fecha, created_at")
     .eq("id", id)
     .maybeSingle()
-    .overrideTypes<Hito | null, { merge: false }>();
+    .overrideTypes<(Hito & { empresa_id: string }) | null, { merge: false }>();
   if (error) return traducir(error, "actualizarProgreso");
   if (!hito || hito.estado !== "en_curso") return { ok: false, mensaje: "Ese hito ya no está en curso." };
-  const r = await llamarGuardar(supabase, {
+  const r = await llamarGuardar(supabase, hito.empresa_id, {
     id,
     titulo: hito.titulo,
     detalle: hito.detalle ?? "",
@@ -175,9 +189,10 @@ export async function borrarHito(id: string): Promise<Resultado> {
   if (!UUID.test(id)) return { ok: false, mensaje: "Ese hito no existe." };
   const { supabase, user } = await conSesion();
   if (!user) return { ok: false, mensaje: SIN_SESION };
+  const empresaId = await empresaDeFila(supabase, "empresa_hitos", id);
   const { error } = await supabase.rpc("borrar_hito", { p_id: id });
   if (error) return traducir(error, "borrar_hito");
-  await refrescar(supabase);
+  await refrescar(supabase, empresaId);
   return { ok: true, mensaje: "Hito borrado." };
 }
 
@@ -194,20 +209,20 @@ export async function publicarAvance(_previo: Resultado, formData: FormData): Pr
   if (!textoAvance) return { ok: false, mensaje: "Contá en una o dos líneas qué avanzaron." };
   if (textoAvance.length > AVANCE_MAX) return { ok: false, mensaje: `Hasta ${AVANCE_MAX} caracteres.` };
 
-  const { error } = await supabase.rpc("publicar_avance", {
+  const empresa = await empresaParaAccion(supabase, formData.get("empresa_id"));
+  if (!empresa) return { ok: false, mensaje: NO_ES_TUYA };
+  const { error } = await rpcEn(supabase, "publicar_avance_en", "publicar_avance", empresa.id, {
     p_texto: textoAvance,
     p_hito: UUID.test(hito) ? hito : null,
   });
   if (error) return traducir(error, "publicar_avance");
-  await refrescar(supabase);
+  await refrescar(supabase, empresa.id);
 
-  // La RLS deja leer los avances de todas las empresas visibles: se filtra la propia.
-  const { data: yo } = await supabase.from("perfiles").select("empresa_id").eq("usuario_id", user.id).maybeSingle();
-  if (!yo?.empresa_id) return { ok: true, mensaje: "Avance publicado." };
+  // La RLS deja leer los avances de todas las empresas visibles: se filtra esta.
   const { data } = await supabase
     .from("empresa_avances")
     .select("created_at")
-    .eq("empresa_id", yo.empresa_id)
+    .eq("empresa_id", empresa.id)
     .order("created_at", { ascending: false })
     .limit(400);
   const racha = calcularRacha((data ?? []).map((a) => a.created_at as string), new Date());
@@ -225,8 +240,9 @@ export async function borrarAvance(id: string): Promise<Resultado> {
   if (!UUID.test(id)) return { ok: false, mensaje: "Ese avance no existe." };
   const { supabase, user } = await conSesion();
   if (!user) return { ok: false, mensaje: SIN_SESION };
+  const empresaId = await empresaDeFila(supabase, "empresa_avances", id);
   const { error } = await supabase.rpc("borrar_avance", { p_id: id });
   if (error) return traducir(error, "borrar_avance");
-  await refrescar(supabase);
+  await refrescar(supabase, empresaId);
   return { ok: true, mensaje: "Avance borrado." };
 }

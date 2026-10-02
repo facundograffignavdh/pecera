@@ -45,7 +45,7 @@ export default function CompletarPerfil({
     },
   ];
   if (perfil.rol === "emprendedor" && conEmpresa !== null) {
-    pasos.push({ clave: "empresa", label: "Tu empresa", hecho: conEmpresa, href: "#tarjeta-tu-empresa" });
+    pasos.push({ clave: "empresa", label: "Tu empresa", hecho: conEmpresa, href: "#tarjeta-mis-empresas" });
   }
   if (portfolio && perfil.rol === "inversor") {
     pasos.push({ clave: "tesis", label: "Tu tesis de inversión", hecho: portfolio.tesis, href: "#tarjeta-tu-tesis-de-inversi-n" });

@@ -11,7 +11,9 @@ import { EnlaceVolver } from "@/components/VolverAlFeed";
 import AccionesPitch from "@/components/cuenta/AccionesPitch";
 import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
 import TarjetaBuild from "@/components/cuenta/TarjetaBuild";
-import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
+import { EmpresaActual } from "@/components/cuenta/EmpresaActual";
+import SelectorEmpresa from "@/components/cuenta/SelectorEmpresa";
+import TarjetaEmpresa from "@/components/cuenta/TarjetaEmpresa";
 import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
 import EnVivo from "@/components/EnVivo";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
@@ -25,7 +27,8 @@ import TarjetaTesis from "@/components/cuenta/TarjetaTesis";
 import TarjetaProducto, { type ImagenPropia } from "@/components/cuenta/TarjetaProducto";
 import { entrar } from "@/app/cuenta/acciones";
 import { type Avance, type Hito, calcularRacha } from "@/lib/build";
-import { urlPerfil } from "@/lib/cuenta";
+import { conEmpresa, urlPerfil } from "@/lib/cuenta";
+import { type EmpresaMia, MAX_EMPRESAS, elegirEmpresa, leerMisEmpresas } from "@/lib/cuenta-empresa";
 import type { CuentaLocal } from "@/lib/cuenta-local";
 import { faltaMigracion } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
@@ -51,7 +54,7 @@ const COLUMNAS = `${COLUMNAS_LISTA}, busca_cofundador, cofundador_aporta, cofund
 const BOTON_PRIMARIO = boton("primario", "lg");
 
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
-  const { error, creado, foto, rol } = await searchParams;
+  const { error, creado, foto, rol, empresa: empresaPedida } = await searchParams;
   const rolInicial = typeof rol === "string" && rol in ROLES ? (rol as Rol) : undefined;
   const supabase = await supabaseConSesion();
   const {
@@ -78,7 +81,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   // Empresa, transparencia y evento: extras de feria_lista. Si la base todavía no
   // los tiene (o fallan), la cuenta se edita igual.
   const [extras, esAdmin] = await Promise.all([
-    user && perfil ? leerExtras(supabase) : null,
+    user && perfil ? leerExtras(supabase, empresaPedida) : null,
     user ? esDelEquipo(supabase) : false,
   ]);
 
@@ -229,33 +232,53 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               key={perfil?.id ?? "nuevo"}
               perfil={perfil}
               rolInicial={rolInicial}
-              empresa={extras?.empresa ? { slug: extras.empresa.slug, nombre: extras.empresa.nombre } : null}
+              empresa={
+                extras?.empresas[0]
+                  ? {
+                      slug: extras.empresas[0].slug,
+                      nombre:
+                        extras.empresas.length > 1
+                          ? `${extras.empresas[0].nombre} y ${extras.empresas.length - 1} más`
+                          : extras.empresas[0].nombre,
+                    }
+                  : null
+              }
             />
 
             {perfil && extras?.disponible && (
               <>
                 {extras.portafolio && <TarjetaPortafolio items={extras.portafolio} rol={perfil.rol} />}
-                <TarjetaEmpresa empresa={extras.empresa} logo={extras.logo} />
-                {extras.empresa && extras.producto && (
-                  <TarjetaProducto
-                    producto={extras.producto.producto}
-                    imagenes={extras.producto.imagenes}
-                    slugEmpresa={extras.empresa.slug}
-                  />
-                )}
-                {extras.empresa && extras.build && (
-                  <TarjetaBuild
-                    hitos={extras.build.hitos}
-                    avances={extras.build.avances.slice(0, 20)}
-                    racha={calcularRacha(
-                      extras.build.avances.map((a) => a.created_at),
-                      new Date()
+                <TarjetaEmpresa empresas={extras.empresas} multi={extras.multi} max={MAX_EMPRESAS} />
+                {extras.empresa && (
+                  // La empresa con la que se trabaja abajo: va en la URL y en cada action.
+                  <EmpresaActual key={extras.empresa.id} empresa={{ id: extras.empresa.id, slug: extras.empresa.slug }}>
+                    <div id="empresa-elegida" className="scroll-mt-24">
+                      <SelectorEmpresa empresas={extras.empresas} actual={extras.empresa.id} ruta="/cuenta#empresa-elegida" />
+                    </div>
+                    {extras.producto && (
+                      <TarjetaProducto
+                        key={`producto-${extras.empresa.id}`}
+                        producto={extras.producto.producto}
+                        imagenes={extras.producto.imagenes}
+                        slugEmpresa={extras.empresa.slug}
+                      />
                     )}
-                  />
+                    {extras.build && (
+                      <TarjetaBuild
+                        key={`build-${extras.empresa.id}`}
+                        hitos={extras.build.hitos}
+                        avances={extras.build.avances.slice(0, 20)}
+                        racha={calcularRacha(
+                          extras.build.avances.map((a) => a.created_at),
+                          new Date()
+                        )}
+                      />
+                    )}
+                  </EmpresaActual>
                 )}
                 {extras.empresa && extras.build && (
                   <Link
-                    href="/cuenta/dataroom"
+                    href={conEmpresa("/cuenta/dataroom", extras.empresas.length > 1 ? extras.empresa.slug : null)}
                     className="flex min-h-16 items-center justify-between gap-3 rounded-3xl bg-tinta px-5 py-4 text-marfil transition-opacity duration-200 ease-pecera hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
                   >
                     <span>
@@ -321,7 +344,12 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
 type Extras = {
   disponible: boolean;
-  empresa: MiEmpresa | null;
+  /** Todas sus empresas, la principal primero. */
+  empresas: EmpresaMia[];
+  /** La base tiene multi_empresa. */
+  multi: boolean;
+  /** La empresa con la que se trabaja (`?empresa=` o la principal). */
+  empresa: EmpresaMia | null;
   participa: boolean;
   /** null si la base todavía no tiene feria_pro: la tarjeta no se muestra. */
   portafolio: ItemPortafolio[] | null;
@@ -329,21 +357,7 @@ type Extras = {
   build: { hitos: Hito[]; avances: Avance[] } | null;
   /** null: la base todavía no tiene productos. `producto` null: no lo cargaron. */
   producto: { producto: Producto | null; imagenes: ImagenPropia[] } | null;
-  /** undefined: la base no tiene logos; null: sin logo. */
-  logo?: string | null;
 };
-
-async function leerLogo(
-  supabase: Awaited<ReturnType<typeof supabaseConSesion>>,
-  empresaId: string
-): Promise<string | null | undefined> {
-  const { data, error } = await supabase.from("empresa_logos").select("clave").eq("empresa_id", empresaId).maybeSingle();
-  if (error) {
-    if (!faltaMigracion(error)) console.error(`Supabase (leerLogo): ${error.message}`);
-    return undefined;
-  }
-  return data?.clave ? urlMedia(data.clave as string) : null;
-}
 
 async function leerProducto(
   supabase: Awaited<ReturnType<typeof supabaseConSesion>>,
@@ -392,40 +406,35 @@ async function leerBuild(
   return { hitos: hitos.data ?? [], avances: avances.data ?? [] };
 }
 
-async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>>): Promise<Extras> {
-  const [v2, evento, portafolio] = await Promise.all([
-    supabase.rpc("mi_empresa_v2"),
+async function leerExtras(
+  supabase: Awaited<ReturnType<typeof supabaseConSesion>>,
+  empresaPedida: unknown
+): Promise<Extras> {
+  const [mias, evento, portafolio] = await Promise.all([
+    leerMisEmpresas(supabase),
     supabase.rpc("mi_evento", { p_evento: EVENTO_ACTUAL.slug }),
     supabase.rpc("mi_portafolio"),
   ]);
-  // Sin feria_pro, la empresa sale de mi_empresa (sin logo).
-  const empresa = faltaMigracion(v2.error) ? await supabase.rpc("mi_empresa") : v2;
-  if (faltaMigracion(empresa.error)) {
-    return { disponible: false, empresa: null, participa: false, build: null, producto: null, portafolio: null };
+  if (!mias.disponible) {
+    return { disponible: false, empresas: [], multi: false, empresa: null, participa: false, build: null, producto: null, portafolio: null };
   }
-  for (const [donde, r] of [
-    ["mi_empresa", empresa],
-    ["mi_evento", evento],
-  ] as const) {
-    if (r.error) console.error(`Supabase (${donde}): ${r.error.message}`);
-  }
+  if (evento.error) console.error(`Supabase (mi_evento): ${evento.error.message}`);
   if (portafolio.error && !faltaMigracion(portafolio.error)) {
     console.error(`Supabase (mi_portafolio): ${portafolio.error.message}`);
   }
-  const fila = ((empresa.data as MiEmpresa[] | null) ?? [])[0] ?? null;
   const filaEvento = (evento.data as Array<{ participa: boolean }> | null)?.[0];
-  // logo_url (feria_pro) llega como clave: se arma la URL.
-  const miEmpresa = fila && { ...fila, logo_url: fila.logo_url ? urlMedia(fila.logo_url) : null };
+  // Producto y Build in Public: los de la empresa elegida.
+  const empresa = elegirEmpresa(mias.empresas, empresaPedida);
+  const [build, producto] = empresa
+    ? await Promise.all([leerBuild(supabase, empresa.id), leerProducto(supabase, empresa.id)])
+    : [null, null];
   return {
     disponible: true,
-    ...(miEmpresa
-      ? await Promise.all([
-          leerBuild(supabase, miEmpresa.id),
-          leerProducto(supabase, miEmpresa.id),
-          leerLogo(supabase, miEmpresa.id),
-        ]).then(([build, producto, logo]) => ({ build, producto, logo: logo === undefined ? undefined : (logo ?? miEmpresa.logo_url ?? null) }))
-      : { build: null, producto: null }),
-    empresa: miEmpresa,
+    empresas: mias.empresas,
+    multi: mias.multi,
+    empresa,
+    build,
+    producto,
     participa: !!filaEvento?.participa,
     portafolio: portafolio.error ? null : ((portafolio.data ?? []) as ItemPortafolio[]),
   };
@@ -470,9 +479,13 @@ async function leerPortfolio(
   return { entradas: entradas.data ?? [], servicios: servicios.data ?? [], tesis: tesis.data };
 }
 
-/** Relaciones que nombran a la empresa propia y esperan respuesta. Vacío si no hay. */
+/**
+ * Relaciones que nombran a alguna de sus empresas y esperan respuesta (con
+ * multi_empresa, dicen cuál). Vacío si no hay.
+ */
 async function leerPendientes(supabase: Awaited<ReturnType<typeof supabaseConSesion>>): Promise<RelacionPendiente[]> {
-  const { data, error } = await supabase.rpc("relaciones_pendientes");
+  let { data, error } = await supabase.rpc("relaciones_pendientes_v2");
+  if (faltaMigracion(error)) ({ data, error } = await supabase.rpc("relaciones_pendientes"));
   if (error) {
     if (!faltaMigracion(error)) console.error(`Supabase (relaciones_pendientes): ${error.message}`);
     return [];

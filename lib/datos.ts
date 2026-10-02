@@ -11,6 +11,7 @@ import { calcularRacha, type Racha } from "@/lib/racha";
 import type {
   DatoEmpresa,
   Empresa,
+  EmpresaDePerfil,
   ItemFeed,
   ItemPortafolio,
   Metricas,
@@ -40,13 +41,49 @@ const COLUMNAS_COFUNDADOR =
   "busca_cofundador, cofundador_aporta, cofundador_busca, cofundador_dedicacion, cofundador_nota, ubicacion, experiencia, educacion, skills, busca, ofrece";
 const COLUMNAS_PERFIL_LISTA = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, empresa:empresas(slug, nombre)`;
 const COLUMNAS_PERFIL = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, ${COLUMNAS_COFUNDADOR}, empresa:empresas(slug, nombre, logo_url, ubicacion)`;
+// multi_empresa: todas sus empresas (la RLS deja solo las visibles), con el cargo en cada una.
+const COLUMNAS_PERFIL_MULTI = `${COLUMNAS_PERFIL}, membresias:empresa_miembros(empresa_id, cargo, created_at, empresa:empresas(slug, nombre, logo_url))`;
 
 /**
- * Columnas por migración, de la más nueva a la más vieja: feria_pro → feria_lista →
- * lo de siempre. Cada consulta prueba en ese orden y se queda con la primera que la
- * base entiende; así el deploy nunca depende de que la migración ya haya corrido.
+ * Columnas por migración, de la más nueva a la más vieja: multi_empresa → feria_pro →
+ * feria_lista → lo de siempre. Cada consulta prueba en ese orden y se queda con la
+ * primera que la base entiende; así el deploy nunca depende de que la migración ya
+ * haya corrido.
  */
-const NIVELES_PERFIL = [COLUMNAS_PERFIL, COLUMNAS_PERFIL_LISTA, COLUMNAS_PERFIL_BASE];
+const NIVELES_PERFIL = [COLUMNAS_PERFIL_MULTI, COLUMNAS_PERFIL, COLUMNAS_PERFIL_LISTA, COLUMNAS_PERFIL_BASE];
+
+type Membresia = {
+  empresa_id: string;
+  cargo: string | null;
+  created_at: string;
+  empresa: { slug: string; nombre: string; logo_url: string | null } | null;
+};
+
+/**
+ * Sus empresas visibles, la principal primero y después por antigüedad. Sin la
+ * migración multi_empresa, la principal sola (con el cargo del perfil).
+ */
+function empresasDe(perfil: Perfil & { membresias?: Membresia[] }): EmpresaDePerfil[] {
+  if (!perfil.membresias) {
+    return perfil.empresa
+      ? [{ ...perfil.empresa, id: perfil.empresa_id ?? null, cargo: perfil.cargo ?? null, principal: true }]
+      : [];
+  }
+  return perfil.membresias
+    .filter((m): m is Membresia & { empresa: NonNullable<Membresia["empresa"]> } => !!m.empresa)
+    .sort(
+      (a, b) =>
+        Number(b.empresa_id === perfil.empresa_id) - Number(a.empresa_id === perfil.empresa_id) ||
+        a.created_at.localeCompare(b.created_at)
+    )
+    .map((m) => ({
+      ...m.empresa,
+      id: m.empresa_id,
+      // El de esa empresa: el del perfil es solo el de la principal.
+      cargo: m.cargo,
+      principal: m.empresa_id === perfil.empresa_id,
+    }));
+}
 
 async function enCascada<T extends { error: { code?: string } | null }>(
   niveles: string[],
@@ -94,13 +131,18 @@ function conUrlsPitch(pitch: Pitch): Pitch {
   };
 }
 
-function conUrlsPerfil(perfil: Perfil): Perfil {
+function conUrlsPerfil(fila: Perfil & { membresias?: Membresia[] }): Perfil {
+  // Las membresías crudas no viajan al cliente: quedan resueltas en `empresas`.
+  const perfil: Perfil & { membresias?: Membresia[] } = { ...fila };
+  delete perfil.membresias;
+  const empresas = empresasDe(fila).map((e) => ({ ...e, logo_url: e.logo_url && urlMedia(e.logo_url) }));
   return {
     ...perfil,
     avatar_url: perfil.avatar_url && urlMedia(perfil.avatar_url),
     ...(perfil.empresa && {
       empresa: { ...perfil.empresa, logo_url: perfil.empresa.logo_url && urlMedia(perfil.empresa.logo_url) },
     }),
+    empresas,
   };
 }
 
@@ -208,7 +250,8 @@ export const getPerfil = cache(async (slug: string): Promise<PaginaPerfil | null
       .from("perfiles")
       .select(
         `${columnas}, pitches(${COLUMNAS_PITCH})${
-          nivel === 0 ? ", portafolio(id, tipo, titulo, descripcion, url, visible, orden)" : ""
+          // portafolio llegó con feria_pro (niveles 0 y 1).
+          nivel <= 1 ? ", portafolio(id, tipo, titulo, descripcion, url, visible, orden)" : ""
         }`
       )
       .eq("slug", slug)
@@ -504,17 +547,31 @@ export const getEmpresa = cache(async (slug: string): Promise<PaginaEmpresa | nu
   if (!fila) return null;
   const empresa: Empresa = { ...fila, logo_url: fila.logo_url && urlMedia(fila.logo_url) };
 
+  // multi_empresa: el equipo sale de las membresías (con el cargo en esta empresa).
+  // Sin la migración, de `empresa_id` como siempre.
+  const membresias = await supabase
+    .from("empresa_miembros")
+    .select("perfil_id, cargo")
+    .eq("empresa_id", empresa.id)
+    .order("created_at")
+    .overrideTypes<Array<{ perfil_id: string; cargo: string | null }>, { merge: false }>();
+  if (membresias.error && !faltaMigracion(membresias.error)) fallo("getEmpresa (membresías)", membresias.error);
+  const equipo = membresias.error ? null : membresias.data;
+
+  const consultaMiembros = supabase
+    .from("perfiles")
+    .select(`${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, pitches(${COLUMNAS_PITCH})`)
+    .order("created_at")
+    .eq("publicado", true)
+    .eq("oculto", false)
+    .eq("pitches.publicado", true)
+    .order("orden", { referencedTable: "pitches" });
+
   const [miembrosRes, datosRes, build, producto] = await Promise.all([
-    supabase
-      .from("perfiles")
-      .select(`${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, pitches(${COLUMNAS_PITCH})`)
-      .order("created_at")
-      .eq("empresa_id", empresa.id)
-      .eq("publicado", true)
-      .eq("oculto", false)
-      .eq("pitches.publicado", true)
-      .order("orden", { referencedTable: "pitches" })
-      .overrideTypes<Array<Perfil & { pitches: Pitch[] }>, { merge: false }>(),
+    (equipo
+      ? consultaMiembros.in("id", equipo.map((m) => m.perfil_id))
+      : consultaMiembros.eq("empresa_id", empresa.id)
+    ).overrideTypes<Array<Perfil & { pitches: Pitch[] }>, { merge: false }>(),
     supabase
       .from("empresa_datos")
       .select("clave, valor, url, visible")
@@ -530,8 +587,12 @@ export const getEmpresa = cache(async (slug: string): Promise<PaginaEmpresa | nu
     fallo("getEmpresa (datos)", datosRes.error);
   }
 
-  const miembros = miembrosRes.data.map((m) => conUrlsPerfil(m));
-  const pitches = miembrosRes.data.flatMap(({ pitches: lista, slug: s, nombre }) =>
+  // En el orden en que se sumaron, y con el cargo que tienen en esta empresa.
+  const orden = new Map(equipo?.map((m, i) => [m.perfil_id, i]));
+  const cargos = new Map(equipo?.map((m) => [m.perfil_id, m.cargo]));
+  const filas = [...miembrosRes.data].sort((a, b) => (orden.get(a.id) ?? 0) - (orden.get(b.id) ?? 0));
+  const miembros = filas.map((m) => conUrlsPerfil({ ...m, cargo: equipo ? (cargos.get(m.id) ?? null) : m.cargo }));
+  const pitches = filas.flatMap(({ pitches: lista, slug: s, nombre }) =>
     lista.map((p) => ({ ...conUrlsPitch(p), autor: { slug: s, nombre } }))
   );
 
