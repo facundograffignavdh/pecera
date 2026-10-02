@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "./config.ts";
-import type { Cuenta, Entrada, Perfil, Regla } from "./formulario.ts";
+import type { Cuenta, EmailsBorrados, Entrada, Perfil, Regla } from "./formulario.ts";
 import type { Bloque } from "./subtitulos.ts";
 
 /**
@@ -23,7 +23,7 @@ function fallo(donde: string, error: { code?: string; message: string }): never 
 
 export type Ingesta = {
   origen_id: string;
-  estado: "ok" | "error";
+  estado: "ok" | "error" | "borrado";
   intentos: number;
   bytes: number;
   subtitulos_intentos: number;
@@ -134,7 +134,7 @@ export async function clavesActuales(origenId: string): Promise<string[]> {
   );
 }
 
-export type EstadoEnvio = "recibido" | "en_espera" | "ok" | "error" | "rechazado";
+export type EstadoEnvio = "recibido" | "en_espera" | "ok" | "error" | "rechazado" | "borrado";
 
 export type Envio = {
   origen_id: string;
@@ -231,6 +231,85 @@ export async function perfilPorId(id: string): Promise<Perfil | null> {
     .overrideTypes<Perfil | null, { merge: false }>();
   if (error) fallo("perfilPorId", error);
   return data;
+}
+
+export type Borrados = { origenes: Set<string>; emails: EmailsBorrados };
+
+/** Sin la migración borrar_cuenta (tabla inexistente) no hay nada borrado. */
+const sinTabla = (error: { code?: string }) => error.code === "PGRST205" || error.code === "42P01";
+
+/**
+ * Lo que dejaron las cuentas eliminadas: los videos (ID de Drive) y el hash de cada
+ * email con su fecha. La ingesta nunca vuelve a procesar nada de eso.
+ */
+export async function leerBorrados(): Promise<Borrados | null> {
+  const origenes = new Set<string>();
+  const pagina = 1000;
+  for (let desde = 0; ; desde += pagina) {
+    const { data, error } = await db()
+      .from("origenes_borrados")
+      .select("origen_id")
+      .order("origen_id")
+      .range(desde, desde + pagina - 1)
+      .overrideTypes<{ origen_id: string }[], { merge: false }>();
+    if (error) {
+      if (sinTabla(error)) return null;
+      fallo("leerOrigenesBorrados", error);
+    }
+    for (const f of data) origenes.add(f.origen_id);
+    if (data.length < pagina) break;
+  }
+  const emails: EmailsBorrados = new Map();
+  for (let desde = 0; ; desde += pagina) {
+    const { data, error } = await db()
+      .from("emails_borrados")
+      .select("email_hash, borrado_at")
+      .order("email_hash")
+      .range(desde, desde + pagina - 1)
+      .overrideTypes<{ email_hash: string; borrado_at: string }[], { merge: false }>();
+    if (error) {
+      if (sinTabla(error)) return null;
+      fallo("leerEmailsBorrados", error);
+    }
+    for (const f of data) emails.set(f.email_hash, Date.parse(f.borrado_at));
+    if (data.length < pagina) return { origenes, emails };
+  }
+}
+
+/**
+ * Una respuesta de una cuenta eliminada que la base no había visto: queda anotada
+ * (para no volver a mirarla y para que el equipo borre el original en Drive) y sus
+ * filas de ingestas y envíos en 'borrado', sin emails. Los triggers de la base
+ * fuerzan lo mismo aunque algo se escriba distinto.
+ */
+export async function marcarBorrado(entrada: Entrada): Promise<void> {
+  const { error } = await db()
+    .from("origenes_borrados")
+    .upsert({ origen_id: entrada.origenId }, { onConflict: "origen_id", ignoreDuplicates: true });
+  if (error) fallo("marcarBorrado", error);
+  const { error: errorIngesta } = await db()
+    .from("ingestas")
+    .upsert(
+      { origen_id: entrada.origenId, estado: "borrado", error: null, intentos: 1000, bytes: 0 },
+      { onConflict: "origen_id" }
+    );
+  if (errorIngesta) fallo("marcarBorrado (ingestas)", errorIngesta);
+  const { error: errorEnvio } = await db()
+    .from("envios")
+    .upsert(
+      {
+        origen_id: entrada.origenId,
+        email_verificado: "",
+        email_escrito: "",
+        fecha: entrada.fecha,
+        estado: "borrado",
+        regla: null,
+        perfil_id: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "origen_id" }
+    );
+  if (errorEnvio) fallo("marcarBorrado (envios)", errorEnvio);
 }
 
 export type ParaBorrar = { clave: string; bytes: number; borrar_despues: string };

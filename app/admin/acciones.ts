@@ -11,7 +11,8 @@ import { supabaseConSesion } from "@/lib/supabase-servidor";
  * service key. Cada RPC vuelve a chequearlo.
  */
 
-async function rpc(nombre: string, args: Record<string, unknown>): Promise<Resultado> {
+/** `revalidar`: qué se vuelve a armar (por defecto todo lo público, que es lo que suele cambiar). */
+async function rpc(nombre: string, args: Record<string, unknown>, revalidar = "/"): Promise<Resultado> {
   const supabase = await supabaseConSesion();
   const {
     data: { user },
@@ -22,7 +23,7 @@ async function rpc(nombre: string, args: Record<string, unknown>): Promise<Resul
   if (error) return traducir(error, nombre);
 
   // Lo que cambia el panel se ve en el feed, perfiles, empresas y el evento.
-  revalidatePath("/", "layout");
+  revalidatePath(revalidar, "layout");
   return { ok: true };
 }
 
@@ -56,4 +57,9 @@ export async function participante(perfil: string, participa: boolean) {
     p_perfil: perfil,
     p_participa: participa,
   });
+}
+
+/** Original de una cuenta eliminada que el equipo ya borró a mano en Drive. */
+export async function marcarOriginalBorrado(origen: string) {
+  return rpc("admin_marcar_original_borrado", { p_origen: origen }, "/admin");
 }

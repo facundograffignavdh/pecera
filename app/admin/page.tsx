@@ -7,6 +7,7 @@ import BotonAccion from "@/components/admin/BotonAccion";
 import {
   autopublicar,
   configurarEvento,
+  marcarOriginalBorrado,
   ocultarEmpresa,
   participante,
   publicarPerfil,
@@ -35,6 +36,7 @@ const VISTAS = [
   { id: "envios", label: "Envíos" },
   { id: "empresas", label: "Empresas" },
   { id: "evento", label: EVENTO_ACTUAL.nombre },
+  { id: "drive", label: "Drive" },
 ] as const;
 type Vista = (typeof VISTAS)[number]["id"];
 
@@ -144,6 +146,7 @@ async function ConSesion({
         {vista === "envios" && <Envios supabase={supabase} />}
         {vista === "empresas" && <Empresas supabase={supabase} />}
         {vista === "evento" && <Evento supabase={supabase} />}
+        {vista === "drive" && <Drive supabase={supabase} />}
       </div>
     </>
   );
@@ -579,6 +582,66 @@ async function Envios({ supabase }: { supabase: Supabase }) {
           );
         })}
         {lista.length === 0 && <li className="text-sm text-tinta/60">No hay envíos trabados.</li>}
+      </ul>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Originales para borrar en Drive
+// ---------------------------------------------------------------------------
+
+type OriginalDrive = { origen_id: string; created_at: string };
+
+async function Drive({ supabase }: { supabase: Supabase }) {
+  const { data, error } = await supabase.rpc("admin_originales_drive");
+  if (faltaMigracion(error)) {
+    return (
+      <p className={`${CAJA} text-sm text-tinta`}>
+        Falta correr la migración <code>20261008120000_borrar_cuenta.sql</code> en Supabase.
+      </p>
+    );
+  }
+  fallo("admin_originales_drive", error);
+  const lista = (data ?? []) as OriginalDrive[];
+
+  return (
+    <div className="flex flex-col gap-4">
+      <h2 className="font-display text-xl font-semibold text-tinta">Originales para borrar en Drive</h2>
+      <p className="text-sm text-tinta/70">
+        Videos de cuentas que se eliminaron. La base no puede borrarlos de Drive: abrí cada uno con la cuenta
+        dueña de la carpeta del Form, borralo (y vaciá la papelera) y marcalo acá. La ingesta no los vuelve a
+        publicar aunque sigan en Drive.
+      </p>
+      <ul className="flex flex-col gap-2">
+        {lista.map((o) => (
+          <li key={o.origen_id} className={`${CAJA} flex flex-wrap items-center justify-between gap-3`}>
+            <div className="min-w-0">
+              <p className="break-all font-mono text-xs text-tinta">{o.origen_id}</p>
+              <p className="mt-0.5 text-xs text-tinta/65">
+                Cuenta eliminada el{" "}
+                {new Date(o.created_at).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={`https://drive.google.com/file/d/${encodeURIComponent(o.origen_id)}/view`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-tinta/70 underline underline-offset-4"
+              >
+                Abrir en Drive
+              </a>
+              <BotonAccion
+                accion={marcarOriginalBorrado.bind(null, o.origen_id)}
+                confirmar="¿Ya lo borraste de Drive?"
+              >
+                Marcar como borrado
+              </BotonAccion>
+            </div>
+          </li>
+        ))}
+        {lista.length === 0 && <li className="text-sm text-tinta/65">No hay originales pendientes.</li>}
       </ul>
     </div>
   );

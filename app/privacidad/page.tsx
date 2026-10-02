@@ -230,6 +230,16 @@ export default function PrivacidadPage() {
           exista el pitch o el perfil al que corresponden. El identificador al azar se queda en
           tu navegador hasta que borres los datos del sitio.
         </p>
+        <p>
+          Cuando eliminás tu cuenta, los videos, fotos, logos e imágenes se borran de nuestros
+          servidores en la hora siguiente. Los videos originales del formulario se quedan en
+          Google Drive hasta que el equipo los borra a mano, y tus respuestas al formulario siguen
+          en la planilla de Google del equipo. Después del borrado solo guardamos lo justo para que
+          tus pitches no vuelvan a publicarse: el identificador de cada video en Drive, el registro
+          del envío sin ningún email y una huella de tu email (un hash: no guardamos el email en
+          sí) con la fecha del borrado. Si tu email estaba bloqueado por abuso, el bloqueo se
+          mantiene.
+        </p>
       </Seccion>
 
       <Seccion id="derechos" titulo="Tus derechos">
@@ -245,13 +255,26 @@ export default function PrivacidadPage() {
             vuelvas a mostrar.
           </li>
           <li>
-            <strong className="font-semibold text-tinta">Pedir tus datos o borrar todo:</strong>{" "}
-            escribinos a <Email /> desde el email de tu cuenta. Podés pedir una copia de tus datos
-            o que borremos tu cuenta y todo lo asociado: perfil, foto, pitches, subtítulos, votos,
-            portfolio, servicios, tesis, registros del formulario y los videos originales. Lo que
-            es de una empresa (producto, hitos, avances, documentos) se borra cuando lo pide su
-            equipo. Salir de una empresa lo podés hacer
-            vos desde Mi perfil.
+            <strong className="font-semibold text-tinta">Eliminar tu cuenta:</strong> desde{" "}
+            <Link href="/cuenta" className={CLASE_ENLACE}>Mi perfil</Link>, en &quot;Eliminar mi
+            cuenta&quot;. Se borra al instante y no tiene vuelta atrás: tu perfil y tu foto, tus
+            pitches (con sus videos, subtítulos, piques y vistas, y los que mandaste por el
+            formulario y todavía no se publicaron), tu newsletter, links y documentos, portfolio,
+            servicios, tesis, votos, participación en eventos y seguidores, y los emails de tus
+            envíos del formulario. También lo que hiciste desde ese navegador (piques, vistas y a
+            quién seguís) y lo que Pecera guardó en él. Tu email queda libre: si volvés, empezás
+            con una cuenta nueva y vacía. Si sos la única persona de tu empresa, la empresa se
+            borra con todo; si hay más integrantes, la empresa se queda, la titularidad pasa a
+            otra persona del equipo y lo que escribiste en ella queda sin tu nombre. Qué guardamos
+            después y por cuánto, en{" "}
+            <a href="#conservacion" className={CLASE_ENLACE}>Cuánto tiempo los guardamos</a>.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Pedir tus datos:</strong> escribinos a{" "}
+            <Email /> desde el email de tu cuenta y te mandamos una copia. Si no podés entrar a tu
+            cuenta, también podés pedirnos por ahí que la borremos. Lo que es de una empresa
+            (producto, hitos, avances, documentos) lo maneja su equipo. Salir de una empresa lo
+            podés hacer vos desde Mi perfil.
           </li>
         </ul>
         <p>

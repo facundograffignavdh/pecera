@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Familjen_Grotesk } from "next/font/google";
 import "./globals.css";
+import AvisoCuentaEliminada from "@/components/AvisoCuentaEliminada";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -47,7 +48,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
       </head>
-      <body className="h-dvh overflow-hidden">{children}</body>
+      <body className="h-dvh overflow-hidden">
+        {children}
+        <AvisoCuentaEliminada />
+      </body>
     </html>
   );
 }
