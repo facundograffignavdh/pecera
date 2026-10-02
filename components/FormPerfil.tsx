@@ -7,6 +7,7 @@ import { type EstadoGuardar, guardarPerfil } from "@/app/cuenta/acciones";
 import Avatar from "@/components/Avatar";
 import { ChipsMultiple, ChipsUnico, SelectorEtapa } from "@/components/Chips";
 import EditorFoto from "@/components/EditorFoto";
+import { nombreImagen } from "@/lib/imagen";
 import EntradaTags from "@/components/EntradaTags";
 import { EtiquetasPerfil } from "@/components/Etiquetas";
 import Info from "@/components/Info";
@@ -441,7 +442,7 @@ export default function FormPerfil({
         return { errores };
       }
       // Al crear, la foto viaja con el resto: la action la sube antes de redirigir.
-      if (creando && foto?.blob) formData.set("foto", foto.blob, "foto.jpg");
+      if (creando && foto?.blob) formData.set("foto", foto.blob, nombreImagen(foto.blob, "foto"));
       let resultado: EstadoGuardar;
       try {
         if (creando) {
