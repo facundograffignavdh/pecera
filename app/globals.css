@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 @theme {
+  /* Semana 21 (Universidad Siglo 21), solo en lo de la Feria 21. Fijos en los dos temas:
+     llevan texto blanco (el verde claro, solo en texto grande: contraste 3:1). */
+  --color-s21-verde: #17a899;
+  --color-s21-verde-oscuro: #026567;
+  --color-s21-amarillo: #eca00b;
+  --color-s21-magenta: #c01a7a;
   --color-marfil: #f5f4ec;
   --color-tinta: #1c1b16;
   /* Naranjas de marca. Naranja (#F47C3C) es la acción primaria: botones con texto

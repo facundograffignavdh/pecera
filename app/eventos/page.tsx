@@ -56,8 +56,8 @@ export default function EventosPage() {
                           <Image
                             src="/feria/feria21.webp"
                             alt="Feria 21: es el corazón emprendedor de Semana 21"
-                            width={2000}
-                            height={387}
+                            width={2584}
+                            height={500}
                             priority
                             className="h-auto w-full"
                           />
@@ -69,7 +69,10 @@ export default function EventosPage() {
                             <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-current" />
                             En curso
                           </span>
-                          <span className="mt-2 block font-display text-3xl font-semibold leading-none text-tinta">{evento.nombre}</span>
+                          {/* En la Feria 21 el título es el banner oficial (FERIA 21 en verde). */}
+                          {!esFeria21 && (
+                            <span className="mt-2 block font-display text-3xl font-semibold leading-none text-tinta">{evento.nombre}</span>
+                          )}
                           <span className="mt-2 block text-sm text-tinta/70">{evento.fechas}</span>
                           <span className="block text-sm text-tinta/55">{evento.lugar}</span>
                         </span>
