@@ -33,8 +33,8 @@ export default function PrivacidadPage() {
   return (
     <PaginaLegal
       titulo="Política de privacidad"
-      actualizado="1 de octubre de 2026"
-      actualizadoIso="2026-10-01"
+      actualizado="2 de octubre de 2026"
+      actualizadoIso="2026-10-02"
       intro={
         <p>
           Pecera muestra pitches en video y perfiles de emprendedores, empresas, inversores y
@@ -119,6 +119,12 @@ export default function PrivacidadPage() {
             proyecto, cuando el equipo publica los resultados.
           </li>
           <li>
+            <strong className="font-semibold text-tinta">Búsqueda de cofundador/a.</strong> Si
+            activás «Busco cofundador/a»: qué aportás, qué buscás y cuánto tiempo le podés dedicar.
+            Cuando le mostrás interés a alguien, guardamos a quién, el mensaje que le escribís (hasta
+            280 caracteres), en qué quedó (pendiente, match, pasó o lo retiraste) y las fechas.
+          </li>
+          <li>
             <strong className="font-semibold text-tinta">El formulario de carga.</strong> Los
             pitches se suben con un formulario de Google Forms. De cada envío guardamos el email
             verificado de la cuenta de Google que lo mandó, el email que se escribió en el
@@ -169,6 +175,7 @@ export default function PrivacidadPage() {
           <li>Mostrar el portfolio, los servicios y la tesis de inversores y aliados, y pedirle a
             cada empresa que confirme las relaciones que la nombran.</li>
           <li>Que encuentres perfiles y empresas en Explorar.</li>
+          <li>Conectar a quienes buscan cofundador/a cuando el interés es mutuo.</li>
           <li>Organizar los eventos y contar los votos del público.</li>
           <li>Mantener tu sesión abierta y cuidar el servicio de abusos.</li>
         </ul>
@@ -197,6 +204,12 @@ export default function PrivacidadPage() {
           contados por perfil. Los datos de transparencia y los documentos del Dataroom que no
           se comparten los ve solo el equipo de la empresa, y las relaciones de portfolio
           privadas, solo vos.
+        </p>
+        <p>
+          Si buscás cofundador/a, lo que cargaste para eso se muestra en tu perfil y en
+          Cofundadores. Los intereses y sus mensajes <strong className="font-semibold text-tinta">no
+          se publican</strong>: los ven solo quien lo manda y quien lo recibe. Si la otra persona
+          pasa, no se lo avisamos a quien lo mandó.
         </p>
       </Seccion>
 
@@ -231,6 +244,12 @@ export default function PrivacidadPage() {
           tu navegador hasta que borres los datos del sitio.
         </p>
         <p>
+          El mensaje de un interés de cofundador/a se guarda mientras esté pendiente o haya match.
+          Si la otra persona pasa o lo retirás, borramos el mensaje y queda solo el registro (quién,
+          a quién, en qué quedó y la fecha) para que no se vuelva a mandar. Todo eso se borra
+          cuando cualquiera de los dos elimina su cuenta.
+        </p>
+        <p>
           Cuando eliminás tu cuenta, los videos, fotos, logos e imágenes se borran de nuestros
           servidores en la hora siguiente. Los videos originales del formulario se quedan en
           Google Drive hasta que el equipo los borra a mano, y tus respuestas al formulario siguen
@@ -260,7 +279,8 @@ export default function PrivacidadPage() {
             cuenta&quot;. Se borra al instante y no tiene vuelta atrás: tu perfil y tu foto, tus
             pitches (con sus videos, subtítulos, piques y vistas, y los que mandaste por el
             formulario y todavía no se publicaron), tu newsletter, links y documentos, portfolio,
-            servicios, tesis, votos, participación en eventos y seguidores, y los emails de tus
+            servicios, tesis, votos, participación en eventos y seguidores, tus intereses de
+            cofundador/a con sus mensajes (los que mandaste y los que recibiste), y los emails de tus
             envíos del formulario. También lo que hiciste desde ese navegador (piques, vistas y a
             quién seguís) y lo que Pecera guardó en él. Tu email queda libre: si volvés, empezás
             con una cuenta nueva y vacía. Si sos la única persona de tu empresa, la empresa se

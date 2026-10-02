@@ -321,12 +321,14 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   (`lib/hashtags.ts`) se calculan sin migración. Colores con sentido: `AREAS` en
   `lib/etiquetas.ts` (un color = un área). Modo noche: variables CSS en `globals.css`;
   `.tema-fijo` para lo que va sobre video.
-- cofundador_conexiones (`20261008120000_cofundador_conexiones.sql`, pruebas en
-  `supabase/pruebas/cofundador.mjs`): `cofundador_intereses` (de, a, mensaje ≤ 280, estado
-  pendiente/aceptado/rechazado; sin políticas: solo por RPC `cofundador_interesar`,
+- cofundador_conexiones (`20261009120000_cofundador_conexiones.sql`, después de borrar_cuenta;
+  pruebas en `supabase/pruebas/cofundador.mjs`): `cofundador_intereses` (de, a, mensaje ≤ 280, estado
+  pendiente/aceptado/rechazado/retirado; sin políticas: solo por RPC `cofundador_interesar`,
   `cofundador_responder`, `cofundador_retirar`, `mis_cofundador_conexiones`). Hay que tener tu
   perfil visible con «Busco cofundador/a»; si el otro ya te había elegido, match inmediato; 20
-  intereses por día; WhatsApp y email solo vienen con match. El encaje (`lib/cofundador.ts`)
+  intereses por día; retirar deja la fila en 'retirado' (sigue contando para el tope, no se puede
+  volver a pedir; la pantalla lo confirma antes) y al pasar o retirar se vacía el mensaje; borrar la
+  cuenta los borra en cascada en las dos direcciones. WhatsApp y email solo vienen con match. El encaje (`lib/cofundador.ts`)
   ordena por complemento y dice el porqué; `/cofundadores` lee la sesión en el navegador
   (`components/explorar/useMatch.ts`) y sin la migración queda como directorio.
 - `admins` (email en minúsculas, solo SQL editor): `es_admin()` y las `admin_*` lo exigen;

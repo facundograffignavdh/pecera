@@ -49,7 +49,8 @@ const MIGRACIONES = [
   "20261005120000_portfolio.sql",
   "20261006120000_logos.sql",
   "20261007120000_feria_pro.sql",
-  "20261008120000_cofundador_conexiones.sql",
+  "20261008120000_borrar_cuenta.sql",
+  "20261009120000_cofundador_conexiones.sql",
 ];
 
 let ok = 0;
@@ -139,6 +140,9 @@ async function main() {
   const interesar = (uid, a, msg = "") => como("authenticated", uid, "select public.cofundador_interesar($1, $2) r", [a, msg]).then((r) => r.rows[0].r);
   const responder = (uid, de, si) => como("authenticated", uid, "select public.cofundador_responder($1, $2) r", [de, si]).then((r) => r.rows[0].r);
   const conexiones = (uid) => como("authenticated", uid, "select * from public.mis_cofundador_conexiones()").then((r) => r.rows);
+  const retirar = (uid, a) => como("authenticated", uid, "select public.cofundador_retirar($1)", [a]);
+  // La fila tal cual está en la tabla (como superusuario del harness).
+  const fila = async (de, a) => (await db.query("select * from public.cofundador_intereses where de = $1 and a = $2", [de, a])).rows[0];
 
   console.log("\n1) Quién puede mostrar interés");
   await espera("sin sesión no se puede", () => como("anon", null, "select public.cofundador_interesar($1, '')", [beto]), "permission denied");
@@ -165,8 +169,10 @@ async function main() {
   await espera("no se puede responder dos veces", () => responder(U.beto, ana, false), "no hay un interés pendiente");
 
   console.log("\n3) Pasar y reintentar");
-  await interesar(U.caro, ana);
+  await interesar(U.caro, ana, "Hola ana, soy caro");
   chequear((await responder(U.ana, caro, false)) === "rechazado", "ana pasa de caro → rechazado");
+  const rechazada = await fila(caro, ana);
+  chequear(rechazada?.estado === "rechazado" && rechazada.mensaje === "", "al pasar se vacía el mensaje (queda el registro)", rechazada);
   chequear((await conexiones(U.caro)).length === 0, "caro no ve nada de lo rechazado (no se notifica)");
   chequear((await interesar(U.caro, ana)) === "rechazado", "caro no puede volver a pedir → rechazado");
 
@@ -179,11 +185,16 @@ async function main() {
   chequear(mutEli.length === 1 && mutEli[0].tipo === "match", "eli ve UN solo match", mutEli);
 
   console.log("\n5) Retirar");
-  await interesar(U.beto, caro);
+  await interesar(U.beto, caro, "Hola caro, soy beto");
   chequear((await conexiones(U.caro)).filter((c) => c.tipo === "recibido").length === 1, "caro recibe el interés de beto");
-  await como("authenticated", U.beto, "select public.cofundador_retirar($1)", [caro]);
-  chequear((await conexiones(U.caro)).filter((c) => c.tipo === "recibido").length === 0, "beto lo retira y desaparece");
-  await como("authenticated", U.ana, "select public.cofundador_retirar($1)", [beto]);
+  await retirar(U.beto, caro);
+  chequear((await conexiones(U.caro)).filter((c) => c.tipo === "recibido").length === 0, "beto lo retira y desaparece para caro");
+  chequear((await conexiones(U.beto)).every((c) => c.perfil_id !== caro), "y para beto tampoco aparece");
+  const retirada = await fila(beto, caro);
+  chequear(retirada?.estado === "retirado" && retirada.mensaje === "", "la fila queda como 'retirado' y sin mensaje", retirada);
+  chequear((await interesar(U.beto, caro)) === "retirado", "beto no puede volver a pedirle → retirado");
+  chequear((await fila(beto, caro))?.estado === "retirado", "y la fila sigue 'retirado'");
+  await retirar(U.ana, beto);
   chequear((await conexiones(U.ana)).filter((c) => c.tipo === "match").length === 1, "retirar no borra un match ya aceptado");
 
   console.log("\n6) Privacidad y acceso directo");
@@ -197,17 +208,20 @@ async function main() {
   await como("authenticated", U.eli, "update public.perfiles set oculto = false where id = $1", [eli]);
 
   console.log("\n7) Tope diario");
-  // 20 intereses de hoy de ana a perfiles de relleno (se insertan como superusuario del harness,
-  // sin sesión: si no, el guardián les asignaría la sesión anterior como dueña).
+  // ana ya tiene uno de hoy (a beto); 18 más a perfiles de relleno (se insertan como superusuario del harness,
+  // sin sesión: si no, el guardián les asignaría la sesión anterior como dueña). El 20 lo pide y
+  // lo retira: retirar no devuelve el cupo.
   await db.exec("reset role; select set_config('request.jwt.claim.sub', '', false); select set_config('request.jwt.claims', '', false);");
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 18; i++) {
     const rel = (await db.query(
       `insert into public.perfiles (slug, nombre, tipo, rol, descripcion, consentimiento_at, publicado) values ($1, 'Relleno', 'startup', 'emprendedor', 'x', now(), true) returning id`,
       ["relleno-" + i]
     )).rows[0].id;
     await db.query(`insert into public.cofundador_intereses (de, a) values ($1, $2)`, [ana, rel]);
   }
-  await espera("el interés 21 del día se frena", () => interesar(U.ana, dani), "mucho interés hoy");
+  chequear((await interesar(U.ana, caro)) === "pendiente", "ana le pide a caro (el 20 del día)");
+  await retirar(U.ana, caro);
+  await espera("retirarlo no libera el cupo: el siguiente se frena", () => interesar(U.ana, dani), "mucho interés hoy");
   await db.query(`update public.cofundador_intereses set created_at = now() - interval '2 days' where de = $1`, [ana]);
   chequear((await interesar(U.ana, dani)) === "pendiente", "pasado el día, puede volver a pedir");
 

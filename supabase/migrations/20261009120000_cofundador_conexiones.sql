@@ -8,9 +8,13 @@
 -- Reglas (todas acá, no solo en la pantalla):
 --  - Para mostrar interés hay que tener tu propio perfil publicado, visible y con «Busco cofundador/a».
 --  - Solo a perfiles publicados, visibles y que buscan cofundador/a; nunca a uno mismo.
---  - Un interés por par (de → a). Si ya te dijeron que no, no se vuelve a pedir.
+--  - Un interés por par (de → a). Si ya te dijeron que no, o lo retiraste, no se vuelve a pedir.
 --  - Si la otra persona ya te había mostrado interés, el match es inmediato (los dos quisieron).
---  - Tope de 20 intereses nuevos por día por persona (contra el spam).
+--  - Tope de 20 intereses nuevos por día por persona (contra el spam). Retirar no devuelve el
+--    cupo: la fila queda como 'retirado' y sigue contando.
+--  - Al pasar o retirar se vacía el mensaje: el registro alcanza para que no se vuelva a pedir.
+--  - Al borrar la cuenta (borrar_mi_cuenta borra el perfil) se van en cascada los intereses y
+--    mensajes de la persona, enviados y recibidos.
 
 create table public.cofundador_intereses (
   de            uuid not null references public.perfiles (id) on delete cascade,
@@ -22,7 +26,7 @@ create table public.cofundador_intereses (
 
   primary key (de, a),
   constraint cofundador_intereses_no_a_uno_mismo check (de <> a),
-  constraint cofundador_intereses_estado_valido check (estado in ('pendiente', 'aceptado', 'rechazado')),
+  constraint cofundador_intereses_estado_valido check (estado in ('pendiente', 'aceptado', 'rechazado', 'retirado')),
   constraint cofundador_intereses_mensaje_largo check (char_length(mensaje) <= 280)
 );
 
@@ -33,7 +37,7 @@ alter table public.cofundador_intereses enable row level security;
 revoke all on public.cofundador_intereses from anon, authenticated;
 -- Sin políticas: nadie la lee ni la escribe directo; solo las funciones de abajo.
 
--- Mostrar interés. Devuelve 'pendiente' | 'match' | 'ya_enviado' | 'rechazado'.
+-- Mostrar interés. Devuelve 'pendiente' | 'match' | 'ya_enviado' | 'rechazado' | 'retirado'.
 create function public.cofundador_interesar(p_a uuid, p_mensaje text default '')
 returns text
 language plpgsql
@@ -66,7 +70,12 @@ begin
 
   select * into v_previo from public.cofundador_intereses where de = v_yo.id and a = p_a;
   if found then
-    return case v_previo.estado when 'pendiente' then 'ya_enviado' when 'aceptado' then 'match' else 'rechazado' end;
+    return case v_previo.estado
+      when 'pendiente' then 'ya_enviado'
+      when 'aceptado' then 'match'
+      when 'retirado' then 'retirado'
+      else 'rechazado'
+    end;
   end if;
 
   if (select count(*) from public.cofundador_intereses where de = v_yo.id and created_at > now() - interval '1 day') >= 20 then
@@ -101,7 +110,9 @@ declare
 begin
   v_yo := public.perfil_de_sesion();
   update public.cofundador_intereses
-    set estado = v_estado, respondido_at = now()
+    set estado = v_estado,
+        respondido_at = now(),
+        mensaje = case when p_aceptar then mensaje else '' end
     where de = p_de and a = v_yo.id and estado = 'pendiente';
   get diagnostics v_filas = row_count;
   if v_filas = 0 then
@@ -111,7 +122,8 @@ begin
 end;
 $$;
 
--- Retirar un interés propio que todavía no tuvo respuesta.
+-- Retirar un interés propio que todavía no tuvo respuesta. No se borra la fila: queda como
+-- 'retirado' (sin mensaje) para que siga contando en el tope del día y no se vuelva a pedir.
 create function public.cofundador_retirar(p_a uuid)
 returns void
 language plpgsql
@@ -122,12 +134,15 @@ declare
   v_yo public.perfiles;
 begin
   v_yo := public.perfil_de_sesion();
-  delete from public.cofundador_intereses where de = v_yo.id and a = p_a and estado = 'pendiente';
+  update public.cofundador_intereses
+    set estado = 'retirado', mensaje = '', respondido_at = now()
+    where de = v_yo.id and a = p_a and estado = 'pendiente';
 end;
 $$;
 
 -- Mis conexiones: lo que recibí, lo que envié y los matches. WhatsApp y email solo vienen
--- cuando hay match. (Lo que la otra persona rechazó no se muestra: "pasó" no se notifica.)
+-- cuando hay match. (Lo que la otra persona rechazó no se muestra: "pasó" no se notifica. Lo
+-- retirado tampoco.)
 create function public.mis_cofundador_conexiones()
 returns table (
   tipo        text,

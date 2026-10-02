@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Avatar from "@/components/Avatar";
 import { Etiqueta } from "@/components/Etiquetas";
 import { type AccionesMatch, type EstadoMatch, useMatch } from "@/components/explorar/useMatch";
@@ -9,14 +9,20 @@ import { canalesDe } from "@/lib/contacto";
 import { type Conexion, encaje, MENSAJE_MAX, NIVELES_ENCAJE } from "@/lib/cofundador";
 import { APORTES, aporte, industria, labelDedicacion } from "@/lib/etiquetas";
 import { ROLES } from "@/lib/rol";
+import { boton } from "@/lib/ui";
 import type { Perfil } from "@/types/pecera";
+
+/** Lo que vale del match es que el interés es mutuo (el contacto ya era público). */
+const MENSAJE_MATCH = "¡Hubo match! Los dos quieren conocerse: escribile.";
 
 /**
  * Cofounder match, al estilo del de YC pero para el ecosistema de acá:
  *  1. Tu perfil de cofundador: qué aportás, qué buscás y cuánto tiempo le podés dedicar.
  *  2. La lista se ordena por ENCAJE (complemento antes que parecido) y cada tarjeta dice por qué.
  *  3. «Me interesa» manda un mensaje corto; la otra persona acepta o pasa.
- *  4. Si se aceptan (o se eligieron los dos) hay match, y recién ahí aparece el contacto.
+ *  4. Si se aceptan (o se eligieron los dos) hay match: el interés es mutuo. El contacto ya es
+ *     público en el perfil; lo que suma el match es saber que la otra persona también quiere.
+ *  Retirar un interés es definitivo (no se puede volver a mandar), así que pide confirmación.
  * Lo personal se pide en el navegador con la sesión: la página sigue siendo estática y pública.
  * Sin sesión, o sin la migración del flujo, queda como directorio con filtro.
  */
@@ -39,6 +45,8 @@ export function VistaCofundadores({
   const [mensaje, setMensaje] = useState("");
   const [trabajando, setTrabajando] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [aRetirar, setARetirar] = useState<string | null>(null);
+  const dialogoRetiro = useRef<HTMLDialogElement>(null);
 
   const listo = estado.fase === "listo" ? estado : null;
   const yo = listo?.yo ?? null;
@@ -69,12 +77,14 @@ export function VistaCofundadores({
     setMensaje("");
     setAviso(
       r.resultado === "match"
-        ? "¡Hubo match! Los dos se eligieron: ya tenés su contacto."
+        ? MENSAJE_MATCH
         : r.resultado === "rechazado"
           ? "Por ahora no hay match con esta persona."
-          : r.resultado === "ya_enviado"
-            ? "Ya le habías mostrado interés."
-            : "Listo: le avisamos que te interesa. Si te acepta, hay match."
+          : r.resultado === "retirado"
+            ? "Ya habías retirado tu interés en esta persona."
+            : r.resultado === "ya_enviado"
+              ? "Ya le habías mostrado interés."
+              : "Listo: le avisamos que te interesa. Si te acepta, hay match."
     );
   }
 
@@ -83,7 +93,7 @@ export function VistaCofundadores({
     setAviso(null);
     const r = await responder(id, aceptar);
     setTrabajando(null);
-    setAviso(r.error ?? (aceptar ? "¡Hubo match! Ya podés escribirle." : "Listo, la dejamos pasar."));
+    setAviso(r.error ?? (aceptar ? MENSAJE_MATCH : "Listo, la dejamos pasar."));
   }
 
   async function sacar(id: string) {
@@ -91,6 +101,17 @@ export function VistaCofundadores({
     await retirar(id);
     setTrabajando(null);
     setAviso("Retiraste tu interés.");
+  }
+
+  function pedirRetiro(id: string) {
+    setARetirar(id);
+    dialogoRetiro.current?.showModal();
+  }
+
+  function confirmarRetiro() {
+    const id = aRetirar;
+    dialogoRetiro.current?.close();
+    if (id) sacar(id);
   }
 
   return (
@@ -276,7 +297,7 @@ export function VistaCofundadores({
                         <button
                           type="button"
                           disabled={trabajando === p.id}
-                          onClick={() => sacar(p.id)}
+                          onClick={() => pedirRetiro(p.id)}
                           className="font-medium text-tinta/70 underline underline-offset-4 hover:text-arcilla"
                         >
                           Retirar
@@ -349,6 +370,37 @@ export function VistaCofundadores({
           })}
         </ul>
       </section>
+
+      {/* Uno solo para toda la lista. Escape y tocar afuera cancelan; el foco vuelve solo. */}
+      <dialog
+        ref={dialogoRetiro}
+        aria-labelledby="retirar-titulo"
+        aria-describedby="retirar-texto"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) e.currentTarget.close();
+        }}
+        onClose={() => setARetirar(null)}
+        className="m-auto w-[min(24rem,calc(100vw-2rem))] rounded-3xl bg-marfil p-0 text-tinta shadow-[0_24px_64px_rgb(28_27_22/0.35)] backdrop:bg-tinta/50"
+      >
+        <div className="flex flex-col gap-5 p-6">
+          <div className="flex flex-col gap-2">
+            <h2 id="retirar-titulo" className="font-display text-2xl font-semibold">
+              ¿Retirar tu interés?
+            </h2>
+            <p id="retirar-texto" className="text-tinta/80">
+              No vas a poder volver a mostrárselo a esta persona.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button type="button" onClick={confirmarRetiro} className={boton("peligro", "lg")}>
+              Retirar
+            </button>
+            <button type="button" onClick={() => dialogoRetiro.current?.close()} className={boton("secundario", "lg")}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }
@@ -358,8 +410,8 @@ function ComoFunciona() {
   const pasos = [
     ["Completá tu perfil", "Qué aportás, qué buscás y cuánto tiempo le podés dedicar."],
     ["Mirá quién encaja", "La lista se ordena por complemento, y cada tarjeta dice por qué."],
-    ["Mostrá interés", "Con un mensaje corto. No se ve tu contacto todavía."],
-    ["Aceptan y hay match", "Si la otra persona acepta (o se eligieron los dos), se habilita el contacto."],
+    ["Mostrá interés", "Con un mensaje corto. Solo lo ve esa persona."],
+    ["Aceptan y hay match", "Si la otra persona acepta (o se eligieron los dos), hay match: saben que el interés es mutuo."],
   ];
   return (
     <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -470,12 +522,12 @@ function BotonesRespuesta({
   );
 }
 
-/** Match: el contacto se habilita acá (WhatsApp y email), no antes. */
+/** Match: el interés es mutuo. El contacto ya es público en el perfil; acá queda a mano. */
 function ContactoMatch({ c }: { c: Conexion }) {
   const canales = canalesDe({ whatsapp: c.whatsapp, email: c.email } as Perfil, `Hola ${c.nombre}, hicimos match en Pecera.`);
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-semibold text-t-verde">¡Hubo match! Ya pueden hablar.</p>
+      <p className="text-sm font-semibold text-t-verde">{MENSAJE_MATCH}</p>
       <div className="flex flex-wrap gap-2">
         {canales.length > 0 ? (
           canales.map((k) => (
