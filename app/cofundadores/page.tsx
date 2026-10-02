@@ -28,8 +28,9 @@ export default async function CofundadoresPage() {
               Encontrá a tu socio/a
             </h1>
             <p className="mt-3 leading-relaxed text-tinta/75">
-              Como el Co-Founder Matching de YC, pero para el ecosistema de acá. Cada uno cuenta qué aporta y qué perfil le
-              falta. Filtrá, mirá su pitch y escribile.
+              Como el Co-Founder Matching de YC, pero para el ecosistema de acá. Cada uno cuenta qué aporta, qué perfil le
+              falta y cuánto tiempo le dedica. La lista se ordena por quién te complementa; si hay interés de los dos,
+              hay match y se habilita el contacto.
             </p>
           </div>
           <Link
@@ -45,7 +46,8 @@ export default async function CofundadoresPage() {
             <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-tinta/20 px-6 py-12 text-center">
               <p className="font-display text-2xl font-semibold text-tinta">Todavía nadie se sumó al match</p>
               <p className="max-w-sm text-sm text-tinta/70">
-                Sé el primero: en tu perfil, paso 3, prendé «Busco cofundador/a» y contá qué aportás y qué buscás.
+                Sé el primero: en tu perfil, tocá «Editar perfil», prendé «Busco cofundador/a» y contá qué aportás y qué
+                buscás.
               </p>
             </div>
           ) : (

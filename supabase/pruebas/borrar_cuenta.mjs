@@ -57,6 +57,7 @@ const MIGRACIONES = [
   "20261006120000_logos.sql",
   "20261007120000_feria_pro.sql",
   "20261008120000_borrar_cuenta.sql",
+  "20261009120000_cofundador_conexiones.sql",
 ];
 
 let ok = 0;
@@ -286,6 +287,16 @@ async function main() {
     insert into public.votos (evento_id, votante, perfil_id) values ('${evento}', '${U.ana}', '${beto}'), ('${evento}', '${U.caro}', '${ana}');
   `);
 
+  // Cofounder match en las dos direcciones: Ana le escribió a Beto (pendiente), Caro le escribió
+  // a Ana (match). Beto → Caro es de control: no es de Ana y se queda.
+  await db.query(
+    `insert into public.cofundador_intereses (de, a, mensaje, estado) values
+       ($1, $2, 'Mensaje de Ana para Beto', 'pendiente'),
+       ($3, $1, 'Mensaje de Caro para Ana', 'aceptado'),
+       ($2, $3, 'Mensaje de Beto para Caro', 'pendiente')`,
+    [ana, beto, caro]
+  );
+
   // Lo que Ana hizo desde su navegador.
   await db.exec(`
     insert into public.piques (pitch_id, dispositivo) values ((select id from public.pitches where origen_id = 'drvB1'), '${DISPO.ana}');
@@ -339,9 +350,17 @@ async function main() {
 
   const quedan = await rastros(
     [U.ana, ana, raiz, DISPO.ana, pitchAna],
-    ["ana@mail.com", "Ana@Mail.com", "ana-startup", "raiz-verde"]
+    ["ana@mail.com", "Ana@Mail.com", "ana-startup", "raiz-verde", "Mensaje de Ana para Beto", "Mensaje de Caro para Ana"]
   );
-  check(quedan.length === 0, "no queda ninguna fila con su id, perfil, empresa, pitch, dispositivo, email ni slug", quedan);
+  check(quedan.length === 0, "no queda ninguna fila con su id, perfil, empresa, pitch, dispositivo, email, slug ni sus mensajes", quedan);
+  check(
+    (await valor(`select count(*)::int from public.cofundador_intereses where de = $1 or a = $1`, [ana])) === 0,
+    "sus intereses de cofundador/a, enviados y recibidos, se borran"
+  );
+  check(
+    (await valor(`select count(*)::int from public.cofundador_intereses where de = $1 and a = $2`, [beto, caro])) === 1,
+    "el interés entre Beto y Caro no se toca"
+  );
   check(
     (await valor(`select count(*)::int from public.votos where perfil_id = '${beto}'`)) === 0,
     "el voto que dio Ana ya no cuenta"
@@ -462,7 +481,7 @@ async function main() {
   check(!(await uno(`select 1 from public.r2_borrar where clave = $1`, [`${agro}-e1e1e1e1.png`])), "y no va a r2_borrar");
   check((await valor(`select count(*)::int from public.r2_borrar where clave = 'drvB1-0a0a0a0a.mp4' and bytes = 3000`)) === 1, "su video sí va a r2_borrar con sus bytes");
   check((await valor(`select count(*)::int from public.envios where origen_id = 'drvB9' and estado = 'borrado' and email_escrito = ''`)) === 1, "el envío que quedó en su perfil ahora es 'borrado'");
-  const quedanBeto = await rastros([U.beto, beto], ["beto@mail.com", "beto-agro"]);
+  const quedanBeto = await rastros([U.beto, beto], ["beto@mail.com", "beto-agro", "Mensaje de Beto para Caro"]);
   check(quedanBeto.length === 0, "no queda nada de Beto", quedanBeto);
   const caroVe = (await como("authenticated", U.caro, `select es_dueno, miembros from public.mi_empresa()`)).rows[0];
   check(caroVe?.es_dueno === true && caroVe.miembros === 1, "Caro ve la empresa como dueña", caroVe);

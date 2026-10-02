@@ -37,6 +37,7 @@ declare
   t text;
 begin
   foreach t in array array[
+    'public.cofundador_intereses',
     'public.contactos',
     'public.vistas',
     'public.medicion_frecuencia',
@@ -85,6 +86,7 @@ from unnest(array[
   'public.piques_frecuencia', 'public.envios', 'public.ingestas',
   'public.empresas', 'public.empresas_codigos', 'public.empresas_intentos',
   'public.empresa_datos', 'public.evento_participantes', 'public.votos',
+  'public.cofundador_intereses',
   -- conservadas
   'public.r2_borrar', 'public.eventos', 'public.admins', 'public.equipo_ingesta',
   'public.emails_bloqueados', 'public.ajustes'
