@@ -5,8 +5,8 @@ import Encabezado from "@/components/Encabezado";
 import Explorar from "@/components/explorar/Explorar";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
+import { SelloFeria21 } from "@/components/eventos/MarcaFeria21";
 import { getTags } from "@/lib/datos";
-import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { getDirectorio } from "@/lib/explorar";
 import { TAG_FERIA } from "@/lib/hashtags";
 
@@ -55,7 +55,7 @@ export default async function ExplorarPage() {
             className="boton group mt-3 flex items-center justify-between gap-4 rounded-[2rem] bg-tinta px-6 py-6 text-marfil"
           >
             <span>
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-marfil/65">{EVENTO_ACTUAL.nombre}</span>
+              <SelloFeria21 chico />
               <span className="mt-1 block font-display text-3xl font-semibold leading-none">#{TAG_FERIA}</span>
               <span className="mt-2 block text-sm text-marfil/75">
                 {feria ? `${feria.total} pitches de la feria` : "Todos los pitches de la feria, en un lugar"}

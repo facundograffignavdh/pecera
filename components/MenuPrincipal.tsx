@@ -14,7 +14,7 @@ const GRUPOS = [
       { href: "/", label: "Feed", bajada: "Para vos y Stakeholding" },
       { href: "/explorar", label: "Explorar", bajada: "Startups, inversores, aliados y hashtags" },
       { href: "/eventos", label: "Eventos", bajada: "Ferias, networking, pitch events y más" },
-      { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "Programa y votación", sub: true },
+      { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre.toUpperCase(), bajada: "Programa y votación", sub: true },
       { href: "/cofundadores", label: "Cofundadores", bajada: "Encontrá socio/a, como en YC" },
     ],
   },

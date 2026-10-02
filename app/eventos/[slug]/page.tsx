@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import Avatar from "@/components/Avatar";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
+import { GaleriaEdicion, PortadaFeria21, TituloFeria } from "@/components/eventos/MarcaFeria21";
 import Votacion from "@/components/eventos/Votacion";
 import { getEstadoEvento } from "@/lib/datos";
-import { EVENTOS, getEventoDefinido } from "@/lib/eventos";
+import { EVENTO_ACTUAL, EVENTOS, getEventoDefinido } from "@/lib/eventos";
 import { ROLES, TIPOS } from "@/lib/rol";
 
 export const revalidate = 60;
@@ -29,6 +31,17 @@ export async function generateMetadata({ params }: PageProps<"/eventos/[slug]">)
 
 const SUBTITULO = "font-display text-2xl font-semibold leading-tight text-tinta";
 
+/** Título de sección: con la marca de Semana 21 en la Feria 21; el de siempre en otros eventos. */
+function Titulo({ id, feria, children }: { id: string; feria: boolean; children: ReactNode }) {
+  return feria ? (
+    <TituloFeria id={id}>{children}</TituloFeria>
+  ) : (
+    <h2 id={id} className={SUBTITULO}>
+      {children}
+    </h2>
+  );
+}
+
 export default async function EventoPage({ params }: PageProps<"/eventos/[slug]">) {
   const { slug } = await params;
   const evento = getEventoDefinido(slug);
@@ -37,6 +50,8 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
   const estado = await getEstadoEvento(evento.slug);
   const proyectos = estado.participantes.filter((p) => p.rol === "emprendedor");
   const presentes = estado.participantes.filter((p) => p.rol !== "emprendedor");
+  // La Feria 21 lleva la identidad de Semana 21 (verde, mayúsculas, trazo amarillo).
+  const feria = evento.slug === EVENTO_ACTUAL.slug;
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
@@ -45,6 +60,9 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
         <EnlaceVolver href="/" />
 
         {/* Portada */}
+        {feria ? (
+          <PortadaFeria21 evento={evento} votacionAbierta={estado.votacionAbierta} />
+        ) : (
         <header className="relative mt-6 overflow-hidden rounded-3xl bg-tinta px-5 pb-6 pt-5 text-marfil">
           <span
             aria-hidden
@@ -80,38 +98,49 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
             </Link>
           </div>
         </header>
+        )}
 
         {/* En la compu: el programa a la izquierda; cómo votar y la votación a la derecha. */}
         <div className="lg:mt-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start lg:gap-10">
         <div className="min-w-0 lg:[&>section:first-child]:mt-0">
         {/* Programa */}
         <section aria-labelledby="programa" className="mt-10">
-          <h2 id="programa" className={SUBTITULO}>
+          <Titulo id="programa" feria={feria}>
             Programa
-          </h2>
+          </Titulo>
           <ol className="mt-4 flex flex-col">
             {evento.agenda.map((j, i) => {
               const ultima = i === evento.agenda.length - 1;
               return (
                 <li key={j.id} className="relative flex gap-4 pb-6">
                   {!ultima && (
-                    <span aria-hidden className="absolute left-[1.1rem] top-10 h-[calc(100%-2.5rem)] w-px bg-tinta/15" />
+                    <span aria-hidden className={`absolute left-[1.1rem] top-10 h-[calc(100%-2.5rem)] w-px ${feria ? "bg-s21-verde/40" : "bg-tinta/15"}`} />
                   )}
                   <span
                     aria-hidden
                     className={`flex size-9 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold ${
-                      j.destacada ? "bg-arcilla text-marfil" : "bg-tinta text-marfil"
+                      j.destacada
+                        ? feria
+                          ? "bg-s21-amarillo text-[#353535]"
+                          : "bg-arcilla text-marfil"
+                        : feria
+                          ? "bg-s21-verde-oscuro text-white"
+                          : "bg-tinta text-marfil"
                     }`}
                   >
                     {j.destacada ? "★" : i + 1}
                   </span>
                   <div
                     className={`min-w-0 flex-1 rounded-2xl px-4 py-3 ${
-                      j.destacada ? "bg-t-arcilla-suave" : "border border-tinta/10"
+                      j.destacada
+                        ? feria
+                          ? "border border-s21-amarillo/50 bg-s21-amarillo/15"
+                          : "bg-t-arcilla-suave"
+                        : "border border-tinta/10"
                     }`}
                   >
                     <p className="flex flex-wrap items-baseline gap-x-2 text-xs font-semibold uppercase tracking-wide text-tinta/60">
-                      <span className={j.destacada ? "text-t-arcilla" : ""}>{j.dia}</span>
+                      <span className={j.destacada && !feria ? "text-t-arcilla" : ""}>{j.dia}</span>
                       <span className="font-normal normal-case tracking-normal">{j.fecha}</span>
                     </p>
                     <h3 className="mt-1 font-display text-lg font-semibold leading-tight text-tinta">{j.titulo}</h3>
@@ -122,7 +151,7 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
                     <ul className="mt-2 flex flex-col gap-1">
                       {j.momentos.map((m) => (
                         <li key={m} className="flex gap-2 text-sm text-tinta/80">
-                          <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-tinta/40" />
+                          <span aria-hidden className={`mt-2 size-1.5 shrink-0 rounded-full ${feria ? "bg-s21-verde" : "bg-tinta/40"}`} />
                           {m}
                         </li>
                       ))}
@@ -138,13 +167,17 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
         <div className="lg:sticky lg:top-24">
         {/* Cómo votar */}
         <section aria-labelledby="como-votar" className="mt-4 grid gap-3">
-          <h2 id="como-votar" className={SUBTITULO}>
+          <Titulo id="como-votar" feria={feria}>
             Cómo votar
-          </h2>
+          </Titulo>
           <ol className="flex flex-col gap-2">
             {evento.comoVotar.map((paso, i) => (
               <li key={paso} className="flex gap-3 text-sm text-tinta">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-tinta/10 text-xs font-semibold">
+                <span
+                  className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                    feria ? "bg-s21-verde-oscuro text-white" : "bg-tinta/10"
+                  }`}
+                >
                   {i + 1}
                 </span>
                 {paso}
@@ -163,9 +196,9 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
 
         {/* Votación */}
         <section id="votacion" aria-labelledby="titulo-votacion" className="mt-10 scroll-mt-24">
-          <h2 id="titulo-votacion" className={SUBTITULO}>
+          <Titulo id="titulo-votacion" feria={feria}>
             Proyectos
-          </h2>
+          </Titulo>
           {!estado.disponible ? (
             <p className="mt-3 rounded-2xl bg-tinta/5 px-4 py-3 text-sm text-tinta">
               Estamos preparando la votación. Volvé en un rato.
@@ -195,11 +228,13 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
         </div>
         </div>
 
+        {feria && <GaleriaEdicion />}
+
         {presentes.length > 0 && (
           <section aria-labelledby="presentes" className="mt-10">
-            <h2 id="presentes" className={SUBTITULO}>
+            <Titulo id="presentes" feria={feria}>
               También en la feria
-            </h2>
+            </Titulo>
             <p className="mt-1 text-sm text-tinta/70">Inversores y aliados que van a estar. Buscalos.</p>
             <ul className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
               {presentes.map((p) => (
