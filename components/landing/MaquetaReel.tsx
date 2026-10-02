@@ -77,7 +77,7 @@ export default function MaquetaReel({ className = "" }: { className?: string }) 
             <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-tinta via-tinta/80 to-transparent" />
 
             <div className="absolute inset-x-0 top-0 flex justify-center pt-3">
-              <LogoInicio variante="feed" />
+              <LogoInicio />
             </div>
 
             <div className="absolute inset-x-0 bottom-0 pb-8 pl-5 pr-2 text-marfil">
