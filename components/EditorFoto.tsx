@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { quitarFoto, subirFoto } from "@/app/cuenta/acciones";
 import Avatar from "@/components/Avatar";
-import { prepararImagen } from "@/lib/imagen";
+import { mensajeEnvioImagen, mensajeImagen, nombreImagen, prepararImagen } from "@/lib/imagen";
 import type { Rol } from "@/types/pecera";
 
 type Estado =
@@ -51,11 +51,11 @@ export default function EditorFoto({
     setMenu(false);
     if (!elegido) return;
     try {
-      const blob = await prepararImagen(elegido, "cubrir");
+      const blob = await prepararImagen(elegido, "foto");
       setEstado({ tipo: "preview", blob, url: URL.createObjectURL(blob) });
       dialogo.current?.showModal();
-    } catch {
-      setEstado({ tipo: "error", mensaje: "No pudimos leer esa imagen. Probá con un JPG o PNG." });
+    } catch (e) {
+      setEstado({ tipo: "error", mensaje: mensajeImagen(e) });
     }
   }
 
@@ -71,7 +71,7 @@ export default function EditorFoto({
     setEstado({ tipo: "subiendo", url });
     try {
       const datos = new FormData();
-      datos.set("foto", blob, "foto.jpg");
+      datos.set("foto", blob, nombreImagen(blob, "foto"));
       const r = await subirFoto(datos);
       if (!r.ok) {
         setEstado({ tipo: "error", mensaje: r.mensaje ?? "No pudimos subir la foto." });
@@ -81,7 +81,7 @@ export default function EditorFoto({
       setEstado({ tipo: "ok", mensaje: "Foto actualizada." });
       navigator.vibrate?.(10);
     } catch {
-      setEstado({ tipo: "error", mensaje: "No pudimos subir la foto. Revisá tu conexión." });
+      setEstado({ tipo: "error", mensaje: mensajeEnvioImagen(blob) });
     }
   }
 
@@ -150,7 +150,7 @@ export default function EditorFoto({
             ? "Guardando…"
             : estado.tipo === "ok" || estado.tipo === "error"
               ? estado.mensaje
-              : "Tocá el círculo. Se guarda cuadrada y sin ubicación."}
+              : "Tocá el círculo. Se guarda sin ubicación."}
         </p>
       </div>
       <input ref={archivo} type="file" accept="image/*" onChange={elegir} className="sr-only" tabIndex={-1} aria-hidden />

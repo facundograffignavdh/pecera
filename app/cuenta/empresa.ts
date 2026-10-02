@@ -15,6 +15,7 @@ import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { faltaMigracion } from "@/lib/datos";
 import { quitarLogo as quitarLogoEcosistema, subirLogo as subirLogoEcosistema } from "@/app/cuenta/logo";
 import { guardarLogo } from "@/lib/foto";
+import { FALLA_IMAGEN } from "@/lib/limites-imagen";
 import { urlMedia } from "@/lib/media";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 import { CLAVES_DATO, esUrlSegura } from "@/lib/transparencia";
@@ -213,8 +214,10 @@ export async function subirLogo(formData: FormData): Promise<Resultado & { url?:
   if (!user) return { ok: false, mensaje: SIN_SESION };
 
   const { data, error } = await supabase.rpc("mi_empresa_v2");
-  if (faltaMigracion(error)) return { ok: false, mensaje: "El logo se va a poder subir en un rato: estamos actualizando Pecera." };
-  if (error) return traducir(error, "mi_empresa_v2");
+  if (error) {
+    console.error(`Supabase (mi_empresa_v2): ${error.code} ${error.message}`);
+    return { ok: false, mensaje: FALLA_IMAGEN.nuestra };
+  }
   const empresa = ((data ?? []) as Array<{ id: string; slug: string; logo_url: string | null }>)[0];
   if (!empresa) return { ok: false, mensaje: "Primero creá o sumate a una empresa." };
 

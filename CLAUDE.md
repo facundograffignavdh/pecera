@@ -106,9 +106,14 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   Con eso `AccesoCuenta` muestra "Entrar" o la foto (va a /p/slug si es visible) y
   `EditarPerfil` aparece solo en el perfil propio. Es solo interfaz. Reglas del form en `lib/cuenta.ts` (cliente y servidor);
   el trigger `perfiles_guardian` las repite en la base y bloquea slug, publicado,
-  usuario_id, origen_id y consentimiento_at. La foto se achica a 512 px en el celular
-  y viaja con el form: `guardarPerfil` la sube con `lib/foto.ts` (`lib/r2.ts`,
-  `<userId>-<hash8>.jpg`); si falla, el perfil se guarda igual y se avisa;
+  usuario_id, origen_id y consentimiento_at. Foto y logo se achican en el celular
+  (`prepararImagen` en `lib/imagen.ts`): lado mayor ≤ 1024 px, con su proporción y sin
+  recortar, ≤ 1 MB (`lib/limites-imagen.ts`, compartido con el servidor). La foto va en JPG
+  sobre Marfil (el trigger solo acepta .jpg); el logo, en PNG si tiene transparencia. Las
+  fallas dicen el motivo (pesada, formato o "problema nuestro"). La foto viaja con el form:
+  `guardarPerfil` la sube con `lib/foto.ts` (`lib/r2.ts`, `<userId>-<hash8>.jpg`; `lib/r2.ts`
+  nunca le pasa un Request al fetch: Next lo rearma como stream y R2 responde 411); si
+  falla, el perfil se guarda igual y se avisa;
   la vieja la anota el trigger en `r2_borrar`. Esas fotos no cuentan para el tope
   de 8 GB de la ingesta (pendiente para cuando se toque la ingesta).
 - Legales: `/privacidad` y `/terminos` (estáticas, `components/PaginaLegal.tsx`),

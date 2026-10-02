@@ -14,7 +14,7 @@ import { LogoEmpresa } from "@/components/perfil/Bloques";
 import { urlSitio } from "@/lib/cuenta";
 import type { Resultado } from "@/lib/errores-base";
 import { cargo } from "@/lib/etiquetas";
-import { prepararImagen } from "@/lib/imagen";
+import { mensajeEnvioImagen, mensajeImagen, nombreImagen, prepararImagen } from "@/lib/imagen";
 import type { DatoEmpresa, Rol } from "@/types/pecera";
 
 export type Miembro = {
@@ -90,14 +90,15 @@ function EditorLogo({ empresa }: { empresa: MiEmpresa }) {
   const [logo, setLogo] = useState(empresa.logo_url ?? null);
   const [estado, setEstado] = useState<{ subiendo: boolean; r?: Resultado }>({ subiendo: false });
 
-  async function enviar(datos: FormData) {
+  async function enviar(datos: FormData, blob?: Blob) {
     setEstado({ subiendo: true });
     try {
       const r = await subirLogo(datos);
       if (r.ok) setLogo(r.url ?? null);
       setEstado({ subiendo: false, r });
     } catch {
-      setEstado({ subiendo: false, r: { ok: false, mensaje: "No pudimos subir el logo. Revisá tu conexión." } });
+      const mensaje = blob ? mensajeEnvioImagen(blob) : "No llegó al servidor. Revisá tu conexión.";
+      setEstado({ subiendo: false, r: { ok: false, mensaje } });
     }
   }
 
@@ -107,16 +108,16 @@ function EditorLogo({ empresa }: { empresa: MiEmpresa }) {
     if (!archivo) return;
     let blob: Blob;
     try {
-      // "contener": un logo ancho entra entero, con margen, sobre Marfil.
-      blob = await prepararImagen(archivo, "contener");
-    } catch {
-      setEstado({ subiendo: false, r: { ok: false, mensaje: "No pudimos leer esa imagen. Probá con un PNG o JPG." } });
+      // Entero y con su proporción; PNG si tiene transparencia.
+      blob = await prepararImagen(archivo, "logo");
+    } catch (e) {
+      setEstado({ subiendo: false, r: { ok: false, mensaje: mensajeImagen(e) } });
       return;
     }
     setLogo(URL.createObjectURL(blob));
     const datos = new FormData();
-    datos.set("logo", blob, "logo.jpg");
-    await enviar(datos);
+    datos.set("logo", blob, nombreImagen(blob, "logo"));
+    await enviar(datos, blob);
   }
 
   return (
