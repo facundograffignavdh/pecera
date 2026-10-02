@@ -18,6 +18,9 @@ import * as React from "react"
  *
  * Needs WebGL2 with float (or half-float) render targets. Where that is
  * missing it paints a still gradient rather than a dead black rectangle.
+ *
+ * Pecera: traído de la rama claude/epic-faraday-ibnhir. Cambios: grilla 128 y
+ * densidad 1 por defecto, pausa fuera de pantalla y fondo configurable.
  */
 
 export type Vec3 = [number, number, number]
@@ -422,8 +425,21 @@ export type CausticPoolProps = {
   preset?: keyof typeof CAUSTIC_PRESETS
   /** Overrides layered over the preset. */
   params?: Partial<CausticParams>
-  /** Simulation grid. 512 is lovely and costs four times 256. */
+  /**
+   * Simulation grid. 512 is lovely and costs four times 256; 128 by default, for
+   * low-end phones.
+   */
   resolution?: 128 | 256 | 512
+  /**
+   * Cap on the canvas device-pixel ratio. The render pass is a full-screen shader,
+   * so this is the expensive knob; 1 by default (the water is soft anyway).
+   */
+  densidad?: number
+  /**
+   * What shows before the first frame and where WebGL2 is missing: a CSS
+   * background, so the page never flashes a black box.
+   */
+  fondo?: string
   /** Pointer stirs the water. */
   interactive?: boolean
   /**
@@ -435,11 +451,16 @@ export type CausticPoolProps = {
   className?: string
 }
 
+const FONDO_POR_DEFECTO =
+  "radial-gradient(120% 90% at 40% 25%, #2a6b7d 0%, #16495c 35%, #0a2635 70%, #05070a 100%)"
+
 export default function CausticPool({
   height = "100svh",
   preset = "tidepool",
   params,
-  resolution = 256,
+  resolution = 128,
+  densidad = 1,
+  fondo = FONDO_POR_DEFECTO,
   interactive = true,
   touch = "scroll",
   className = "",
@@ -591,7 +612,7 @@ export default function CausticPool({
     let cssW = 1
     let cssH = 1
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const dpr = Math.min(window.devicePixelRatio || 1, densidad)
       cssW = Math.max(canvas.clientWidth, 1)
       cssH = Math.max(canvas.clientHeight, 1)
       const w = Math.floor(cssW * dpr)
@@ -837,15 +858,37 @@ export default function CausticPool({
     }
     seed()
 
+    // Only runs while it is on screen and the tab is visible: off screen it would
+    // burn battery for nobody. Resuming resets the clock so the pool does not jump.
+    let onScreen = true
+    const run = () => {
+      const want = onScreen && !document.hidden
+      if (want && !raf) {
+        last = performance.now()
+        accumulated = 0
+        raf = requestAnimationFrame(frame)
+      } else if (!want && raf) {
+        cancelAnimationFrame(raf)
+        raf = 0
+      }
+    }
+    const visibility = new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting
+      run()
+    })
     if (reduced) {
       paint()
     } else {
-      raf = requestAnimationFrame(frame)
+      visibility.observe(canvas)
+      document.addEventListener("visibilitychange", run)
+      run()
     }
 
     return () => {
       cancelAnimationFrame(raf)
       observer.disconnect()
+      visibility.disconnect()
+      document.removeEventListener("visibilitychange", run)
       canvas.removeEventListener("pointermove", onMove)
       canvas.removeEventListener("pointerdown", onDown)
       canvas.removeEventListener("pointerup", onUp)
@@ -861,23 +904,13 @@ export default function CausticPool({
       gl.deleteProgram(stepProgram)
       gl.deleteProgram(drawProgram)
     }
-  }, [resolution, interactive, reduced, generation])
+  }, [resolution, densidad, interactive, reduced, generation])
 
   return (
-    <section
-      className={"relative w-full overflow-hidden bg-[#05070a] " + className}
-      style={{ height }}
-      aria-label="Shallow water lit from above"
-    >
+    <div className={"relative w-full overflow-hidden " + className} style={{ height, background: fondo }}>
       {failed ? (
         // No float targets: a still picture of the same water beats a black box.
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(120% 90% at 40% 25%, #2a6b7d 0%, #16495c 35%, #0a2635 70%, #05070a 100%)",
-          }}
-        />
+        <div className="absolute inset-0" style={{ background: fondo }} />
       ) : (
         <canvas
           ref={canvasRef}
@@ -889,6 +922,6 @@ export default function CausticPool({
           }
         />
       )}
-    </section>
+    </div>
   )
 }

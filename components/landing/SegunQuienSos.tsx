@@ -150,17 +150,7 @@ const VISTAS: Vista[] = [
     cta: "Entrar como emprendedor",
     visual: (
       <div className="relative">
-        <MaquetaReel
-          pitch={{
-            poster: "/posters/pitch_1.jpg",
-            nombre: "Raíz Verde",
-            rol: "emprendedor",
-            tipo: "startup",
-            subtitulo: "Convertimos la borra de café en sustrato para huertas",
-            piques: 128,
-            piqueado: true,
-          }}
-        />
+        <MaquetaReel />
         <span className="vidrio absolute -right-3 top-24 inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold shadow-[0_8px_24px_rgb(28_27_22/0.14)] sm:-right-16">
           <span className="punto-vivo size-2 rounded-full bg-obra" />
           Beta pública · 75%
