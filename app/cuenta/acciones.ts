@@ -93,11 +93,17 @@ export async function eliminarCuenta(confirmacion: string, dispositivo: string |
   // La cuenta ya no existe: solo quedan las cookies, que se van acá.
   await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
 
-  const borrado = (data ?? {}) as { perfil?: string | null; empresa?: string | null };
+  const borrado = (data ?? {}) as {
+    perfil?: string | null;
+    empresa?: string | null;
+    /** multi_empresa: cada una de sus empresas. */
+    empresas?: Array<{ slug: string; borrada: boolean }>;
+  };
   revalidatePath("/");
   revalidatePath("/explorar");
   if (borrado.perfil) revalidatePath(`/p/${borrado.perfil}`);
-  if (borrado.empresa) revalidatePath(`/e/${borrado.empresa}`, "layout");
+  const slugs = new Set([...(borrado.empresas ?? []).map((e) => e.slug), ...(borrado.empresa ? [borrado.empresa] : [])]);
+  for (const slug of slugs) revalidatePath(`/e/${slug}`, "layout");
   return { ok: true };
 }
 

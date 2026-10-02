@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useActionState, useState, useTransition } from "react";
-import { cambiarCargo, editarEmpresa, renovarCodigo, salirEmpresa, subirLogo } from "@/app/cuenta/empresa";
+import { cambiarCargo, editarEmpresa, renovarCodigo, subirLogo } from "@/app/cuenta/empresa";
 import Avatar from "@/components/Avatar";
 import BotonCopiar from "@/components/BotonCopiar";
 import { ChipsUnico } from "@/components/Chips";
@@ -12,7 +11,7 @@ import TarjetaTransparencia from "@/components/cuenta/TarjetaTransparencia";
 import { CamposEmpresa, type MiEmpresa, formatoCodigo } from "@/components/cuenta/TarjetaEmpresa";
 import { Aviso, BOTON_PRIMARIO, BOTON_SECUNDARIO, INPUT, Tarjeta } from "@/components/cuenta/ui";
 import { LogoEmpresa } from "@/components/perfil/Bloques";
-import { urlSitio } from "@/lib/cuenta";
+import { conEmpresa, urlSitio } from "@/lib/cuenta";
 import type { Resultado } from "@/lib/errores-base";
 import { CARGOS, cargo, conTono } from "@/lib/etiquetas";
 import { mensajeEnvioImagen, mensajeImagen, nombreImagen, prepararImagen } from "@/lib/imagen";
@@ -215,7 +214,6 @@ function DatosEmpresa({ empresa }: { empresa: MiEmpresa }) {
 }
 
 function Equipo({ empresa, miembros, multi }: { empresa: MiEmpresa; miembros: Miembro[]; multi: boolean }) {
-  const router = useRouter();
   const [codigo, setCodigo] = useState(empresa.codigo);
   const [mensaje, setMensaje] = useState<Resultado | null>(null);
   const [pendiente, iniciar] = useTransition();
@@ -301,24 +299,10 @@ function Equipo({ empresa, miembros, multi }: { empresa: MiEmpresa; miembros: Mi
         ) : (
           <p className="text-sm text-tinta/65">La página pública se ve cuando al menos un perfil del equipo está publicado.</p>
         )}
-        <button
-          type="button"
-          disabled={pendiente}
-          onClick={() => {
-            const texto = empresa.es_dueno
-              ? "¿Salir de la empresa? Si queda alguien del equipo, pasa a ser quien la administra."
-              : "¿Salir de la empresa?";
-            if (!window.confirm(texto)) return;
-            iniciar(async () => {
-              const r = await salirEmpresa(empresa.id);
-              if (r.ok) router.push("/cuenta");
-              else setMensaje(r);
-            });
-          }}
-          className={`${BOTON_SECUNDARIO} boton`}
-        >
+        {/* Qué pasa (y, si es la última integrante, el borrado) se confirma en su pantalla. */}
+        <Link href={conEmpresa("/cuenta/empresa/salir", empresa.slug)} className={`${BOTON_SECUNDARIO} boton`}>
           Salir de la empresa
-        </button>
+        </Link>
       </div>
     </>
   );

@@ -14,6 +14,7 @@ import {
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { faltaMigracion } from "@/lib/datos";
 import { quitarLogo as quitarLogoEcosistema, subirLogo as subirLogoEcosistema } from "@/app/cuenta/logo";
+import { confirmaBorrado } from "@/lib/borrar-cuenta";
 import { empresaParaAccion, rpcEn } from "@/lib/cuenta-empresa";
 import { guardarLogo } from "@/lib/foto";
 import { urlMedia } from "@/lib/media";
@@ -167,15 +168,19 @@ export async function editarEmpresa(_previo: Resultado, formData: FormData): Pro
 
 /**
  * Sale de la empresa. Si es la última integrante, la empresa se borra con todo, y
- * solo con `borrar` (la pantalla de salida lo confirma); si no, la base corta.
+ * solo si `confirmacion` es la palabra de la pantalla de salida (ELIMINAR); si no,
+ * la base corta y no se borra nada.
  */
-export async function salirEmpresa(empresaId: string, borrar = false): Promise<Resultado & { borrada?: boolean }> {
+export async function salirEmpresa(empresaId: string, confirmacion = ""): Promise<Resultado & { borrada?: boolean }> {
   const { supabase, user } = await conSesion();
   if (!user) return { ok: false, mensaje: SIN_SESION };
   const empresa = await empresaParaAccion(supabase, empresaId);
   if (!empresa) return { ok: false, mensaje: NO_ES_TUYA };
 
-  let { data, error } = await supabase.rpc("salir_de_empresa", { p_empresa: empresa.id, p_borrar: borrar });
+  let { data, error } = await supabase.rpc("salir_de_empresa", {
+    p_empresa: empresa.id,
+    p_borrar: confirmaBorrado(confirmacion),
+  });
   if (faltaMigracion(error)) ({ data, error } = await supabase.rpc("salir_empresa"));
   if (error) return traducir(error, "salir_empresa");
 
