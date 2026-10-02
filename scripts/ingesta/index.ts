@@ -23,11 +23,13 @@ import {
   guardarEnvio,
   guardarPitch,
   guardarSubtitulos,
+  leerBorrados,
   leerCuentas,
   leerEmails,
   leerEnvios,
   leerIngestas,
   leerParaBorrar,
+  marcarBorrado,
   moverPitch,
   pendientesDeSubtitulos,
   pitchParaSubtitular,
@@ -41,9 +43,11 @@ import {
   type ParaSubtitular,
 } from "./db.ts";
 import {
+  deCuentaBorrada,
   faltantes,
   leerFila,
   resolver,
+  sinEmailsBorrados,
   type Entrada,
   type Lectura,
   type Perfil,
@@ -86,6 +90,7 @@ const resumen = {
   quedanParaDespues: 0,
   enEspera: 0,
   rechazados: 0,
+  borrados: 0,
   aMano: 0,
   porRegla: {} as Partial<Record<Regla, number>>,
   subidos: 0,
@@ -198,6 +203,7 @@ async function escribirResumen(usados: number, fatal: string | null) {
     `Salteadas (sin video): ${resumen.salteadas}`,
     `En espera (sin perfil al que asignar): ${resumen.enEspera}`,
     `Rechazados (email bloqueado): ${resumen.rechazados}`,
+    `Salteados (cuenta eliminada): ${resumen.borrados}`,
     `Asignados a mano: ${resumen.aMano}`,
     `Por regla: ${
       Object.entries(resumen.porRegla)
@@ -396,17 +402,21 @@ async function main() {
 
   // En modo seco también se lee Supabase (solo lectura) para mostrar qué regla
   // aplicaría a cada fila.
-  const [ingestas, envios, bloqueados, equipo] = await Promise.all([
+  const [ingestas, envios, bloqueados, equipo, leidos] = await Promise.all([
     leerIngestas(),
     leerEnvios(),
     leerEmails("emails_bloqueados"),
     leerEmails("equipo_ingesta"),
+    leerBorrados(),
   ]);
+  // Lo de las cuentas eliminadas no se procesa nunca (ni con reprocesar ni asignar).
+  if (!leidos) console.log("Aviso: falta la migración borrar_cuenta; no hay cuentas eliminadas que saltear.");
+  const borrados = leidos ?? { origenes: new Set<string>(), emails: new Map<string, number>() };
 
   // Una sola consulta con los emails de lo que todavía no está publicado.
   const emails = new Set<string>();
   for (const [id, l] of porVideo) {
-    if (l.tipo !== "valida" || ingestas.get(id)?.estado === "ok") continue;
+    if (l.tipo !== "valida" || ingestas.get(id)?.estado === "ok" || borrados.origenes.has(id)) continue;
     emails.add(l.entrada.emailEscrito).add(l.entrada.emailVerificado);
   }
   if (ASIGNAR && "email" in ASIGNAR) emails.add(ASIGNAR.email);
@@ -418,6 +428,9 @@ async function main() {
 
   if (REPROCESAR && !SOLO_SUBTITULOS && !porVideo.has(REPROCESAR)) {
     fatal = `reprocesar: ${REPROCESAR} no está en la hoja (o no tiene video)`;
+  }
+  for (const pedido of [REPROCESAR, ASIGNAR?.origenId]) {
+    if (!fatal && pedido && borrados.origenes.has(pedido)) fatal = `${pedido} es de una cuenta eliminada: no se procesa`;
   }
 
   // Input `asignar`: el equipo decide a qué perfil va. Pisa las reglas y el bloqueo.
@@ -439,6 +452,10 @@ async function main() {
   if (SECO) console.log("Modo seco: no se baja, no se sube y no se escribe nada.");
 
   for (const [id, lectura] of fatal ? [] : porVideo) {
+    if (borrados.origenes.has(id)) {
+      resumen.borrados++;
+      continue;
+    }
     const previa: Ingesta | undefined = ingestas.get(id);
     let envio: Envio | undefined = envios.get(id);
     const forzar = id === REPROCESAR && !SOLO_SUBTITULOS;
@@ -446,7 +463,7 @@ async function main() {
 
     const anotar = async (entrada: Entrada, nuevo: Omit<Envio, "origen_id">) => {
       if (SECO) return;
-      await guardarEnvio(entrada, nuevo, envio);
+      await guardarEnvio(sinEmailsBorrados(entrada, borrados.emails), nuevo, envio);
       envio = { origen_id: id, ...nuevo };
     };
 
@@ -488,6 +505,15 @@ async function main() {
       continue;
     }
     const { entrada } = lectura;
+
+    // Respuesta anterior al borrado de una cuenta que la base nunca registró (si la
+    // hubiera registrado, ya estaría en origenes_borrados).
+    if (!envio && deCuentaBorrada(entrada, borrados.emails)) {
+      if (!SECO) await marcarBorrado(entrada);
+      resumen.borrados++;
+      log(id, SECO ? "se marcaría borrado" : "borrado", "cuenta eliminada");
+      continue;
+    }
 
     // A quién va. Lo ya asignado en una corrida anterior (y que falló al
     // procesar) conserva su perfil, salvo que ahora esté bloqueado.

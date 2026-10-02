@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { DESCRIPCION_MAX, REGEX_EMAIL } from "./config.ts";
 
 /**
@@ -160,4 +161,49 @@ export function resolver(
   return propio
     ? { estado: "asignado", regla: "respaldo_verificado", perfil: propio }
     : { estado: "en_espera", regla: "sin_cuenta_espera" };
+}
+
+/** Cuentas eliminadas: sha256 del email → cuándo se borró (ms epoch). */
+export type EmailsBorrados = Map<string, number>;
+
+/** sha256 del email en minúsculas, igual que `hash_email` en la base. */
+export function hashEmail(email: string): string {
+  return createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("hex");
+}
+
+/** ¿El email es de una cuenta que se eliminó después de esta respuesta? */
+function borradoDespues(email: string, fecha: string, borrados: EmailsBorrados): boolean {
+  if (!email) return false;
+  const cuando = borrados.get(hashEmail(email));
+  return cuando !== undefined && Date.parse(fecha) <= cuando;
+}
+
+/**
+ * Una respuesta que la base nunca registró es de una cuenta eliminada si la mandó
+ * esa cuenta o la mandaron para ella antes del borrado. Lo posterior es de la
+ * cuenta nueva (si la hay) y se procesa normal.
+ */
+export function deCuentaBorrada(
+  entrada: Pick<Entrada, "emailVerificado" | "emailEscrito" | "fecha">,
+  borrados: EmailsBorrados
+): boolean {
+  return (
+    borradoDespues(entrada.emailVerificado, entrada.fecha, borrados) ||
+    borradoDespues(entrada.emailEscrito, entrada.fecha, borrados)
+  );
+}
+
+/**
+ * Lo que se guarda en `envios`: sin los emails de cuentas eliminadas (por ejemplo,
+ * alguien del equipo que cargó un pitch para otra persona y después borró su cuenta).
+ */
+export function sinEmailsBorrados<T extends Pick<Entrada, "emailVerificado" | "emailEscrito" | "fecha">>(
+  entrada: T,
+  borrados: EmailsBorrados
+): T {
+  return {
+    ...entrada,
+    emailVerificado: borradoDespues(entrada.emailVerificado, entrada.fecha, borrados) ? "" : entrada.emailVerificado,
+    emailEscrito: borradoDespues(entrada.emailEscrito, entrada.fecha, borrados) ? "" : entrada.emailEscrito,
+  };
 }

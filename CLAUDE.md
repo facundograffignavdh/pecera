@@ -171,6 +171,18 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   (tabla `portafolio`). Logo de empresa: se guarda en `empresa_logos` (`poner_logo_empresa`);
   `empresas.logo_url` es solo respaldo de lectura. Formulario de perfil: el de 6 pasos.
   El progreso del perfil en /cuenta lo muestra solo `CompletarPerfil`.
+- Eliminar la cuenta (rama `borrar-cuenta`, migración `20261008120000_borrar_cuenta.sql`,
+  pruebas `supabase/pruebas/borrar_cuenta.mjs`): `/cuenta/eliminar` confirma escribiendo
+  ELIMINAR y llama a `borrar_mi_cuenta(p_dispositivo)` (una transacción: perfil y todo lo
+  suyo, la empresa si es la única integrante o si no pasa la titularidad, `auth.users`,
+  claves de R2 a `r2_borrar` con `now()`). Lo que queda: `origenes_borrados` (ID de Drive,
+  /admin → Drive los lista para borrar a mano), `emails_borrados` (sha256 del email, con
+  `hash_email` en la base y `hashEmail` en la ingesta) y las filas de `ingestas`/`envios` en
+  'borrado' sin emails. Triggers: ningún pitch con origen borrado, y lo que se escriba de un
+  origen borrado vuelve a 'borrado' con `intentos` 1000 (la ingesta vieja lo da por agotado).
+  La ingesta saltea `origenes_borrados` siempre (también `reprocesar`/`asignar`) y marca las
+  respuestas anteriores al borrado que nunca registró. Después: `limpiarNavegador`
+  (`lib/borrar-cuenta.ts`, todo `pecera:*` salvo tema y subtítulos) y `AvisoCuentaEliminada`.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
@@ -218,6 +230,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   tenía perfil (doble envío), a `/cuenta`. `guardarPerfil` nunca tira: toda falla
   vuelve como mensaje (22023 del trigger → campo). A los 20 s sin respuesta el form
   ofrece recargar; `app/cuenta/error.tsx` atrapa el resto.
+- `/cuenta/eliminar` → qué se borra (`antes_de_borrar`) y confirmación con ELIMINAR
 - `/subir` → al Form de pitches con el email de la sesión (sin sesión, a /cuenta)
 - `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
 - `/e/[slug]` → página de empresa: equipo con cargos, pitches de todos y datos de

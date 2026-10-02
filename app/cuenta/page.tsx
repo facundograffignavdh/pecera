@@ -294,6 +294,21 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             )}
 
             <BotonSalir />
+
+            <section
+              aria-labelledby="eliminar-titulo"
+              className="mt-10 flex flex-col gap-2 rounded-3xl border border-tinta/15 px-5 py-5"
+            >
+              <h2 id="eliminar-titulo" className="font-display text-lg font-semibold text-tinta">
+                Eliminar mi cuenta
+              </h2>
+              <p className="text-sm leading-relaxed text-tinta/70">
+                Borra tu perfil, tus pitches y todo lo tuyo en Pecera. No tiene vuelta atrás.
+              </p>
+              <Link href="/cuenta/eliminar" className={`${boton("peligro", "md")} mt-1 self-start`}>
+                Eliminar mi cuenta
+              </Link>
+            </section>
             </div>
           </section>
         )}

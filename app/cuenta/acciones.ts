@@ -16,6 +16,7 @@ import {
   validarPerfil,
   validarSlug,
 } from "@/lib/cuenta";
+import { PALABRA_CONFIRMAR, confirmaBorrado } from "@/lib/borrar-cuenta";
 import { faltaMigracion } from "@/lib/datos";
 import { guardarFoto } from "@/lib/foto";
 import { urlMedia } from "@/lib/media";
@@ -54,6 +55,50 @@ export async function salir(): Promise<void> {
   const supabase = await supabaseConSesion();
   await supabase.auth.signOut({ scope: "local" });
   redirect("/");
+}
+
+export type ResultadoEliminar = { ok: true } | { ok: false; mensaje: string };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Elimina la cuenta de la sesión con todo lo suyo (`borrar_mi_cuenta`, en una
+ * transacción: si falla, no se borra nada) y cierra la sesión. `dispositivo` es el
+ * uuid anónimo de este navegador: se van también sus piques, vistas y seguidos.
+ * La limpieza del navegador la hace el cliente al recibir `ok`.
+ */
+export async function eliminarCuenta(confirmacion: string, dispositivo: string | null): Promise<ResultadoEliminar> {
+  if (!confirmaBorrado(confirmacion)) {
+    return { ok: false, mensaje: `Escribí ${PALABRA_CONFIRMAR} para confirmar.` };
+  }
+  const supabase = await supabaseConSesion();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, mensaje: "Tu sesión se cerró. Entrá de nuevo para eliminar tu cuenta." };
+
+  const { data, error } = await supabase.rpc("borrar_mi_cuenta", {
+    p_dispositivo: dispositivo && UUID.test(dispositivo) ? dispositivo : null,
+  });
+  if (error) {
+    console.error(`Supabase (borrar_mi_cuenta): ${error.code} ${error.message}`);
+    return {
+      ok: false,
+      mensaje: faltaMigracion(error)
+        ? "Todavía no se puede eliminar la cuenta desde acá. Escribinos y la borramos nosotros."
+        : "No pudimos eliminar tu cuenta y no se borró nada. Probá de nuevo en un rato.",
+    };
+  }
+
+  // La cuenta ya no existe: solo quedan las cookies, que se van acá.
+  await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+
+  const borrado = (data ?? {}) as { perfil?: string | null; empresa?: string | null };
+  revalidatePath("/");
+  revalidatePath("/explorar");
+  if (borrado.perfil) revalidatePath(`/p/${borrado.perfil}`);
+  if (borrado.empresa) revalidatePath(`/e/${borrado.empresa}`, "layout");
+  return { ok: true };
 }
 
 export type EstadoGuardar = {
