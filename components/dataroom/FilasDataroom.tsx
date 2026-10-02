@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { archivarDocumento, cambiarVisibilidad, cambiarVisibilidadDato } from "@/app/cuenta/dataroom";
 import BotonCopiar from "@/components/BotonCopiar";
 import SwitchTransparencia from "@/components/SwitchTransparencia";
+import { useConEmpresa, useEmpresaId } from "@/components/cuenta/EmpresaActual";
 import type { Documento } from "@/lib/dataroom";
 import type { Resultado } from "@/lib/errores-base";
 
@@ -23,7 +24,8 @@ export function FilaDocumento({
   proporcion: number | null;
   hace: string;
 }) {
-  const href = doc.tipo === "plantilla" ? `/cuenta/dataroom/plantilla/${doc.plantilla}` : `/cuenta/dataroom/doc/${doc.id}`;
+  const ruta = useConEmpresa();
+  const href = ruta(doc.tipo === "plantilla" ? `/cuenta/dataroom/plantilla/${doc.plantilla}` : `/cuenta/dataroom/doc/${doc.id}`);
   return (
     <li className="flex flex-col gap-3 rounded-2xl border border-tinta/10 bg-marfil px-4 py-3.5">
       <div className="flex flex-col gap-1">
@@ -80,6 +82,7 @@ export function FilaDato({
   url: string | null;
   visible: boolean;
 }) {
+  const empresaId = useEmpresaId();
   return (
     <li className="flex flex-col gap-2 rounded-2xl border border-tinta/10 bg-marfil px-4 py-3">
       <div className="flex flex-col">
@@ -92,7 +95,7 @@ export function FilaDato({
           <span className="font-display text-lg font-semibold text-tinta">{valor}</span>
         )}
       </div>
-      <SwitchTransparencia visible={visible} etiqueta={label} onCambiar={(v) => cambiarVisibilidadDato(clave, v)} compacto />
+      <SwitchTransparencia visible={visible} etiqueta={label} onCambiar={(v) => cambiarVisibilidadDato(empresaId, clave, v)} compacto />
     </li>
   );
 }

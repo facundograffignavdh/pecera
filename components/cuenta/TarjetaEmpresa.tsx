@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
-import { crearEmpresa, unirseEmpresa } from "@/app/cuenta/empresa";
+import { useActionState, useState, useTransition } from "react";
+import { crearEmpresa, elegirPrincipal, unirseEmpresa } from "@/app/cuenta/empresa";
 import { ChipsMultiple, ChipsUnico, SelectorEtapa } from "@/components/Chips";
 import { Aviso, BOTON_PRIMARIO, INPUT, Tarjeta } from "@/components/cuenta/ui";
 import { LogoEmpresa } from "@/components/perfil/Bloques";
-import { slugDesdeNombre, urlSitio } from "@/lib/cuenta";
+import { conEmpresa, slugDesdeNombre, urlSitio } from "@/lib/cuenta";
 import type { Resultado } from "@/lib/errores-base";
 import {
   CARGOS,
@@ -14,6 +14,7 @@ import {
   INDUSTRIAS,
   MAX_INDUSTRIAS_PROYECTO,
   RONDAS,
+  cargo as cargoDe,
   conTono,
 } from "@/lib/etiquetas";
 
@@ -47,20 +48,66 @@ export const formatoCodigo = (c: string) => `${c.slice(0, 4)}-${c.slice(4)}`;
 /** Dirección pública de la empresa. */
 const urlEmpresa = (slug: string) => urlSitio(`/e/${slug}`);
 
+/** Una empresa de la persona, como la arma lib/cuenta-empresa (logo ya como URL). */
+export type EmpresaDeLista = MiEmpresa & { es_principal: boolean; cargo: string | null };
+
+/**
+ * "Mis empresas": todas (hasta `max`), la principal primero, y sumar otra creándola o
+ * con un código. Cada una se administra en /cuenta/empresa?empresa=slug. Sin la
+ * migración multi_empresa (`multi` false), una sola, como siempre.
+ */
 export default function TarjetaEmpresa({
-  empresa,
-  logo,
+  empresas,
+  multi = false,
+  max = 1,
 }: {
-  empresa: MiEmpresa | null;
-  /** Logo vigente (empresa_logos o, si no hay, el de feria_pro). Se edita en /cuenta/empresa. */
-  logo?: string | null;
+  empresas: EmpresaDeLista[];
+  multi?: boolean;
+  max?: number;
 }) {
+  const [sumando, setSumando] = useState(false);
+  const puedeSumar = empresas.length < (multi ? max : 1);
   return (
     <Tarjeta
-      titulo="Tu empresa"
-      bajada="Una página con todo tu equipo, cada uno con su cargo, y todos sus pitches juntos."
+      titulo="Mis empresas"
+      bajada={
+        empresas.length === 0
+          ? "Una página con todo tu equipo, cada uno con su cargo, y todos sus pitches juntos."
+          : multi
+            ? `Podés ser parte de hasta ${max}. Tus pitches se ven en todas.`
+            : undefined
+      }
     >
-      {empresa ? <ConEmpresa empresa={empresa} logo={logo ?? empresa.logo_url ?? null} /> : <SinEmpresa />}
+      {empresas.length > 0 && (
+        <ul className="flex flex-col gap-3">
+          {empresas.map((e) => (
+            <FilaEmpresa key={e.id} empresa={e} varias={empresas.length > 1} multi={multi} />
+          ))}
+        </ul>
+      )}
+      {empresas.length === 0 ? (
+        <SinEmpresa />
+      ) : puedeSumar ? (
+        sumando ? (
+          <div className="flex flex-col gap-3 border-t border-tinta/10 pt-4">
+            <p className="font-medium text-tinta">Sumar otra empresa</p>
+            <SinEmpresa />
+            <button type="button" onClick={() => setSumando(false)} className="self-start text-sm text-tinta/70 underline underline-offset-4 hover:text-tinta">
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setSumando(true)}
+            className="boton inline-flex min-h-11 items-center self-start rounded-full border border-tinta/30 px-5 text-sm font-medium text-tinta hover:border-tinta"
+          >
+            + Sumar otra empresa
+          </button>
+        )
+      ) : (
+        multi && <p className="text-sm text-tinta/65">Llegaste al máximo de {max} empresas. Para sumar otra, salí de alguna.</p>
+      )}
     </Tarjeta>
   );
 }
@@ -235,7 +282,7 @@ function FormUnirme() {
           className={`${INPUT} font-mono tracking-widest uppercase`}
         />
         <span className="text-sm font-normal text-tinta/70">
-          Te lo pasa quien creó la empresa: está en su cuenta, en esta misma tarjeta.
+          Te lo pasa alguien del equipo: está en su cuenta, en Administrar → Equipo.
         </span>
       </label>
       <CargoPropio />
@@ -247,19 +294,29 @@ function FormUnirme() {
   );
 }
 
-/** Con empresa: un resumen. Todo lo demás se administra en /cuenta/empresa. */
-function ConEmpresa({ empresa, logo }: { empresa: MiEmpresa; logo: string | null }) {
+/** Una empresa: un resumen. Todo lo demás se administra en /cuenta/empresa. */
+function FilaEmpresa({ empresa, varias, multi }: { empresa: EmpresaDeLista; varias: boolean; multi: boolean }) {
+  const logo = empresa.logo_url ?? null;
+  const c = cargoDe(empresa.cargo);
+  const [r, setR] = useState<Resultado | null>(null);
+  const [pendiente, iniciar] = useTransition();
   return (
-    <div className="flex flex-col gap-4">
+    <li className="flex flex-col gap-3 rounded-2xl border border-tinta/10 bg-marfil px-4 py-4">
       <div className="flex items-center gap-3">
-        <LogoEmpresa nombre={empresa.nombre} logo={logo} size={56} />
-        <div className="min-w-0">
-          <p className="truncate font-display text-2xl font-semibold leading-tight text-tinta">{empresa.nombre}</p>
+        <LogoEmpresa nombre={empresa.nombre} logo={logo} size={varias ? 48 : 56} />
+        <div className="min-w-0 flex-1">
+          <p className={`truncate font-display font-semibold leading-tight text-tinta ${varias ? "text-xl" : "text-2xl"}`}>
+            {empresa.nombre}
+          </p>
           <p className="text-sm text-tinta/70">
+            {c ? `${c.label} · ` : ""}
             {empresa.miembros} {empresa.miembros === 1 ? "miembro" : "miembros"} ·{" "}
-            {empresa.es_dueno ? "la creaste vos" : "sos parte del equipo"}
+            {empresa.es_dueno ? "la administrás vos" : "sos parte del equipo"}
           </p>
         </div>
+        {varias && empresa.es_principal && (
+          <span className="shrink-0 rounded-full bg-tinta px-2.5 py-0.5 text-xs font-semibold text-marfil">Principal</span>
+        )}
       </div>
       {!logo && (
         <p className="rounded-2xl bg-t-ocre-suave px-4 py-3 text-sm text-t-ocre">
@@ -267,8 +324,8 @@ function ConEmpresa({ empresa, logo }: { empresa: MiEmpresa; logo: string | null
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <Link href="/cuenta/empresa" className={`${BOTON_PRIMARIO} boton flex-1`}>
-          Administrar empresa
+        <Link href={conEmpresa("/cuenta/empresa", varias ? empresa.slug : null)} className={`${BOTON_PRIMARIO} boton flex-1`}>
+          Administrar
         </Link>
         {empresa.visible && (
           <Link
@@ -279,7 +336,17 @@ function ConEmpresa({ empresa, logo }: { empresa: MiEmpresa; logo: string | null
           </Link>
         )}
       </div>
-      <p className="text-sm text-tinta/65">Logo, datos, equipo, métricas y documentos.</p>
-    </div>
+      {varias && multi && !empresa.es_principal && (
+        <button
+          type="button"
+          disabled={pendiente}
+          onClick={() => iniciar(async () => setR(await elegirPrincipal(empresa.id)))}
+          className="self-start text-sm text-tinta/70 underline underline-offset-4 hover:text-tinta"
+        >
+          Hacer principal (va primero en tu perfil y en el reel)
+        </button>
+      )}
+      {r?.mensaje && <Aviso ok={r.ok}>{r.mensaje}</Aviso>}
+    </li>
   );
 }

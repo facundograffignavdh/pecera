@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useState, useTransition } from "react";
-import { editarEmpresa, renovarCodigo, salirEmpresa, subirLogo } from "@/app/cuenta/empresa";
+import { cambiarCargo, editarEmpresa, renovarCodigo, salirEmpresa, subirLogo } from "@/app/cuenta/empresa";
 import Avatar from "@/components/Avatar";
 import BotonCopiar from "@/components/BotonCopiar";
+import { ChipsUnico } from "@/components/Chips";
 import { Etiqueta } from "@/components/Etiquetas";
 import TarjetaTransparencia from "@/components/cuenta/TarjetaTransparencia";
 import { CamposEmpresa, type MiEmpresa, formatoCodigo } from "@/components/cuenta/TarjetaEmpresa";
@@ -13,7 +14,7 @@ import { Aviso, BOTON_PRIMARIO, BOTON_SECUNDARIO, INPUT, Tarjeta } from "@/compo
 import { LogoEmpresa } from "@/components/perfil/Bloques";
 import { urlSitio } from "@/lib/cuenta";
 import type { Resultado } from "@/lib/errores-base";
-import { cargo } from "@/lib/etiquetas";
+import { CARGOS, cargo, conTono } from "@/lib/etiquetas";
 import { mensajeEnvioImagen, mensajeImagen, nombreImagen, prepararImagen } from "@/lib/imagen";
 import type { DatoEmpresa, Rol } from "@/types/pecera";
 
@@ -31,6 +32,7 @@ export type Miembro = {
 type Seccion = "perfil" | "equipo" | "transparencia";
 
 const INICIAL: Resultado = { ok: false };
+const OPCIONES_CARGOS = conTono(CARGOS);
 
 /**
  * Cuenta de la empresa: logo y datos, equipo con su código, y métricas y
@@ -40,10 +42,13 @@ export default function PanelEmpresa({
   empresa,
   miembros,
   datos,
+  multi,
 }: {
   empresa: MiEmpresa;
   miembros: Miembro[];
   datos: DatoEmpresa[];
+  /** La base tiene multi_empresa: cargo por empresa. */
+  multi: boolean;
 }) {
   const [seccion, setSeccion] = useState<Seccion>("perfil");
 
@@ -79,7 +84,7 @@ export default function PanelEmpresa({
             <DatosEmpresa empresa={empresa} />
           </>
         )}
-        {seccion === "equipo" && <Equipo empresa={empresa} miembros={miembros} />}
+        {seccion === "equipo" && <Equipo empresa={empresa} miembros={miembros} multi={multi} />}
         {seccion === "transparencia" && <TarjetaTransparencia datos={datos} slugEmpresa={empresa.slug} />}
       </div>
     </div>
@@ -117,6 +122,7 @@ function EditorLogo({ empresa }: { empresa: MiEmpresa }) {
     setLogo(URL.createObjectURL(blob));
     const datos = new FormData();
     datos.set("logo", blob, nombreImagen(blob, "logo"));
+    datos.set("empresa_id", empresa.id);
     await enviar(datos, blob);
   }
 
@@ -142,6 +148,7 @@ function EditorLogo({ empresa }: { empresa: MiEmpresa }) {
               onClick={() => {
                 const datos = new FormData();
                 datos.set("quitar", "1");
+                datos.set("empresa_id", empresa.id);
                 enviar(datos);
               }}
               className="self-start text-sm text-tinta/60 underline underline-offset-4 hover:text-tinta"
@@ -163,7 +170,7 @@ function DatosEmpresa({ empresa }: { empresa: MiEmpresa }) {
   if (!empresa.es_dueno) {
     return (
       <Tarjeta titulo="Datos de la empresa">
-        <p className="text-sm text-tinta/70">Solo quien creó la empresa puede editar nombre, descripción, etapa y redes.</p>
+        <p className="text-sm text-tinta/70">Solo quien administra la empresa puede editar nombre, descripción, etapa y redes.</p>
       </Tarjeta>
     );
   }
@@ -172,6 +179,7 @@ function DatosEmpresa({ empresa }: { empresa: MiEmpresa }) {
     <Tarjeta titulo="Datos de la empresa" bajada="Lo que se ve en la página pública.">
       <form action={accion} className="flex flex-col gap-5">
         <input type="hidden" name="slug_actual" value={empresa.slug} />
+        <input type="hidden" name="empresa_id" value={empresa.id} />
         <CamposEmpresa inicial={empresa} conSlug={false} />
         <label className="flex flex-col gap-1.5 text-sm font-medium text-tinta">
           <span>
@@ -206,14 +214,14 @@ function DatosEmpresa({ empresa }: { empresa: MiEmpresa }) {
   );
 }
 
-function Equipo({ empresa, miembros }: { empresa: MiEmpresa; miembros: Miembro[] }) {
+function Equipo({ empresa, miembros, multi }: { empresa: MiEmpresa; miembros: Miembro[]; multi: boolean }) {
   const router = useRouter();
   const [codigo, setCodigo] = useState(empresa.codigo);
   const [mensaje, setMensaje] = useState<Resultado | null>(null);
   const [pendiente, iniciar] = useTransition();
 
   const invitacion = codigo
-    ? `Sumate a ${empresa.nombre} en Pecera: entrá a ${urlSitio("/cuenta")}, en "Tu empresa" tocá "Tengo un código" y poné ${formatoCodigo(codigo)}`
+    ? `Sumate a ${empresa.nombre} en Pecera: entrá a ${urlSitio("/cuenta")}, en "Mis empresas" tocá "Tengo un código" y poné ${formatoCodigo(codigo)}`
     : "";
 
   return (
@@ -244,7 +252,7 @@ function Equipo({ empresa, miembros }: { empresa: MiEmpresa; miembros: Miembro[]
               onClick={() =>
                 iniciar(async () => {
                   if (!window.confirm("¿Generar un código nuevo? El actual deja de servir.")) return;
-                  const r = await renovarCodigo();
+                  const r = await renovarCodigo(empresa.id);
                   if (r.ok && r.codigo) setCodigo(r.codigo);
                   setMensaje(r);
                 })
@@ -258,7 +266,9 @@ function Equipo({ empresa, miembros }: { empresa: MiEmpresa; miembros: Miembro[]
       )}
       {mensaje?.mensaje && <Aviso ok={mensaje.ok}>{mensaje.mensaje}</Aviso>}
 
-      <Tarjeta titulo="El equipo" bajada="Cada uno elige su cargo desde su perfil.">
+      {multi && <MiCargo empresa={empresa} actual={miembros.find((m) => m.soy_yo)?.cargo ?? null} />}
+
+      <Tarjeta titulo="El equipo" bajada={multi ? "Cada uno elige su cargo en la empresa." : "Cada uno elige su cargo desde su perfil."}>
         <ul className="flex flex-col gap-2">
           {miembros.map((m) => {
             const c = cargo(m.cargo);
@@ -300,7 +310,7 @@ function Equipo({ empresa, miembros }: { empresa: MiEmpresa; miembros: Miembro[]
               : "¿Salir de la empresa?";
             if (!window.confirm(texto)) return;
             iniciar(async () => {
-              const r = await salirEmpresa();
+              const r = await salirEmpresa(empresa.id);
               if (r.ok) router.push("/cuenta");
               else setMensaje(r);
             });
@@ -311,5 +321,34 @@ function Equipo({ empresa, miembros }: { empresa: MiEmpresa; miembros: Miembro[]
         </button>
       </div>
     </>
+  );
+}
+
+/** Su cargo en ESTA empresa (en otra puede ser otro). */
+function MiCargo({ empresa, actual }: { empresa: MiEmpresa; actual: string | null }) {
+  const [valor, setValor] = useState(actual ?? "");
+  const [r, setR] = useState<Resultado | null>(null);
+  const [guardando, iniciar] = useTransition();
+  return (
+    <Tarjeta titulo="Tu cargo acá" bajada={`El que se ve junto a ${empresa.nombre} en tu perfil y en el reel.`}>
+      <ChipsUnico
+        id={`cargo-${empresa.id}`}
+        nombre="cargo"
+        legend="Cargo"
+        opciones={OPCIONES_CARGOS}
+        valor={valor}
+        onCambiar={setValor}
+        permitirNinguno
+      />
+      <button
+        type="button"
+        disabled={guardando || valor === (actual ?? "")}
+        onClick={() => iniciar(async () => setR(await cambiarCargo(empresa.id, valor)))}
+        className={`${BOTON_SECUNDARIO} boton self-start`}
+      >
+        {guardando ? "Guardando…" : "Guardar cargo"}
+      </button>
+      {r?.mensaje && <Aviso ok={r.ok}>{r.mensaje}</Aviso>}
+    </Tarjeta>
   );
 }

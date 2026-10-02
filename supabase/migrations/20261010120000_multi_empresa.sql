@@ -138,6 +138,31 @@ create trigger perfiles_empresa_espejo
   after insert or update of empresa_id on public.perfiles
   for each row execute function public.perfiles_empresa_espejo();
 
+-- El cargo del perfil (el del formulario, el que ve main) es el de la principal: si
+-- cambia, cambia el de esa membresía. El de las otras empresas se elige en cada una.
+create function public.perfiles_cargo_espejo()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.empresa_id is not null then
+    update public.empresa_miembros
+    set cargo = new.cargo
+    where perfil_id = new.id and empresa_id = new.empresa_id
+      and cargo is distinct from new.cargo;
+  end if;
+  return null;
+end;
+$$;
+
+revoke execute on function public.perfiles_cargo_espejo() from public, anon, authenticated;
+
+create trigger perfiles_cargo_espejo
+  after update of cargo on public.perfiles
+  for each row execute function public.perfiles_cargo_espejo();
+
 -- ---------------------------------------------------------------------------
 -- 3) Los datos de hoy: cada perfil con empresa pasa a tener su membresía
 -- ---------------------------------------------------------------------------
@@ -514,7 +539,7 @@ security definer
 set search_path = ''
 as $$
   select
-    x.slug, x.nombre, coalesce(mm.cargo, x.cargo), x.avatar_url, x.rol,
+    x.slug, x.nombre, mm.cargo, x.avatar_url, x.rol,
     x.publicado and not x.oculto,
     e.dueno_id = x.usuario_id,
     x.usuario_id = auth.uid()
@@ -1014,7 +1039,7 @@ as $$
   select
     e.id, e.slug, e.nombre, e.descripcion, e.web, e.linkedin, e.instagram,
     e.industrias, e.etapa, e.ronda, l.clave, e.logo_url, e.ubicacion, c.codigo,
-    coalesce(m.cargo, p.cargo),
+    m.cargo,
     e.dueno_id = auth.uid(),
     e.id = p.empresa_id,
     public.empresa_visible(e.id),
@@ -1170,7 +1195,8 @@ begin
 end;
 $$;
 
--- Cuál es la principal (la que va primero en el perfil y el reel).
+-- Cuál es la principal (la que va primero en el perfil y el reel). El cargo del
+-- perfil pasa a ser el de esa empresa (o ninguno).
 create function public.elegir_empresa_principal(p_empresa uuid)
 returns void
 language plpgsql
@@ -1184,15 +1210,13 @@ begin
   perform set_config('pecera.empresa_rpc', 'on', true);
   update public.perfiles p
   set empresa_id = v_empresa,
-      cargo = coalesce(
-        (select m.cargo from public.empresa_miembros m where m.empresa_id = v_empresa and m.perfil_id = p.id),
-        p.cargo
-      )
+      cargo = (select m.cargo from public.empresa_miembros m where m.empresa_id = v_empresa and m.perfil_id = p.id)
   where p.id = v_perfil.id;
 end;
 $$;
 
--- El cargo en una empresa (vacío = sin cargo). Si es la principal, también el del perfil.
+-- El cargo en una empresa (vacío = sin cargo). Si es la principal, también el del
+-- perfil (y el trigger perfiles_cargo_espejo no tiene nada que cambiar).
 create function public.cambiar_cargo_en(p_empresa uuid, p_cargo text)
 returns void
 language plpgsql
@@ -1300,7 +1324,7 @@ declare
 begin
   return query
   select
-    x.slug, x.nombre, coalesce(m.cargo, x.cargo), x.avatar_url, x.rol,
+    x.slug, x.nombre, m.cargo, x.avatar_url, x.rol,
     x.publicado and not x.oculto,
     e.dueno_id is not distinct from x.usuario_id and x.usuario_id is not null,
     x.usuario_id is not distinct from auth.uid(),

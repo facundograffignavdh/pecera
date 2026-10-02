@@ -10,6 +10,7 @@ import {
   publicarAvance,
 } from "@/app/cuenta/build";
 import Racha from "@/components/build/Racha";
+import { CampoEmpresa } from "@/components/cuenta/EmpresaActual";
 import { Aviso, BOTON_PRIMARIO, BOTON_SECUNDARIO, INPUT, Tarjeta } from "@/components/cuenta/ui";
 import {
   AVANCE_MAX,
@@ -205,6 +206,7 @@ function PublicarAvance({ actual }: { actual: Hito | null }) {
 
   return (
     <form action={accion} className="flex flex-col gap-2">
+      <CampoEmpresa />
       <label htmlFor="avance" className="text-sm font-medium text-tinta">
         Contá un avance
       </label>
@@ -335,6 +337,7 @@ function NuevoHito({ hayActual }: { hayActual: boolean }) {
 
   return (
     <form key={vuelta} action={accion} className="flex flex-col gap-4 rounded-2xl border border-tinta/15 bg-marfil p-4">
+      <CampoEmpresa />
       <div className="flex flex-col gap-1.5">
         <label htmlFor="hito-titulo" className="text-sm font-medium text-tinta">
           ¿Cuál es el hito?

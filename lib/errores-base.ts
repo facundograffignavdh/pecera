@@ -10,10 +10,16 @@ const NO_DISPONIBLE = "Esta parte todavía se está activando. Probá de nuevo e
 /** Mensajes de la base (raise exception de feria_lista) → texto para la persona. */
 const MENSAJES: Record<string, string> = {
   "ya tenés empresa": "Ya sos parte de una empresa. Salí de esa primero.",
+  // multi_empresa
+  "tope de empresas": "Ya sos parte de 5 empresas, el máximo. Salí de alguna para sumar otra.",
+  "ya sos parte de esa empresa": "Ya sos parte de esa empresa.",
+  "no sos parte de esa empresa": "Esa empresa no está entre las tuyas. Recargá la página.",
+  "confirmá el borrado": "Sos la única integrante: si salís, la empresa se borra. Confirmalo en la pantalla de salida.",
+  "sos la única integrante": "Sos la única integrante: si salís, la empresa se borra. Confirmalo en la pantalla de salida.",
   "primero creá tu perfil": "Primero creá tu perfil.",
   "demasiados intentos": "Probaste muchos códigos. Esperá una hora y volvé a intentar.",
-  "solo el dueño edita la empresa": "Solo quien creó la empresa puede editarla.",
-  "solo el dueño renueva el código": "Solo quien creó la empresa puede renovar el código.",
+  "solo el dueño edita la empresa": "Solo quien administra la empresa puede editarla.",
+  "solo el dueño renueva el código": "Solo quien administra la empresa puede renovar el código.",
   "primero sumate a una empresa": "Primero creá o sumate a una empresa.",
   "votación cerrada": "La votación no está abierta.",
   "no podés votarte": "No podés votarte a vos.",

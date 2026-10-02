@@ -733,6 +733,7 @@ begin
 end;
 $$;
 
+drop trigger if exists perfiles_cargo_espejo on public.perfiles;
 drop trigger if exists perfiles_empresa_espejo on public.perfiles;
 drop trigger if exists empresa_miembros_principal on public.empresa_miembros;
 drop trigger if exists empresa_miembros_tope on public.empresa_miembros;
@@ -766,5 +767,6 @@ drop table if exists public.empresa_miembros;
 drop function if exists public.empresa_miembros_tope();
 drop function if exists public.empresa_miembros_principal();
 drop function if exists public.perfiles_empresa_espejo();
+drop function if exists public.perfiles_cargo_espejo();
 
 commit;

@@ -60,6 +60,17 @@ export function urlSitio(ruta: string): string {
 }
 
 /** URL pública del perfil: la que va en la tarjeta NFC. */
+/**
+ * La misma ruta de /cuenta con la empresa con la que se trabaja (`?empresa=slug`).
+ * Sin slug, tal cual: se usa la principal. Respeta los parámetros y el #ancla.
+ */
+export function conEmpresa(href: string, slug?: string | null): string {
+  if (!slug) return href;
+  const [ruta, ancla] = href.split("#");
+  const sep = ruta.includes("?") ? "&" : "?";
+  return `${ruta}${sep}empresa=${encodeURIComponent(slug)}${ancla === undefined ? "" : `#${ancla}`}`;
+}
+
 export function urlPerfil(slug: string): string {
   return urlSitio(`/p/${slug}`);
 }

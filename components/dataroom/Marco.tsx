@@ -59,7 +59,7 @@ export function SinEmpresa({ disponible }: { disponible: boolean }) {
           : "Estamos actualizando Pecera. Probá de nuevo en un rato."}
       </p>
       {disponible && (
-        <a href="/cuenta#tarjeta-tu-empresa" className="inline-flex min-h-11 items-center self-start rounded-full bg-naranja px-5 text-sm font-semibold text-tinta hover:bg-pecera active:scale-[0.98]">
+        <a href="/cuenta#tarjeta-mis-empresas" className="inline-flex min-h-11 items-center self-start rounded-full bg-naranja px-5 text-sm font-semibold text-tinta hover:bg-pecera active:scale-[0.98]">
           Ir a Mi perfil
         </a>
       )}

@@ -4,12 +4,15 @@ import { redirect } from "next/navigation";
 import Encabezado from "@/components/Encabezado";
 import EnVivo from "@/components/EnVivo";
 import PieLegal from "@/components/PieLegal";
+import { EmpresaActual } from "@/components/cuenta/EmpresaActual";
 import PanelEmpresa, { type Miembro } from "@/components/cuenta/PanelEmpresa";
-import TarjetaEmpresa, { type MiEmpresa } from "@/components/cuenta/TarjetaEmpresa";
+import SelectorEmpresa from "@/components/cuenta/SelectorEmpresa";
+import TarjetaEmpresa from "@/components/cuenta/TarjetaEmpresa";
 import { LogoEmpresa } from "@/components/perfil/Bloques";
+import { conEmpresa } from "@/lib/cuenta";
+import { cuentaConEmpresa, rpcEn } from "@/lib/cuenta-empresa";
 import { faltaMigracion } from "@/lib/datos";
 import { urlMedia } from "@/lib/media";
-import { supabaseConSesion } from "@/lib/supabase-servidor";
 import type { DatoEmpresa } from "@/types/pecera";
 
 export const metadata: Metadata = {
@@ -17,32 +20,24 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-/** Cuenta de la empresa: logo, datos, equipo, métricas y documentos. */
-export default async function EmpresaCuentaPage() {
-  const supabase = await supabaseConSesion();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+/**
+ * Cuenta de una empresa: logo, datos, equipo, métricas y documentos. Con varias
+ * empresas, la de `?empresa=` (o la principal) y el selector para cambiar.
+ */
+export default async function EmpresaCuentaPage({ searchParams }: PageProps<"/cuenta/empresa">) {
+  const { empresa: pedida } = await searchParams;
+  const { supabase, user, empresas, empresa, multi } = await cuentaConEmpresa(pedida);
   if (!user) redirect("/cuenta");
-
-  // mi_empresa_v2 trae el logo (feria_pro); sin esa migración, la de siempre.
-  let consulta = await supabase.rpc("mi_empresa_v2");
-  if (faltaMigracion(consulta.error)) consulta = await supabase.rpc("mi_empresa");
-  if (consulta.error) console.error(`Supabase (mi_empresa): ${consulta.error.message}`);
-  const fila = ((consulta.data ?? []) as MiEmpresa[])[0] ?? null;
-  // Logo: el de empresa_logos (migración logos) y, si no hay, el de feria_pro.
-  const logo = fila
-    ? await supabase.from("empresa_logos").select("clave").eq("empresa_id", fila.id).maybeSingle()
-    : null;
-  const clave = (logo?.data?.clave as string | undefined) ?? fila?.logo_url ?? null;
-  const empresa = fila && { ...fila, logo_url: clave ? urlMedia(clave) : null };
 
   let miembros: Miembro[] = [];
   let datos: DatoEmpresa[] = [];
   if (empresa) {
-    const [m, d] = await Promise.all([supabase.rpc("miembros_mi_empresa"), supabase.rpc("mis_datos_empresa")]);
-    if (m.error && !faltaMigracion(m.error)) console.error(`Supabase (miembros_mi_empresa): ${m.error.message}`);
-    if (d.error && !faltaMigracion(d.error)) console.error(`Supabase (mis_datos_empresa): ${d.error.message}`);
+    const [m, d] = await Promise.all([
+      rpcEn(supabase, "miembros_de_empresa", "miembros_mi_empresa", empresa.id, {}),
+      rpcEn(supabase, "mis_datos_en", "mis_datos_empresa", empresa.id, {}),
+    ]);
+    if (m.error && !faltaMigracion(m.error)) console.error(`Supabase (miembros_de_empresa): ${m.error.message}`);
+    if (d.error && !faltaMigracion(d.error)) console.error(`Supabase (mis_datos_en): ${d.error.message}`);
     miembros = ((m.data ?? []) as Miembro[]).map((x) => ({ ...x, avatar_url: x.avatar_url && urlMedia(x.avatar_url) }));
     datos = (d.data ?? []) as DatoEmpresa[];
   }
@@ -56,22 +51,38 @@ export default async function EmpresaCuentaPage() {
         </Link>
 
         {empresa ? (
-          <>
+          <EmpresaActual empresa={{ id: empresa.id, slug: empresa.slug }}>
+            <div className="mt-6">
+              <SelectorEmpresa empresas={empresas} actual={empresa.id} ruta="/cuenta/empresa" />
+            </div>
             <header className="aparecer mt-6 flex items-center gap-4">
               <LogoEmpresa nombre={empresa.nombre} logo={empresa.logo_url ?? null} size={64} />
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-tinta/55">Mi empresa</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-tinta/65">
+                  {empresas.length > 1 ? (empresa.es_principal ? "Tu empresa principal" : "Una de tus empresas") : "Mi empresa"}
+                </p>
                 <h1 className="truncate font-display text-3xl font-semibold leading-tight text-tinta">{empresa.nombre}</h1>
               </div>
             </header>
-            <EnVivo canal={`empresa-${empresa.id}`} filtro={`empresa_id=eq.${empresa.id}`} />
+            {multi ? (
+              <EnVivo canal={`equipo-${empresa.id}`} filtro={`empresa_id=eq.${empresa.id}`} tabla="empresa_miembros" />
+            ) : (
+              <EnVivo canal={`empresa-${empresa.id}`} filtro={`empresa_id=eq.${empresa.id}`} />
+            )}
             <div className="mt-6">
-              <PanelEmpresa empresa={empresa} miembros={miembros} datos={datos} />
+              {/* key: al cambiar de empresa, los formularios arrancan de cero. */}
+              <PanelEmpresa key={empresa.id} empresa={empresa} miembros={miembros} datos={datos} multi={multi} />
             </div>
-          </>
+            <p className="mt-6 text-sm text-tinta/65">
+              <Link href={conEmpresa("/cuenta#tarjeta-mis-empresas", empresa.slug)} className="underline underline-offset-4 hover:text-tinta">
+                Producto, Build in Public y Dataroom
+              </Link>{" "}
+              están en Mi perfil, con esta misma empresa elegida.
+            </p>
+          </EmpresaActual>
         ) : (
           <div className="mt-6">
-            <TarjetaEmpresa empresa={null} />
+            <TarjetaEmpresa empresas={[]} />
           </div>
         )}
 

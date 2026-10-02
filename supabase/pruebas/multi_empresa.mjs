@@ -392,6 +392,17 @@ async function main() {
   check((await valor(`select cargo from public.perfiles where id = $1`, [ana])) === "asesor", "y el cargo del perfil pasa a ser el de esa empresa");
   await yo(U.ana, `select public.cambiar_cargo_en($1, 'ceo')`, [tres]);
   check((await valor(`select cargo from public.perfiles where id = $1`, [ana])) === "ceo", "cambiar el cargo de la principal cambia el del perfil");
+  // Y al revés: el formulario del perfil (también el de main) edita perfiles.cargo.
+  await yo(U.ana, `update public.perfiles set cargo = 'cto' where id = $1`, [ana]);
+  const cargos = (await db.query(`select e.slug, m.cargo from public.empresa_miembros m join public.empresas e on e.id = m.empresa_id where m.perfil_id = $1 order by e.slug`, [ana])).rows;
+  check(
+    cargos.find((c) => c.slug === "ana-tres")?.cargo === "cto" && cargos.filter((c) => c.cargo === "cto").length === 1,
+    "editar el cargo del perfil cambia solo el de la principal",
+    cargos
+  );
+  await yo(U.ana, `select public.elegir_empresa_principal($1)`, [await empresaDe("ana-cuatro")]);
+  check((await valor(`select cargo from public.perfiles where id = $1`, [ana])) === "asesor", "al cambiar la principal, el perfil toma el cargo de la nueva");
+  await yo(U.ana, `select public.elegir_empresa_principal($1)`, [tres]);
   // Salir de la principal (una compartida: Caro Fondo).
   await yo(U.ana, `select public.elegir_empresa_principal($1)`, [caroFondo]);
   await yo(U.ana, `select public.salir_de_empresa($1)`, [caroFondo]);
@@ -539,11 +550,16 @@ async function main() {
         "guardar_dato_en", "guardar_hito_en", "publicar_avance_en", "guardar_producto_en", "poner_imagenes_producto_en",
         "poner_logo_en", "guardar_documento_en", "relaciones_pendientes_v2", "antes_de_borrar_v2", "empresa_mia",
         "salir_interno", "borrar_empresa_entera", "empresa_miembros_tope", "empresa_miembros_principal", "perfiles_empresa_espejo",
+        "perfiles_cargo_espejo",
       ]]
     )
   ).rows;
   check(nuevas.length === 0, "no queda ninguna función nueva", nuevas);
-  const triggers = (await db.query(`select tgname from pg_trigger where tgname in ('perfiles_empresa_espejo', 'empresa_miembros_tope', 'empresa_miembros_principal')`)).rows;
+  const triggers = (
+    await db.query(
+      `select tgname from pg_trigger where tgname in ('perfiles_empresa_espejo', 'perfiles_cargo_espejo', 'empresa_miembros_tope', 'empresa_miembros_principal')`
+    )
+  ).rows;
   check(triggers.length === 0, "ni ningún trigger nuevo", triggers);
   const tras = await definiciones(nombresR);
   // Sin los \r: el fin de línea de los .sql depende de cómo git hizo el checkout.

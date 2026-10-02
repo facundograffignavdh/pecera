@@ -9,6 +9,7 @@ import {
   type ValorCampo,
   esCategoriaDataroom,
 } from "@/lib/dataroom";
+import { empresaParaAccion, leerMisEmpresas, rpcEn } from "@/lib/cuenta-empresa";
 import { type Resultado, SIN_SESION, traducir } from "@/lib/errores-base";
 import {
   camposDe,
@@ -24,11 +25,18 @@ import { esUrlSegura } from "@/lib/transparencia";
  * Dataroom: documentos de la empresa (templates de Academy, textos propios y links).
  * Todo por funciones de la base, que verifican que la sesión sea miembro. Ninguna
  * tira: toda falla vuelve como mensaje.
+ *
+ * multi_empresa: lo nuevo se guarda en la empresa que manda la pantalla (`empresaId`);
+ * lo que ya existe se toca por su id y la empresa sale del documento.
  */
 
 type Supa = Awaited<ReturnType<typeof supabaseConSesion>>;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const COLUMNAS_DOC = "id, plantilla, categoria, tipo, titulo, campos, cuerpo, url, completo, visible, archivado, updated_at";
+const COLUMNAS_DOC =
+  "id, empresa_id, plantilla, categoria, tipo, titulo, campos, cuerpo, url, completo, visible, archivado, updated_at";
+const NO_ES_TUYA = "Esa empresa no está entre las tuyas. Recargá la página.";
+
+type DatoPropio = { clave: string; valor: string | null; url: string | null; visible: boolean };
 
 async function conSesion() {
   const supabase = await supabaseConSesion();
@@ -38,28 +46,39 @@ async function conSesion() {
   return { supabase, user };
 }
 
-async function slugEmpresa(supabase: Supa): Promise<string | null> {
-  const { data } = await supabase.rpc("mi_empresa");
-  return (data as Array<{ slug: string }> | null)?.[0]?.slug ?? null;
-}
-
 /** Lo público de la empresa (su página, su Dataroom y el One Pager) se regenera. */
-async function refrescarPublico(supabase: Supa) {
-  const slug = await slugEmpresa(supabase);
+async function refrescarPublico(supabase: Supa, empresaId: string | null | undefined) {
+  const { empresas } = await leerMisEmpresas(supabase);
+  const slug = (empresas.find((e) => e.id === empresaId) ?? (empresaId ? null : empresas[0]))?.slug;
   if (!slug) return;
   revalidatePath(`/e/${slug}`);
   revalidatePath(`/e/${slug}/dataroom`);
   revalidatePath(`/e/${slug}/one-pager`);
 }
 
-async function leerDocumento(supabase: Supa, id: string): Promise<Documento | null> {
+async function leerDocumento(supabase: Supa, id: string): Promise<(Documento & { empresa_id: string }) | null> {
   const { data } = await supabase
     .from("empresa_documentos")
     .select(COLUMNAS_DOC)
     .eq("id", id)
     .maybeSingle()
-    .overrideTypes<Documento | null, { merge: false }>();
+    .overrideTypes<(Documento & { empresa_id: string }) | null, { merge: false }>();
   return data;
+}
+
+/** Transparencia de esa empresa (con multi_empresa) o de la única. */
+async function misDatos(supabase: Supa, empresaId: string): Promise<DatoPropio[]> {
+  const { data } = await rpcEn(supabase, "mis_datos_en", "mis_datos_empresa", empresaId, {});
+  return (data as DatoPropio[] | null) ?? [];
+}
+
+function guardarDatoEn(supabase: Supa, empresaId: string, d: { clave: string; valor: string | null; url: string | null; visible: boolean }) {
+  return rpcEn(supabase, "guardar_dato_en", "guardar_dato_empresa", empresaId, {
+    p_clave: d.clave,
+    p_valor: d.valor,
+    p_url: d.url,
+    p_visible: d.visible,
+  });
 }
 
 /**
@@ -70,6 +89,7 @@ async function leerDocumento(supabase: Supa, id: string): Promise<Documento | nu
  */
 async function espejarDatos(
   supabase: Supa,
+  empresaId: string,
   plantillaId: string,
   valores: Record<string, ValorCampo>,
   visibleDoc: boolean
@@ -79,23 +99,18 @@ async function espejarDatos(
   const conDato = camposDe(p).filter((c) => c.dato);
   if (conDato.length === 0) return false;
 
-  const { data } = await supabase.rpc("mis_datos_empresa");
-  const actuales = new Map(
-    ((data as Array<{ clave: string; valor: string | null; url: string | null; visible: boolean }> | null) ?? []).map(
-      (d) => [d.clave, d]
-    )
-  );
+  const actuales = new Map((await misDatos(supabase, empresaId)).map((d) => [d.clave, d]));
   let cambio = false;
   for (const c of conDato) {
     const valor = formatoValor(c, valores[c.id], valores).slice(0, 280);
     if (!valor) continue;
     const previo = actuales.get(c.dato!);
     if (previo?.valor === valor) continue;
-    const { error } = await supabase.rpc("guardar_dato_empresa", {
-      p_clave: c.dato,
-      p_valor: valor,
-      p_url: previo?.url ?? null,
-      p_visible: previo ? previo.visible : visibleDoc,
+    const { error } = await guardarDatoEn(supabase, empresaId, {
+      clave: c.dato!,
+      valor,
+      url: previo?.url ?? null,
+      visible: previo ? previo.visible : visibleDoc,
     });
     if (error) console.error(`Supabase (espejarDatos ${c.dato}): ${error.code} ${error.message}`);
     else cambio = true;
@@ -115,6 +130,7 @@ export type ResultadoGuardado = Resultado & {
  * lo que llega con la definición del template y recalcula si está completo.
  */
 export async function guardarPlantilla(
+  empresaId: string,
   plantillaId: string,
   crudos: Record<string, unknown>,
   final = false
@@ -123,10 +139,12 @@ export async function guardarPlantilla(
   if (!p) return { ok: false, mensaje: "Ese template no existe." };
   const { supabase, user } = await conSesion();
   if (!user) return { ok: false, mensaje: SIN_SESION };
+  const empresa = await empresaParaAccion(supabase, empresaId);
+  if (!empresa) return { ok: false, mensaje: NO_ES_TUYA };
 
   const valores = limpiarValores(p, crudos);
   const progreso = progresoPlantilla(p, valores);
-  const { data, error } = await supabase.rpc("guardar_documento", {
+  const { data, error } = await rpcEn(supabase, "guardar_documento_en", "guardar_documento", empresa.id, {
     p_id: null,
     p_plantilla: p.id,
     p_categoria: p.categoria,
@@ -141,12 +159,12 @@ export async function guardarPlantilla(
 
   const id = String(data);
   const doc = await leerDocumento(supabase, id);
-  const cambioDatos = await espejarDatos(supabase, p.id, valores, doc?.visible ?? false);
+  const cambioDatos = await espejarDatos(supabase, empresa.id, p.id, valores, doc?.visible ?? false);
   // El autosave no regenera nada (sería en cada pausa al escribir); "Guardar" sí.
   if (final || cambioDatos || doc?.visible) {
     revalidatePath("/cuenta");
     revalidatePath("/cuenta/dataroom");
-    if (cambioDatos || doc?.visible) await refrescarPublico(supabase);
+    if (cambioDatos || doc?.visible) await refrescarPublico(supabase, empresa.id);
   }
   return {
     ok: true,
@@ -160,6 +178,7 @@ export async function guardarPlantilla(
 
 /** Texto propio o link. `final`: lo pidió la persona (no el autosave). */
 export async function guardarDocumento(datos: {
+  empresaId: string;
   id: string | null;
   tipo: TipoDocumento;
   categoria: string;
@@ -182,9 +201,11 @@ export async function guardarDocumento(datos: {
 
   const { supabase, user } = await conSesion();
   if (!user) return { ok: false, mensaje: SIN_SESION };
+  const empresa = await empresaParaAccion(supabase, datos.empresaId);
+  if (!empresa) return { ok: false, mensaje: NO_ES_TUYA };
 
   const completo = datos.tipo === "link" ? !!url : cuerpo.length > 0;
-  const { data, error } = await supabase.rpc("guardar_documento", {
+  const { data, error } = await rpcEn(supabase, "guardar_documento_en", "guardar_documento", empresa.id, {
     p_id: datos.id,
     p_plantilla: null,
     p_categoria: datos.categoria as CategoriaDataroom,
@@ -201,7 +222,7 @@ export async function guardarDocumento(datos: {
     revalidatePath("/cuenta");
     revalidatePath("/cuenta/dataroom");
     const doc = await leerDocumento(supabase, id);
-    if (doc?.visible) await refrescarPublico(supabase);
+    if (doc?.visible) await refrescarPublico(supabase, empresa.id);
   }
   return { ok: true, id, completo, mensaje: datos.final ? "Guardado en tu Dataroom." : "Guardado" };
 }
@@ -218,20 +239,20 @@ export async function cambiarVisibilidad(id: string, visible: boolean): Promise<
   const { error } = await supabase.rpc("visibilidad_documento", { p_id: id, p_visible: visible });
   if (error) return traducir(error, "visibilidad_documento");
 
+  // El documento dice de qué empresa es (la base ya verificó que sea de la sesión).
   const doc = await leerDocumento(supabase, id);
   const p = buscarPlantilla(doc?.plantilla);
-  if (p) {
+  if (p && doc) {
     const claves = new Set(camposDe(p).flatMap((c) => (c.dato ? [c.dato] : [])));
-    const { data } = await supabase.rpc("mis_datos_empresa");
-    for (const d of (data as Array<{ clave: string; valor: string | null; url: string | null; visible: boolean }> | null) ?? []) {
+    for (const d of await misDatos(supabase, doc.empresa_id)) {
       if (!claves.has(d.clave) || d.visible === visible) continue;
-      await supabase.rpc("guardar_dato_empresa", { p_clave: d.clave, p_valor: d.valor, p_url: d.url, p_visible: visible });
+      await guardarDatoEn(supabase, doc.empresa_id, { ...d, visible });
     }
   }
 
   revalidatePath("/cuenta");
   revalidatePath("/cuenta/dataroom");
-  await refrescarPublico(supabase);
+  await refrescarPublico(supabase, doc?.empresa_id);
   return {
     ok: true,
     mensaje: visible
@@ -241,24 +262,18 @@ export async function cambiarVisibilidad(id: string, visible: boolean): Promise<
 }
 
 /** Visibilidad de un dato de Transparencia desde el Dataroom (mismo valor y link). */
-export async function cambiarVisibilidadDato(clave: string, visible: boolean): Promise<Resultado> {
+export async function cambiarVisibilidadDato(empresaId: string, clave: string, visible: boolean): Promise<Resultado> {
   const { supabase, user } = await conSesion();
   if (!user) return { ok: false, mensaje: SIN_SESION };
-  const { data } = await supabase.rpc("mis_datos_empresa");
-  const dato = ((data as Array<{ clave: string; valor: string | null; url: string | null }> | null) ?? []).find(
-    (d) => d.clave === clave
-  );
+  const empresa = await empresaParaAccion(supabase, empresaId);
+  if (!empresa) return { ok: false, mensaje: NO_ES_TUYA };
+  const dato = (await misDatos(supabase, empresa.id)).find((d) => d.clave === clave);
   if (!dato) return { ok: false, mensaje: "Ese dato no existe." };
-  const { error } = await supabase.rpc("guardar_dato_empresa", {
-    p_clave: clave,
-    p_valor: dato.valor,
-    p_url: dato.url,
-    p_visible: visible,
-  });
+  const { error } = await guardarDatoEn(supabase, empresa.id, { ...dato, visible });
   if (error) return traducir(error, "guardar_dato_empresa");
   revalidatePath("/cuenta");
   revalidatePath("/cuenta/dataroom");
-  await refrescarPublico(supabase);
+  await refrescarPublico(supabase, empresa.id);
   return {
     ok: true,
     mensaje: visible ? "Ahora es transparente: se ve en la página de tu empresa." : "Ahora es privado: solo lo ve tu equipo.",
@@ -271,9 +286,10 @@ export async function archivarDocumento(id: string, archivado: boolean): Promise
   if (!user) return { ok: false, mensaje: SIN_SESION };
   const { error } = await supabase.rpc("archivar_documento", { p_id: id, p_archivado: archivado });
   if (error) return traducir(error, "archivar_documento");
+  const doc = await leerDocumento(supabase, id);
   revalidatePath("/cuenta");
   revalidatePath("/cuenta/dataroom");
-  await refrescarPublico(supabase);
+  await refrescarPublico(supabase, doc?.empresa_id);
   return { ok: true, mensaje: archivado ? "Archivado. Lo podés recuperar desde Archivados." : "Recuperado." };
 }
 
@@ -284,7 +300,10 @@ export type ProgresoAcademy = {
   plantillas: Record<string, { proporcion: number; completo: boolean }>;
 };
 
-/** Para /academy (página estática): cuánto completó la empresa de la sesión. */
+/**
+ * Para /academy (página estática): cuánto completó la empresa de la sesión. Con
+ * varias empresas, la principal (la página no sabe con cuál se está trabajando).
+ */
 export async function progresoAcademy(): Promise<ProgresoAcademy> {
   const { supabase, user } = await conSesion();
   if (!user) return { sesion: false, conEmpresa: false, plantillas: {} };

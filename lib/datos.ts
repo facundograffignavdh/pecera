@@ -79,7 +79,8 @@ function empresasDe(perfil: Perfil & { membresias?: Membresia[] }): EmpresaDePer
     .map((m) => ({
       ...m.empresa,
       id: m.empresa_id,
-      cargo: m.cargo ?? perfil.cargo ?? null,
+      // El de esa empresa: el del perfil es solo el de la principal.
+      cargo: m.cargo,
       principal: m.empresa_id === perfil.empresa_id,
     }));
 }
@@ -590,7 +591,7 @@ export const getEmpresa = cache(async (slug: string): Promise<PaginaEmpresa | nu
   const orden = new Map(equipo?.map((m, i) => [m.perfil_id, i]));
   const cargos = new Map(equipo?.map((m) => [m.perfil_id, m.cargo]));
   const filas = [...miembrosRes.data].sort((a, b) => (orden.get(a.id) ?? 0) - (orden.get(b.id) ?? 0));
-  const miembros = filas.map((m) => conUrlsPerfil({ ...m, cargo: cargos.get(m.id) ?? m.cargo }));
+  const miembros = filas.map((m) => conUrlsPerfil({ ...m, cargo: equipo ? (cargos.get(m.id) ?? null) : m.cargo }));
   const pitches = filas.flatMap(({ pitches: lista, slug: s, nombre }) =>
     lista.map((p) => ({ ...conUrlsPitch(p), autor: { slug: s, nombre } }))
   );
