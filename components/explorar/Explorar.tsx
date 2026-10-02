@@ -48,6 +48,7 @@ function texto(f: FichaDirectorio): string {
       ...f.especialidades.map((c) => ESPECIALIDADES.find((e) => e.valor === c)?.label ?? c),
       ...f.geografias.map(labelGeografia),
       f.empresa?.nombre ?? "",
+      ...f.otrasEmpresas,
     ].join(" ")
   );
 }
@@ -270,8 +271,10 @@ function Ficha({ f }: { f: FichaDirectorio }) {
   } else if (f.rol === "aliado") {
     if (f.servicios.length) linea.push(f.servicios.slice(0, 2).join(" · "));
     if (f.apoyos + f.inversiones > 0) linea.push(`Trabajó con ${f.apoyos + f.inversiones}`);
-  } else if (f.empresa) {
-    linea.push(f.empresa.nombre);
+  } else if (f.empresa || f.otrasEmpresas.length) {
+    // La principal y cuántas más (la lista completa está en su perfil).
+    const [primera, ...resto] = [...(f.empresa ? [f.empresa.nombre] : []), ...f.otrasEmpresas];
+    linea.push(resto.length ? `${primera} +${resto.length}` : primera);
   }
   return (
     <Link

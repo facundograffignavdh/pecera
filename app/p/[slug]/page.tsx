@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import Avatar from "@/components/Avatar";
 import CanalesPerfil from "@/components/CanalesPerfil";
 import Encabezado from "@/components/Encabezado";
-import { EtiquetasPerfil } from "@/components/Etiquetas";
+import { EtiquetasPerfil, detalleEmpresas, empresasDe } from "@/components/Etiquetas";
 import GrillaPitches from "@/components/GrillaPitches";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
@@ -88,19 +88,21 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
   const rol = ROLES[leido.rol];
   // Portfolio (inversiones y clientes), Build in Public y newsletter: extras del ecosistema.
   const conPortfolio = leido.rol === "inversor" || leido.rol === "aliado";
+  // Todas sus empresas visibles, la principal primero. Build in Public: el de la primera.
+  const suyas = empresasDe(leido);
+  const idsEmpresas = suyas.map((e) => e.id ?? "");
   const [build, newsletter, portfolio] = await Promise.all([
-    leido.empresa_id ? getBuildEmpresa(leido.empresa_id) : null,
+    suyas[0]?.id ? getBuildEmpresa(suyas[0].id) : null,
     getNewsletter(leido.id),
     conPortfolio ? getPortfolio(leido.id) : null,
   ]);
-  const logos = await getLogos([leido.empresa_id ?? "", ...(portfolio?.entradas.map((e) => e.empresa_id ?? "") ?? [])]);
-  // El logo de la empresa: el de empresa_logos y, si no hay, el de feria_pro.
-  const perfil =
-    leido.empresa && leido.empresa_id
-      ? { ...leido, empresa: { ...leido.empresa, logo_url: logos.get(leido.empresa_id) ?? leido.empresa.logo_url } }
-      : leido;
-  const c = cargo(perfil.cargo);
-  const detalle = perfil.empresa ? `${c?.label ?? "Equipo"} en ${perfil.empresa.nombre}` : null;
+  const logos = await getLogos([...idsEmpresas, ...(portfolio?.entradas.map((e) => e.empresa_id ?? "") ?? [])]);
+  // El logo de cada empresa: el de empresa_logos y, si no hay, el de feria_pro.
+  const empresas = suyas.map((e) => ({ ...e, logo_url: (e.id && logos.get(e.id)) || e.logo_url }));
+  const perfil = { ...leido, empresas };
+  const principal = empresas[0] ?? null;
+  const c = cargo(principal?.cargo);
+  const detalle = detalleEmpresas(perfil);
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
@@ -142,20 +144,26 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
                     </p>
                   )}
                 </header>
-                <EtiquetasPerfil perfil={perfil} conCargo={!perfil.empresa} />
+                <EtiquetasPerfil perfil={perfil} conCargo={!principal} />
                 <DescripcionConTags texto={perfil.descripcion} className="leading-relaxed text-tinta/90" />
                 <AccionesPerfil
                   perfil={perfil}
                   url={urlPerfil(perfil.slug)}
                   seguidores={seguidores}
                   detalle={detalle}
-                  empresa={perfil.empresa?.nombre ?? null}
+                  empresa={principal?.nombre ?? null}
                   cargo={c?.label ?? null}
                 />
               </div>
             </article>
 
-            {perfil.empresa && <TarjetaEmpresaPerfil empresa={perfil.empresa} cargo={c?.label ?? null} />}
+            {empresas.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {empresas.map((e) => (
+                  <TarjetaEmpresaPerfil key={e.slug} empresa={e} cargo={cargo(e.cargo)?.label ?? null} />
+                ))}
+              </div>
+            )}
             <CanalesPerfil perfil={perfil} />
           </div>
 
@@ -188,7 +196,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
             <BloqueTrayectoria perfil={perfil} />
             <BloqueCofundador perfil={perfil} />
             {portfolio && <PortfolioPublico rol={perfil.rol} perfilId={perfil.id} datos={portfolio} logos={logos} />}
-            {build && perfil.empresa && (build.hitos.length > 0 || build.avances.length > 0) && (
+            {build && principal && (build.hitos.length > 0 || build.avances.length > 0) && (
               <section aria-labelledby="build-titulo">
                 <h2 id="build-titulo" className={SUBTITULO}>
                   Build in Public
@@ -198,7 +206,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
                   avances={build.avances}
                   ahora={new Date()}
                   completo={false}
-                  hrefEmpresa={`/e/${perfil.empresa.slug}`}
+                  hrefEmpresa={`/e/${principal.slug}`}
                 />
               </section>
             )}

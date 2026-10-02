@@ -9,7 +9,7 @@ import {
   labelTicket,
   pasoEtapa,
 } from "@/lib/etiquetas";
-import type { Perfil } from "@/types/pecera";
+import type { EmpresaDePerfil, Perfil } from "@/types/pecera";
 
 /**
  * Etiquetas de perfil y empresa (etapa, ronda, industrias, cargo, especialidades,
@@ -18,6 +18,30 @@ import type { Perfil } from "@/types/pecera";
 
 const PILDORA = "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium";
 const NEUTRA = "border border-tinta/20 text-tinta/80";
+
+/**
+ * Las empresas de la persona, la principal primero. Si la consulta no trajo la lista
+ * (sin multi_empresa), la principal sola con el cargo del perfil.
+ */
+export function empresasDe(perfil: Pick<Perfil, "empresa" | "empresas" | "empresa_id" | "cargo">): EmpresaDePerfil[] {
+  if (perfil.empresas) return perfil.empresas;
+  return perfil.empresa
+    ? [{ ...perfil.empresa, id: perfil.empresa_id ?? null, cargo: perfil.cargo ?? null, principal: true }]
+    : [];
+}
+
+/** "Acme", "Acme y Beta", "Acme, Beta y Gamma". */
+export function listaNombres(nombres: string[]): string {
+  return nombres.length < 2 ? (nombres[0] ?? "") : `${nombres.slice(0, -1).join(", ")} y ${nombres.at(-1)}`;
+}
+
+/** "CEO en Acme" o "CEO en Acme y 2 más", para una línea corta (seguidos, vCard). */
+export function detalleEmpresas(perfil: Pick<Perfil, "empresa" | "empresas" | "empresa_id" | "cargo">): string | null {
+  const [primera, ...resto] = empresasDe(perfil);
+  if (!primera) return null;
+  const c = cargo(primera.cargo);
+  return `${c?.label ?? "Equipo"} en ${primera.nombre}${resto.length ? ` y ${resto.length} más` : ""}`;
+}
 
 export function Etiqueta({ children, clase = NEUTRA }: { children: React.ReactNode; clase?: string }) {
   return <span className={`${PILDORA} ${clase}`}>{children}</span>;
@@ -128,11 +152,13 @@ export function EtiquetasPerfil({
 /**
  * Versión del reel: una línea corta sobre el video (empresa, etapa y hasta dos
  * etiquetas). Chips de vidrio oscuro con texto marfil: se leen sobre el gradiente.
+ * Con varias empresas no entran sin tapar el video: va la principal y un chip "+N";
+ * la lista completa está en el perfil, a un toque.
  */
 export function EtiquetasReel({
   perfil,
 }: {
-  perfil: ConEtiquetas & Pick<Perfil, "empresa">;
+  perfil: ConEtiquetas & Pick<Perfil, "empresa" | "empresas" | "empresa_id">;
 }) {
   const chips: Array<{ clave: string; texto: string }> = [];
   if (perfil.rol === "inversor") {
@@ -147,16 +173,30 @@ export function EtiquetasReel({
   for (const i of (perfil.industrias ?? []).slice(0, 2 - Math.min(chips.length, 1))) {
     chips.push({ clave: `in-${i}`, texto: labelIndustria(i) });
   }
-  const c = cargo(perfil.cargo);
+  const [primera, ...resto] = empresasDe(perfil);
+  const c = cargo(primera?.cargo);
   const etapa = perfil.rol === "emprendedor" ? perfil.etapa : null;
-  if (!perfil.empresa && !etapa && !chips.length) return null;
+  if (!primera && !etapa && !chips.length) return null;
 
   return (
     <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
-      {perfil.empresa && (
-        <span className="texto-sombra font-medium text-marfil">
-          {c ? `${c.label} en ` : "En "}
-          <span className="font-semibold">{perfil.empresa.nombre}</span>
+      {primera && (
+        <span className="flex min-w-0 max-w-full items-center gap-1.5">
+          <span className="texto-sombra truncate font-medium text-marfil">
+            {c ? `${c.label} en ` : "En "}
+            <span className="font-semibold">{primera.nombre}</span>
+          </span>
+          {resto.length > 0 && (
+            <>
+              <span
+                aria-hidden
+                className="shrink-0 rounded-full bg-tinta/55 px-1.5 py-0.5 font-semibold text-marfil ring-1 ring-marfil/20"
+              >
+                +{resto.length}
+              </span>
+              <span className="sr-only">, y también en {listaNombres(resto.map((e) => e.nombre))}</span>
+            </>
+          )}
         </span>
       )}
       {etapa && <BarraEtapa etapa={etapa} claro />}
