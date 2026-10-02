@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
-import { type ReactNode, useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { type ReactNode, useActionState, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { type EstadoGuardar, guardarPerfil } from "@/app/cuenta/acciones";
 import Avatar from "@/components/Avatar";
 import { ChipsMultiple, ChipsUnico, SelectorEtapa } from "@/components/Chips";
@@ -262,6 +262,8 @@ export default function FormPerfil({
   const formRef = useRef<HTMLFormElement>(null);
   const tituloRef = useRef<HTMLHeadingElement>(null);
   const temporizador = useRef<number | null>(null);
+  /** Hay cambios que todavía no se guardaron (así "Listo" no escribe si no tocaste nada). */
+  const sucio = useRef(false);
 
   const [valores, setValores] = useState<Valores>({
     nombre: perfil?.nombre ?? "",
@@ -398,39 +400,63 @@ export default function FormPerfil({
     if (indice >= 0) irA(indice);
   }
 
+  /** Guarda ya, sin esperar la pausa (si todo está bien). Devuelve cómo salió. */
+  const guardarYa = useCallback(async (): Promise<{ ok: boolean; mensaje?: string }> => {
+    if (temporizador.current !== null) {
+      clearTimeout(temporizador.current);
+      temporizador.current = null;
+    }
+    const form = formRef.current;
+    if (!form || !sucio.current) return { ok: true };
+    const datos = new FormData(form);
+    const { errores } = validarPerfil(entradaDesde(datos));
+    const primero = Object.values(errores)[0];
+    if (primero) {
+      setAutoguardado({ tipo: "revisar", mensaje: primero });
+      return { ok: false, mensaje: primero };
+    }
+    setAutoguardado({ tipo: "guardando" });
+    try {
+      const r = await guardarPerfil({ errores: {} }, datos);
+      if (r.guardado) {
+        sucio.current = false;
+        setAutoguardado({ tipo: "ok", en: Date.now() });
+        setAhora(Date.now());
+        return { ok: true };
+      }
+      const mensaje = r.general ?? Object.values(r.errores)[0] ?? "No pudimos guardar.";
+      setAutoguardado({ tipo: "error", mensaje });
+      return { ok: false, mensaje };
+    } catch {
+      const mensaje = "Sin conexión: tus cambios todavía no se guardaron.";
+      setAutoguardado({ tipo: "error", mensaje });
+      return { ok: false, mensaje };
+    }
+  }, []);
+
   /** Al editar: guarda solo, después de una pausa, si todo está bien. */
   function programarAutoguardado() {
     if (creando) return;
+    sucio.current = true;
     if (temporizador.current !== null) clearTimeout(temporizador.current);
     setAutoguardado({ tipo: "pendiente" });
-    temporizador.current = window.setTimeout(async () => {
+    temporizador.current = window.setTimeout(() => {
       temporizador.current = null;
-      const form = formRef.current;
-      if (!form) return;
-      const datos = new FormData(form);
-      const { errores } = validarPerfil(entradaDesde(datos));
-      const primero = Object.values(errores)[0];
-      if (primero) {
-        setAutoguardado({ tipo: "revisar", mensaje: primero });
-        return;
-      }
-      setAutoguardado({ tipo: "guardando" });
-      try {
-        const r = await guardarPerfil({ errores: {} }, datos);
-        if (r.guardado) {
-          setAutoguardado({ tipo: "ok", en: Date.now() });
-          setAhora(Date.now());
-        } else {
-          setAutoguardado({
-            tipo: "error",
-            mensaje: r.general ?? Object.values(r.errores)[0] ?? "No pudimos guardar.",
-          });
-        }
-      } catch {
-        setAutoguardado({ tipo: "error", mensaje: "Sin conexión: tus cambios todavía no se guardaron." });
-      }
+      void guardarYa();
     }, PAUSA_AUTOGUARDADO_MS);
   }
+
+  // "Listo" (PerfilCuenta) pide guardar lo pendiente antes de volver a la vista del perfil, y
+  // espera la respuesta: así el último cambio no se pierde por salir antes de la pausa.
+  useEffect(() => {
+    if (creando) return;
+    const alPedir = async () => {
+      const resultado = await guardarYa();
+      window.dispatchEvent(new CustomEvent("pecera:perfil-guardado", { detail: resultado }));
+    };
+    window.addEventListener("pecera:guardar-perfil", alPedir);
+    return () => window.removeEventListener("pecera:guardar-perfil", alPedir);
+  }, [creando, guardarYa]);
 
   const [estado, accion, guardando] = useActionState(
     async (previo: EstadoGuardar, formData: FormData): Promise<EstadoGuardar> => {

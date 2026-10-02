@@ -213,7 +213,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 ## Rutas
 - `/` → feed de reels
 - `/p/[slug]` → perfil del participante
-- `/cuenta` → Mi perfil (login, crear/editar, Mis pitches). Al crear, la action
+- `/cuenta` → Mi perfil (login, crear/editar, Mis pitches). Con perfil, `PerfilCuenta` lo muestra
+  como un perfil terminado (vista) y el formulario por pasos solo se abre con "Editar perfil" (o
+  `?editar=1`); "Listo" guarda lo pendiente (evento `pecera:guardar-perfil`) y vuelve a la vista,
+  y no escribe si no cambiaste nada. Al crear, la action
   redirige a `/cuenta?creado=1` (`&foto=error` si la foto falló); si la cuenta ya
   tenía perfil (doble envío), a `/cuenta`. `guardarPerfil` nunca tira: toda falla
   vuelve como mensaje (22023 del trigger → campo). A los 20 s sin respuesta el form

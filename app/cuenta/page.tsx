@@ -3,7 +3,8 @@ import Link from "next/link";
 import BotonCopiar from "@/components/BotonCopiar";
 import BotonSalir from "@/components/BotonSalir";
 import Encabezado from "@/components/Encabezado";
-import FormPerfil, { type PerfilPropio } from "@/components/FormPerfil";
+import { type PerfilPropio } from "@/components/FormPerfil";
+import PerfilCuenta from "@/components/cuenta/PerfilCuenta";
 import MisPitches, { type MiPitch } from "@/components/MisPitches";
 import PieLegal from "@/components/PieLegal";
 import RecordarCuenta from "@/components/RecordarCuenta";
@@ -51,7 +52,7 @@ const COLUMNAS = `${COLUMNAS_LISTA}, busca_cofundador, cofundador_aporta, cofund
 const BOTON_PRIMARIO = boton("primario", "lg");
 
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
-  const { error, creado, foto, rol } = await searchParams;
+  const { error, creado, foto, rol, editar } = await searchParams;
   const rolInicial = typeof rol === "string" && rol in ROLES ? (rol as Rol) : undefined;
   const supabase = await supabaseConSesion();
   const {
@@ -225,10 +226,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               }
             />
 
-            <FormPerfil
-              key={perfil?.id ?? "nuevo"}
+            <PerfilCuenta
               perfil={perfil}
               rolInicial={rolInicial}
+              editarInicial={editar === "1"}
               empresa={extras?.empresa ? { slug: extras.empresa.slug, nombre: extras.empresa.nombre } : null}
             />
 
