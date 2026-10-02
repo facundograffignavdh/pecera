@@ -36,7 +36,7 @@ export default function MaquetaReel({
           <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-tinta via-tinta/80 to-transparent" />
 
           <span className="vidrio absolute left-1/2 top-3 flex -translate-x-1/2 items-center rounded-full px-2.5 py-1">
-            <Image src="/brand/isotipo-naranja.png" alt="" width={22} height={14} />
+            <Image src="/brand/logo-naranja.png" alt="" width={58} height={13} />
           </span>
 
           <div className="absolute inset-x-0 bottom-0 p-3.5 text-marfil">
