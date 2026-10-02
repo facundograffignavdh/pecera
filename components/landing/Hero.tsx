@@ -3,28 +3,8 @@ import "@/components/landing/titular.css";
 import BotonForm from "@/components/landing/BotonForm";
 import { EVENTO_ACTUAL, momentoEvento } from "@/lib/eventos";
 import { FEED_DESDE_LANDING } from "@/lib/landing";
-import CausticPool, { type CausticParams } from "@/components/ui/caustic-pool";
+import AguaHero from "@/components/landing/AguaHero";
 import { boton } from "@/lib/ui";
-
-/**
- * El agua del fondo: "deep-ocean" con más luz (exposición, cáusticas y vetas
- * altas, viñeta suave) y destellos cálidos (Naranja suave) que enlazan con la
- * marca. El texto Marfil se lee gracias al velo oscuro de la izquierda (abajo),
- * no a bajar el brillo del agua. Constante de módulo: así `params` no cambia
- * entre renders y el agua nunca se reinicia.
- */
-const AGUA: Partial<CausticParams> = {
-  exposure: 1.85,
-  floorBase: 0.34,
-  causticGain: 0.36,
-  veinGain: 0.24,
-  veinColor: [150, 215, 250],
-  deepGain: 0.75,
-  glintColor: [255, 236, 214],
-  glintGain: 0.95,
-  fresnelGain: 0.4,
-  vigDark: 0.8,
-}
 
 const PARA_QUIEN = [
   { quien: "Startups", que: "Pitch, empresa, avances y ronda", punto: "bg-arcilla" },
@@ -48,7 +28,7 @@ export default function Hero() {
       {/* Agua con cáusticas que se revuelve al pasar el mouse o arrastrar el dedo.
           Es decoración (aria-hidden); el contenido va encima y deja pasar el puntero. */}
       <div aria-hidden className="absolute inset-0 -z-10">
-        <CausticPool preset="deep-ocean" params={AGUA} height="100%" resolution={256} />
+        <AguaHero />
         {/* Velo a la izquierda (donde va el texto): fuerte detrás de las letras y se va
             a nada hacia la derecha, para que el agua se vea brillante. En el celular el
             texto ocupa todo el ancho, así que el velo es parejo. */}

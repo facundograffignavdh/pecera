@@ -79,16 +79,19 @@ function Banda({ tono, children }: { tono: "blanca" | "naranja"; children: React
  */
 export default function SumatePage() {
   return (
-    <main
-      id={ID_SCROLL}
-      className="tema-fijo landing-base h-dvh overflow-y-auto overflow-x-clip overscroll-y-contain scroll-smooth bg-marfil text-tinta"
-    >
+    <>
+      {/* Fuera del .tema-fijo: las píldoras de vidrio siguen al tema de la app (de noche,
+          oscuras con texto claro), como en el resto de las páginas. Es fixed: no se mueve. */}
+      <Encabezado variante="perfil" />
+      <main
+        id={ID_SCROLL}
+        className="tema-fijo landing-base h-dvh overflow-y-auto overflow-x-clip overscroll-y-contain scroll-smooth bg-marfil text-tinta"
+      >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(DATOS_ESTRUCTURADOS).replace(/</g, "\\u003c") }}
       />
       <div id="progreso" aria-hidden className="fixed inset-x-0 top-0 z-30 h-[3px] origin-left scale-x-0 bg-naranja" />
-      <Encabezado variante="perfil" />
       <Movimiento scroller={ID_SCROLL} />
       <ElegirRol />
 
@@ -123,6 +126,7 @@ export default function SumatePage() {
       >
         <BotonForm tamano="md" className="shadow-[0_10px_30px_rgb(28_27_22/0.25)]" />
       </div>
-    </main>
+      </main>
+    </>
   );
 }
