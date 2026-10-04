@@ -20,6 +20,7 @@
   --color-superficie: #efede3;
   --color-arcilla: #d95a22;
   --color-inversor: #0c6aa8;
+  --color-serie-ciq: #0c6aa8;
   --color-aliado: #1f7a52;
   /* Celeste del Pitch: identifica el formato en feed, perfil, empresa y cuenta.
      Siempre de fondo con texto Tinta (11:1); nunca como color de texto. */
@@ -786,6 +787,7 @@ html {
     --color-marfil: #13120f;
     --color-tinta: #f1eee3;
     --color-inversor: #5aa9e0;
+    --color-serie-ciq: #4a9ad3;
     --color-aliado: #4fb888;
     --color-t-arcilla: #f3b08e;
     --color-t-arcilla-suave: #3b2014;
@@ -810,6 +812,7 @@ html[data-tema="noche"] {
   --color-marfil: #13120f;
   --color-tinta: #f1eee3;
   --color-inversor: #5aa9e0;
+  --color-serie-ciq: #4a9ad3;
   --color-aliado: #4fb888;
   --color-t-arcilla: #f3b08e;
   --color-t-arcilla-suave: #3b2014;
@@ -859,6 +862,7 @@ html .tema-fijo {
   --color-marfil: #f5f4ec;
   --color-tinta: #1c1b16;
   --color-inversor: #0c6aa8;
+  --color-serie-ciq: #0c6aa8;
   --color-aliado: #1f7a52;
   --color-t-arcilla: #8a3310;
   --color-t-arcilla-suave: #f6dccb;

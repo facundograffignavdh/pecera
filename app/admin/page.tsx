@@ -154,7 +154,7 @@ async function ConSesion({
         {vista === "empresas" && <Empresas supabase={supabase} />}
         {vista === "evento" && <Evento supabase={supabase} />}
         {vista === "drive" && <Drive supabase={supabase} />}
-        {vista === "medicion" && <Medicion supabase={supabase} />}
+        {vista === "medicion" && <Medicion supabase={supabase} filtro={filtro} />}
       </div>
     </>
   );

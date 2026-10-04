@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { congelarDemoDay } from "@/app/admin/acciones";
 import BotonAccion from "@/components/admin/BotonAccion";
+import DataroomSecciones, { type Dataroom } from "@/components/admin/Dataroom";
 import { faltaMigracion } from "@/lib/datos";
 import type { supabaseConSesion } from "@/lib/supabase-servidor";
 
@@ -36,11 +37,16 @@ export function porcentaje(v: number | null | undefined) {
 }
 
 /**
- * Pestaña "Medición" de /admin (super dataroom): el snapshot del Demo Day y los CSV.
+ * Pestaña "Medición" de /admin (super dataroom): el snapshot del Demo Day, los CSV y
+ * el dataroom desde el comienzo de la feria. `filtro` (?f=) = fuente del embudo.
  * Solo agregados. Definiciones en docs/GUIA-MEDICION.md.
  */
-export default async function Medicion({ supabase }: { supabase: Supabase }) {
-  const { data, error } = await supabase.rpc("admin_demo_day_snapshots");
+export default async function Medicion({ supabase, filtro }: { supabase: Supabase; filtro: string }) {
+  const fuente = filtro === "todos" ? null : filtro;
+  const [{ data, error }, dataroom] = await Promise.all([
+    supabase.rpc("admin_demo_day_snapshots"),
+    supabase.rpc("admin_dataroom", { p_fuente: fuente }),
+  ]);
   if (faltaMigracion(error)) {
     return (
       <p className={`${CAJA} text-sm text-tinta`}>
@@ -49,6 +55,7 @@ export default async function Medicion({ supabase }: { supabase: Supabase }) {
     );
   }
   if (error) throw new Error(`Supabase (admin_demo_day_snapshots): ${error.message}`);
+  if (dataroom.error) throw new Error(`Supabase (admin_dataroom): ${dataroom.error.message}`);
   const snapshots = (data ?? []) as SnapshotDemoDay[];
 
   return (
@@ -112,6 +119,8 @@ export default async function Medicion({ supabase }: { supabase: Supabase }) {
           </a>
         </p>
       </section>
+
+      <DataroomSecciones d={dataroom.data as Dataroom} fuente={fuente} />
     </div>
   );
 }
