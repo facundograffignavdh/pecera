@@ -127,6 +127,9 @@ async function ConSesion({
   return (
     <>
       <p className="mt-1 break-all text-sm text-tinta/60">{email}</p>
+      <Link href="/admin/vivo" className="mt-2 inline-block text-sm font-semibold underline underline-offset-4">
+        Pantalla del stand (en vivo) →
+      </Link>
       <nav aria-label="Secciones del panel" className="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5">
         {VISTAS.map((x) => (
           <Link
