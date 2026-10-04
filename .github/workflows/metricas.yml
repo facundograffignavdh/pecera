@@ -1,0 +1,47 @@
+# Métricas: cada hora guarda los agregados en metricas_hora (snapshot_metricas_hora,
+# recalcula las últimas 26 horas) y poda la actividad cruda de más de 90 días.
+# Así la curva de la feria queda aunque después cambien las fórmulas. La service key
+# vive solo acá (secrets), nunca en Vercel. El repo es público: el log muestra solo
+# el código HTTP y dos números (horas calculadas y filas podadas).
+# El cron de GitHub corre solo desde main; en otra rama se prueba a mano:
+#   gh workflow run metricas.yml --ref <rama>
+name: Métricas
+
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: metricas
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Snapshot por hora
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set -euo pipefail
+          codigo=$(curl -sS -o respuesta.json -w '%{http_code}' --max-time 120 \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/snapshot_metricas_hora" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "HTTP $codigo"
+          if [ "$codigo" -ge 200 ] && [ "$codigo" -lt 300 ]; then
+            # Solo números: {"horas":26,"podadas":0}
+            jq -c '{horas, podadas}' respuesta.json
+          else
+            # Los errores de PostgREST traen código y mensaje, nunca filas.
+            jq -c '{code, message}' respuesta.json || true
+            exit 1
+          fi
