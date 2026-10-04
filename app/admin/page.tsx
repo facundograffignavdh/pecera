@@ -14,6 +14,7 @@ import {
   publicarPitch,
 } from "@/app/admin/acciones";
 import { entrar } from "@/app/cuenta/acciones";
+import AvisoEntrar from "@/components/AvisoEntrar";
 import type { Canal } from "@/lib/contacto";
 import { faltaMigracion } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
@@ -81,6 +82,7 @@ function SinSesion() {
       >
         Entrar con Google
       </button>
+      <AvisoEntrar />
     </form>
   );
 }

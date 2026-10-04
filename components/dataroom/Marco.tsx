@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { entrar } from "@/app/cuenta/acciones";
+import AvisoEntrar from "@/components/AvisoEntrar";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
@@ -36,11 +37,12 @@ export function SinSesion({ volverA, titulo }: { volverA: string; titulo: string
     <section className="mt-8 flex flex-col gap-4">
       <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">{titulo}</h1>
       <p className="leading-relaxed text-tinta/80">Entrá con tu cuenta de Google para seguir.</p>
-      <form action={entrar}>
+      <form action={entrar} className="flex flex-col items-start gap-3">
         <input type="hidden" name="next" value={volverA} />
         <button type="submit" className="inline-flex min-h-12 items-center rounded-full bg-naranja px-6 font-semibold text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla hover:bg-pecera active:scale-[0.98]">
           Entrar con Google
         </button>
+        <AvisoEntrar />
       </form>
     </section>
   );

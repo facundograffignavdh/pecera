@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { entrar } from "@/app/cuenta/acciones";
+import AvisoEntrar from "@/components/AvisoEntrar";
 import { type MiEstado, miEstadoEvento, quitarVoto, votar } from "@/app/eventos/acciones";
 import Avatar from "@/components/Avatar";
 import { BarraEtapa } from "@/components/Etiquetas";
@@ -245,6 +246,7 @@ function EstadoSesion({
         >
           Entrar con Google para votar
         </button>
+        <AvisoEntrar tono="oscuro" />
       </form>
     );
   }

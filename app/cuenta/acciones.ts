@@ -2,7 +2,7 @@
 
 import type { PostgrestError } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   CAMPOS_LISTA,
@@ -21,6 +21,7 @@ import { faltaMigracion } from "@/lib/datos";
 import { guardarFoto } from "@/lib/foto";
 import { urlMedia } from "@/lib/media";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
+import { COOKIE_VINCULO, dispositivoValido, vincularSinFallar } from "@/lib/vinculo";
 
 /** Origen de la request: anda igual en localhost, en las vistas previas y en producción. */
 async function origen(): Promise<string> {
@@ -33,10 +34,26 @@ async function origen(): Promise<string> {
 
 /**
  * "Entrar con Google" (PKCE: el verifier queda en una cookie). Vuelve a `next`
- * (campo del form, solo rutas internas) o a /cuenta.
+ * (campo del form, solo rutas internas) o a /cuenta. El uuid del dispositivo (campo
+ * `dispositivo`, ver AvisoEntrar) viaja en una cookie httpOnly hasta el callback,
+ * que lo vincula con la cuenta; si algo de eso falla, el login sigue igual.
  */
 export async function entrar(formData?: FormData): Promise<void> {
   const next = destinoSeguro(String(formData?.get("next") ?? ""));
+  const dispositivo = dispositivoValido(formData?.get("dispositivo"));
+  if (dispositivo) {
+    try {
+      (await cookies()).set(COOKIE_VINCULO, dispositivo, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/auth",
+        maxAge: 600,
+      });
+    } catch {
+      // Sin cookie no hay vínculo; el login sigue.
+    }
+  }
   const supabase = await supabaseConSesion();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -55,6 +72,18 @@ export async function salir(): Promise<void> {
   const supabase = await supabaseConSesion();
   await supabase.auth.signOut({ scope: "local" });
   redirect("/");
+}
+
+/**
+ * Respaldo del vínculo para sesiones que ya estaban abiertas (RecordarCuenta lo
+ * llama una vez desde /cuenta). Nunca tira.
+ */
+export async function vincularEsteDispositivo(dispositivo: string): Promise<boolean> {
+  try {
+    return await vincularSinFallar(await supabaseConSesion(), dispositivo);
+  } catch {
+    return false;
+  }
 }
 
 export type ResultadoEliminar = { ok: true } | { ok: false; mensaje: string };
@@ -77,6 +106,9 @@ export async function eliminarCuenta(confirmacion: string, dispositivo: string |
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, mensaje: "Tu sesión se cerró. Entrá de nuevo para eliminar tu cuenta." };
 
+  // Si el login no llegó a vincular este navegador, se vincula ahora: así borrar la
+  // cuenta se lleva también la actividad anónima de este dispositivo.
+  await vincularSinFallar(supabase, dispositivo);
   const { data, error } = await supabase.rpc("borrar_mi_cuenta", {
     p_dispositivo: dispositivo && UUID.test(dispositivo) ? dispositivo : null,
   });
