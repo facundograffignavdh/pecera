@@ -33,8 +33,8 @@ export default function PrivacidadPage() {
   return (
     <PaginaLegal
       titulo="Política de privacidad"
-      actualizado="2 de octubre de 2026"
-      actualizadoIso="2026-10-02"
+      actualizado="4 de octubre de 2026"
+      actualizadoIso="2026-10-04"
       intro={
         <p>
           Pecera muestra pitches en video y perfiles de emprendedores, empresas, inversores y
@@ -144,14 +144,34 @@ export default function PrivacidadPage() {
             menos 3 segundos, una por celular y pitch cada 12 horas) y los toques en los canales
             de contacto de un perfil (WhatsApp, email, LinkedIn, Instagram o web), desde el
             perfil o desde el aviso del pique. Guardamos el identificador, el pitch o el perfil,
-            el canal y la fecha, más un contador para frenar abusos. Tampoco está atado a tu
-            nombre ni a tu cuenta.
+            el canal y la fecha, más un contador para frenar abusos. No está atado a tu nombre;
+            si entrás con tu cuenta, se une a ella (ver más abajo).
+          </li>
+          <li id="medicion">
+            <strong className="font-semibold text-tinta">La actividad y de dónde llegaste.</strong>{" "}
+            Con el mismo identificador al azar registramos algunas acciones: cuando empieza una
+            visita (una &quot;sesión&quot;, otro identificador al azar que cambia después de 30
+            minutos sin uso), cuando abrís un perfil, cuando ves al menos el 75 % de un pitch,
+            cuando compartís un perfil y cuando llegás con la tarjeta NFC de un stand. Si el link
+            lo dice, guardamos de dónde llegaste (por ejemplo, la tarjeta del stand o una campaña),
+            si fue en el horario de la feria y si usás celular o compu.{" "}
+            <strong className="font-semibold text-tinta">No guardamos</strong> tu dirección IP, tu
+            ubicación, el modelo de tu navegador ni nada que sirva para reconocerte por fuera del
+            identificador al azar.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">La unión de tu navegador con tu cuenta.</strong>{" "}
+            Cuando entrás con Google, unimos el identificador al azar de ese navegador con tu
+            cuenta. Sirve para saber qué tipo de perfil (emprendedor, inversor o aliado) inicia las
+            conexiones y solo se usa en números agregados: nunca mostramos quién contactó a quién.
+            Si sos del equipo de Pecera, tu navegador no cuenta en las métricas.
           </li>
           <li>
             <strong className="font-semibold text-tinta">En tu navegador.</strong> Si entrás a tu
             cuenta, usamos cookies de sesión para saber que sos vos. Además guardamos en tu
             navegador (no en nuestros servidores) si querés ver subtítulos, qué piques diste, qué
-            pitches viste en las últimas 12 horas, el identificador al azar y un resumen público de tu perfil (nombre, foto y
+            pitches viste en las últimas 12 horas, el identificador al azar, la sesión de medición y
+            de dónde llegaste en esta visita, y un resumen público de tu perfil (nombre, foto y
             dirección) para mostrar tu foto arriba de la pantalla. Mientras completás tu perfil o
             un template, guardamos un borrador en tu navegador para que no se pierda si se corta
             la conexión. No usamos cookies de
@@ -171,6 +191,8 @@ export default function PrivacidadPage() {
           <li>Saber a qué perfil corresponde cada video que llega por el formulario.</li>
           <li>Contar los piques y las vistas de cada pitch.</li>
           <li>Medir cuántas veces se toca cada canal de contacto, para saber si Pecera sirve para conectar.</li>
+          <li>Medir, en números agregados, cuántas conexiones se inician y entre qué tipos de
+            perfil, para mostrar si Pecera funciona (por ejemplo, en el Demo Day de la feria).</li>
           <li>Armar la página de cada empresa con su equipo, su producto, su recorrido (Build in
             Public) y lo que decida compartir.</li>
           <li>Mostrar el portfolio, los servicios y la tesis de inversores y aliados, y pedirle a
@@ -203,7 +225,8 @@ export default function PrivacidadPage() {
           cuenta ni los emails del formulario. Tampoco mostramos quién dio cada pique ni a quién
           votó cada persona: solo los totales. En cada pitch mostramos cuántas vistas y
           cuántos piques tiene; los contactos no se muestran: los ve solo el equipo de Pecera,
-          contados por perfil. Los datos de transparencia y los documentos del Dataroom que no
+          contados por perfil. La actividad y la unión de tu navegador con tu cuenta tampoco se
+          publican: el equipo ve solo números agregados. Los datos de transparencia y los documentos del Dataroom que no
           se comparten los ve solo el equipo de la empresa, y las relaciones de portfolio
           privadas, solo vos.
         </p>
@@ -245,7 +268,9 @@ export default function PrivacidadPage() {
           una empresa y eras la última integrante, la empresa se borra con todo (su página, logo,
           producto, Build in Public, transparencia y Dataroom) y sus imágenes se borran de
           nuestros servidores en la hora siguiente; antes de confirmar te ofrecemos exportar el
-          Dataroom. Los piques, las vistas y los contactos se guardan mientras
+          Dataroom. La actividad (visitas, perfiles abiertos, pitches vistos, tarjetas y lo demás
+          de la medición) se borra a los 90 días; después quedan solo totales por hora, sin
+          identificadores. Los piques, las vistas y los contactos se guardan mientras
           exista el pitch o el perfil al que corresponden. El identificador al azar se queda en
           tu navegador hasta que borres los datos del sitio.
         </p>
@@ -287,8 +312,10 @@ export default function PrivacidadPage() {
             formulario y todavía no se publicaron), tu newsletter, links y documentos, portfolio,
             servicios, tesis, votos, participación en eventos y seguidores, tus intereses de
             cofundador/a con sus mensajes (los que mandaste y los que recibiste), y los emails de tus
-            envíos del formulario. También lo que hiciste desde ese navegador (piques, vistas y a
-            quién seguís) y lo que Pecera guardó en él. Tu email queda libre: si volvés, empezás
+            envíos del formulario. También lo que hiciste desde ese navegador y desde los otros
+            navegadores unidos a tu cuenta (piques, vistas, contactos, actividad y a quién
+            seguís; si otra cuenta también usa ese navegador, lo anónimo queda), esa unión, y lo
+            que Pecera guardó en el navegador. Tu email queda libre: si volvés, empezás
             con una cuenta nueva y vacía. Con cada una de tus empresas: si sos la única persona del
             equipo, la empresa se borra con todo; si hay más integrantes, se queda, la
             administración pasa a quien está hace más tiempo en el equipo y lo que escribiste en

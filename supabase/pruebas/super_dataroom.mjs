@@ -448,6 +448,21 @@ async function main() {
   await aplicar(NUEVA);
   check((await valor(`select count(*)::int from public.feria_franjas`)) === 3, "y la migración se puede volver a correr");
 
+  // -------------------------------------------------------------------------
+  console.log("\n11) limpieza-prelanzamiento.sql con las tablas nuevas");
+  await yo(U.ali, `select public.vincular_dispositivo($1)`, [D.ali]);
+  await reg({ p_nombre: "sesion_iniciada", p_dispositivo: D.ali });
+  await anon(`select public.marcar_equipo($1)`, [D.marcado]);
+  await como("service_role", null, `select public.snapshot_metricas_hora()`);
+  await yo(U.admin, `select public.admin_congelar_demo_day()`);
+  await aplicar("supabase/limpieza-prelanzamiento.sql");
+  const vacias = (await sistema(`select
+      (select count(*) from public.actividad) + (select count(*) from public.actividad_descartes)
+    + (select count(*) from public.dispositivo_cuentas) + (select count(*) from public.dispositivos_equipo)
+    + (select count(*) from public.metricas_hora) + (select count(*) from public.demo_day_snapshots) as n`)).rows[0].n;
+  check(Number(vacias) === 0, "deja vacías las tablas nuevas (también el snapshot inmutable)");
+  check((await valor(`select count(*)::int from public.feria_franjas`)) === 3, "y conserva las franjas de la feria");
+
   console.log(`\n${ok} ok · ${fallas} fallas`);
   process.exit(fallas ? 1 : 0);
 }
