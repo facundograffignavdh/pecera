@@ -8,7 +8,7 @@ const CLAVE_DISPOSITIVO = "pecera:dispositivo";
 let dispositivoEnMemoria: string | null = null;
 
 /** uuid v4 a mano: `crypto.randomUUID` no existe fuera de https (ej. la IP de la LAN). */
-function uuidAlAzar(): string {
+export function uuidAlAzar(): string {
   const b = crypto.getRandomValues(new Uint8Array(16));
   b[6] = (b[6] & 0x0f) | 0x40;
   b[8] = (b[8] & 0x3f) | 0x80;

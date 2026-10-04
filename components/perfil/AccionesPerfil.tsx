@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { registrarActividad } from "@/lib/actividad";
 import { canalesDe } from "@/lib/contacto";
 import { registrarContacto } from "@/lib/medicion";
 import { dejarDeSeguir, seguir, useSigo } from "@/lib/red";
@@ -81,6 +82,7 @@ export default function AccionesPerfil({
     if (navigator.share) {
       try {
         await navigator.share({ title: `${perfil.nombre} — Pecera`, text: perfil.descripcion, url });
+        registrarActividad({ nombre: "pitch_compartido", perfilId: perfil.id, canal: "nativo" });
         return;
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
@@ -88,6 +90,7 @@ export default function AccionesPerfil({
     }
     try {
       await navigator.clipboard.writeText(url);
+      registrarActividad({ nombre: "pitch_compartido", perfilId: perfil.id, canal: "copiado" });
       avisar("Link copiado.");
     } catch {
       window.prompt("Copiá el link:", url);

@@ -56,10 +56,31 @@ export function registrarVista(pitchId: string) {
 }
 
 /**
- * Un toque en un canal de contacto. `pitchId` solo desde el pop-up del pique.
- * Va con `keepalive` (supabase-js no lo deja pasar): el toque suele abrir WhatsApp
- * o el correo, y el navegador puede soltar la página antes de que termine.
+ * Llama a una función de la base con `keepalive` (supabase-js no lo deja pasar): el
+ * toque suele abrir WhatsApp o el correo, y el navegador puede soltar la página
+ * antes de que termine. Nunca tira.
  */
+export function rpcConKeepalive(funcion: string, cuerpo: Record<string, unknown>) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const clave = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !clave) return;
+  try {
+    fetch(`${url}/rest/v1/rpc/${funcion}`, {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        apikey: clave,
+        Authorization: `Bearer ${clave}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(cuerpo),
+    }).catch(() => {});
+  } catch {
+    // Nunca frena el link.
+  }
+}
+
+/** Un toque en un canal de contacto. `pitchId` solo desde el pop-up del pique. */
 export function registrarContacto({
   perfilId,
   pitchId = null,
@@ -69,26 +90,10 @@ export function registrarContacto({
   pitchId?: string | null;
   canal: Canal["clave"];
 }) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const clave = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !clave) return;
-  try {
-    fetch(`${url}/rest/v1/rpc/registrar_contacto`, {
-      method: "POST",
-      keepalive: true,
-      headers: {
-        apikey: clave,
-        Authorization: `Bearer ${clave}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        p_perfil: perfilId,
-        p_pitch: pitchId,
-        p_canal: canal,
-        p_dispositivo: dispositivo(),
-      }),
-    }).catch(() => {});
-  } catch {
-    // Nunca frena el link.
-  }
+  rpcConKeepalive("registrar_contacto", {
+    p_perfil: perfilId,
+    p_pitch: pitchId,
+    p_canal: canal,
+    p_dispositivo: dispositivo(),
+  });
 }

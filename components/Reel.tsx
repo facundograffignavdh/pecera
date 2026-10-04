@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from
 import { IconoCorazon } from "@/components/Iconos";
 import { ColumnaReel, DatosReel } from "@/components/ReelPartes";
 import Subtitulos from "@/components/Subtitulos";
+import { registrarActividad } from "@/lib/actividad";
 import { registrarVista } from "@/lib/medicion";
 import { marcarPistaVista, usePistaPendiente } from "@/lib/pista-pique";
 import type { ItemFeed } from "@/types/pecera";
@@ -14,6 +15,8 @@ const DOBLE_TOQUE_MS = 250;
 const RAFAGA_MS = 450;
 /** Una vista = el video se reprodujo al menos esto. */
 const SEGUNDOS_VISTA = 3;
+/** Cuánto del video hay que ver para `pitch_completado`. */
+const FRACCION_COMPLETO = 0.75;
 
 type Props = {
   item: ItemFeed;
@@ -74,6 +77,8 @@ export default function Reel({
   const pistaPendiente = usePistaPendiente();
   // La vista se cuenta una vez por pasada por el reel.
   const vistaContada = useRef(false);
+  // El 75 % del video, también una vez por pasada (el video está en loop).
+  const completoContado = useRef(false);
 
   // Al salir de pantalla se olvida la pausa manual, así el reel vuelve a
   // arrancar solo cuando el usuario regresa. Ajuste en render, no en efecto.
@@ -100,6 +105,7 @@ export default function Reel({
       video.pause();
       video.currentTime = 0;
       vistaContada.current = false;
+      completoContado.current = false;
       return;
     }
 
@@ -185,9 +191,15 @@ export default function Reel({
   // Sin controles no se puede adelantar: llegar a los 3 s es haberlos reproducido.
   function alAvanzar() {
     const video = videoRef.current;
-    if (!activo || vistaContada.current || !video || video.currentTime < SEGUNDOS_VISTA) return;
-    vistaContada.current = true;
-    registrarVista(pitch.id);
+    if (!activo || !video) return;
+    if (!vistaContada.current && video.currentTime >= SEGUNDOS_VISTA) {
+      vistaContada.current = true;
+      registrarVista(pitch.id);
+    }
+    if (!completoContado.current && video.duration > 0 && video.currentTime / video.duration >= FRACCION_COMPLETO) {
+      completoContado.current = true;
+      registrarActividad({ nombre: "pitch_completado", pitchId: pitch.id });
+    }
   }
 
   function alTocarCorazon() {
