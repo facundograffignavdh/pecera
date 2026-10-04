@@ -1,5 +1,6 @@
 import type { Canal } from "@/lib/contacto";
 import { dispositivo } from "@/lib/dispositivo";
+import { pedirMotivo } from "@/lib/motivo";
 import { supabase } from "@/lib/supabase";
 
 /**
@@ -80,7 +81,10 @@ export function rpcConKeepalive(funcion: string, cuerpo: Record<string, unknown>
   }
 }
 
-/** Un toque en un canal de contacto. `pitchId` solo desde el pop-up del pique. */
+/**
+ * Un toque en un canal de contacto. `pitchId` solo desde el pop-up del pique.
+ * Después se ofrece el "¿Para qué?" (opcional, ver PreguntaMotivo).
+ */
 export function registrarContacto({
   perfilId,
   pitchId = null,
@@ -96,4 +100,5 @@ export function registrarContacto({
     p_canal: canal,
     p_dispositivo: dispositivo(),
   });
+  pedirMotivo({ perfilId, canal });
 }

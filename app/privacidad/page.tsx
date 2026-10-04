@@ -154,7 +154,9 @@ export default function PrivacidadPage() {
             minutos sin uso), cuando abrís un perfil, cuando ves al menos el 75 % de un pitch,
             cuando compartís un perfil y cuando llegás con la tarjeta NFC de un stand. Si el link
             lo dice, guardamos de dónde llegaste (por ejemplo, la tarjeta del stand o una campaña),
-            si fue en el horario de la feria y si usás celular o compu.{" "}
+            si fue en el horario de la feria y si usás celular o compu. Después de tocar un
+            contacto te preguntamos, si querés contestar, para qué es (inversión, alianza, cliente,
+            cofundador/a u otro); no hay texto libre.{" "}
             <strong className="font-semibold text-tinta">No guardamos</strong> tu dirección IP, tu
             ubicación, el modelo de tu navegador ni nada que sirva para reconocerte por fuera del
             identificador al azar.

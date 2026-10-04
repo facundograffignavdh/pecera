@@ -3,6 +3,7 @@ import { Fraunces, Familjen_Grotesk } from "next/font/google";
 import "./globals.css";
 import AvisoCuentaEliminada from "@/components/AvisoCuentaEliminada";
 import Medicion from "@/components/Medicion";
+import PreguntaMotivo from "@/components/PreguntaMotivo";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <AvisoCuentaEliminada />
         <Medicion />
+        <PreguntaMotivo />
       </body>
     </html>
   );

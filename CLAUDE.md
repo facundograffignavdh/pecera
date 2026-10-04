@@ -218,7 +218,9 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `vincularSinFallar` (`lib/vinculo.ts`: nunca traba el login), aviso `AvisoEntrar` en cada form de
   login. Borrar la cuenta limpia los dispositivos por trigger del vínculo (no se redefinió
   `borrar_mi_cuenta`). `metricas_hora` la llena `.github/workflows/metricas.yml` (podando la
-  actividad de más de 90 días). `/admin/vivo` = pantalla del stand (k ≥ 5 en el ticker).
+  actividad de más de 90 días). `/admin/vivo` = pantalla del stand (k ≥ 5 en el ticker). Pestaña Medición de /admin
+  (`app/admin/medicion.tsx`, `components/admin/Dataroom.tsx`): snapshot inmutable del Demo Day, CSV en
+  `/admin/csv` y el dataroom. "¿Para qué?" tras un contacto: `lib/motivo.ts` + `PreguntaMotivo` (layout).
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
