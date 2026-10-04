@@ -4,6 +4,7 @@ import Link from "next/link";
 import BotonCopiar from "@/components/BotonCopiar";
 import Encabezado from "@/components/Encabezado";
 import BotonAccion from "@/components/admin/BotonAccion";
+import Medicion from "@/app/admin/medicion";
 import {
   autopublicar,
   configurarEvento,
@@ -38,6 +39,7 @@ const VISTAS = [
   { id: "empresas", label: "Empresas" },
   { id: "evento", label: EVENTO_ACTUAL.nombre },
   { id: "drive", label: "Drive" },
+  { id: "medicion", label: "Medición" },
 ] as const;
 type Vista = (typeof VISTAS)[number]["id"];
 
@@ -152,6 +154,7 @@ async function ConSesion({
         {vista === "empresas" && <Empresas supabase={supabase} />}
         {vista === "evento" && <Evento supabase={supabase} />}
         {vista === "drive" && <Drive supabase={supabase} />}
+        {vista === "medicion" && <Medicion supabase={supabase} />}
       </div>
     </>
   );
