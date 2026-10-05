@@ -221,6 +221,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   actividad de más de 90 días). `/admin/vivo` = pantalla del stand (k ≥ 5 en el ticker). Pestaña Medición de /admin
   (`app/admin/medicion.tsx`, `components/admin/Dataroom.tsx`): snapshot inmutable del Demo Day, CSV en
   `/admin/csv` y el dataroom. "¿Para qué?" tras un contacto: `lib/motivo.ts` + `PreguntaMotivo` (layout).
+- `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
+  teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)

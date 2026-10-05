@@ -4,6 +4,7 @@ import "./globals.css";
 import AvisoCuentaEliminada from "@/components/AvisoCuentaEliminada";
 import Medicion from "@/components/Medicion";
 import PreguntaMotivo from "@/components/PreguntaMotivo";
+import TecladoIOS from "@/components/TecladoIOS";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AvisoCuentaEliminada />
         <Medicion />
         <PreguntaMotivo />
+        <TecladoIOS />
       </body>
     </html>
   );
