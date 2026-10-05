@@ -32,6 +32,17 @@ export function limpiarNavegador(): void {
   } catch {
     // Sin localStorage no hay nada guardado.
   }
+  // De la pestaña: el origen de la visita (atribución) y la medición de la sesión.
+  try {
+    const claves: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const clave = sessionStorage.key(i);
+      if (clave?.startsWith("pecera:") && clave !== AVISO_CUENTA_ELIMINADA) claves.push(clave);
+    }
+    for (const clave of claves) sessionStorage.removeItem(clave);
+  } catch {
+    // Sin sessionStorage no hay nada guardado.
+  }
 }
 
 /** Aviso que se muestra una vez al llegar al inicio después de borrar. */

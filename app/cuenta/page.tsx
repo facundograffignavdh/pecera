@@ -6,6 +6,7 @@ import Encabezado from "@/components/Encabezado";
 import FormPerfil, { type PerfilPropio } from "@/components/FormPerfil";
 import MisPitches, { type MiPitch } from "@/components/MisPitches";
 import PieLegal from "@/components/PieLegal";
+import AvisoEntrar from "@/components/AvisoEntrar";
 import RecordarCuenta from "@/components/RecordarCuenta";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import AccionesPitch from "@/components/cuenta/AccionesPitch";
@@ -172,6 +173,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                 Google te va a pedir que confirmes tu cuenta. Vas a ver una dirección de
                 Supabase: es el servicio que usa Pecera para las cuentas.
               </p>
+              <AvisoEntrar />
             </form>
           </section>
         ) : (

@@ -1,6 +1,7 @@
 -- Pecera: limpieza prelanzamiento. NO es una migración: se corre a mano, una sola
 -- vez, en el SQL editor. Borra TODOS los datos de prueba y todas las cuentas.
--- Conserva: eventos, admins, equipo_ingesta, emails_bloqueados, ajustes y r2_borrar.
+-- Conserva: eventos, admins, equipo_ingesta, emails_bloqueados, ajustes, r2_borrar y
+-- feria_franjas. Después, el equipo vuelve a abrir Pecera con ?equipo=1 en sus celulares.
 --
 -- ANTES de correrlo: en la hoja "Pecera — Pitches v2" borrar todas las filas de
 -- respuestas y dejar solo la de títulos. La ingesta lee la hoja, no el Form, y
@@ -64,6 +65,11 @@ declare
   t text;
 begin
   foreach t in array array[
+    'public.actividad',
+    'public.actividad_descartes',
+    'public.dispositivo_cuentas',
+    'public.dispositivos_equipo',
+    'public.metricas_hora',
     'public.cofundador_intereses',
     'public.contactos',
     'public.vistas',
@@ -79,6 +85,16 @@ begin
       execute format('delete from %s', t);
     end if;
   end loop;
+end;
+$$;
+
+-- 2b) Snapshots del Demo Day: un trigger impide borrarlos fila por fila (son
+--     inmutables); TRUNCATE no dispara ese trigger.
+do $$
+begin
+  if to_regclass('public.demo_day_snapshots') is not null then
+    truncate public.demo_day_snapshots;
+  end if;
 end;
 $$;
 
@@ -114,9 +130,11 @@ from unnest(array[
   'public.piques_frecuencia', 'public.envios', 'public.ingestas',
   'public.empresas', 'public.empresas_codigos', 'public.empresas_intentos',
   'public.empresa_datos', 'public.empresa_miembros', 'public.evento_participantes', 'public.votos',
-  'public.cofundador_intereses',
+  'public.cofundador_intereses', 'public.actividad', 'public.actividad_descartes',
+  'public.dispositivo_cuentas', 'public.dispositivos_equipo', 'public.metricas_hora',
+  'public.demo_day_snapshots',
   -- conservadas
-  'public.r2_borrar', 'public.eventos', 'public.admins', 'public.equipo_ingesta',
+  'public.feria_franjas', 'public.r2_borrar', 'public.eventos', 'public.admins', 'public.equipo_ingesta',
   'public.emails_bloqueados', 'public.ajustes'
 ]) as t
 where to_regclass(t) is not null;

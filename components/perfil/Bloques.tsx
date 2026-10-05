@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import EnlaceContacto from "@/components/EnlaceContacto";
 import { Etiqueta } from "@/components/Etiquetas";
 import { canalesDe } from "@/lib/contacto";
 import { aporte, labelDedicacion, necesidad, tipoPortafolio } from "@/lib/etiquetas";
@@ -101,13 +102,15 @@ export function BloqueCofundador({ perfil }: { perfil: Perfil }) {
       </dl>
       {perfil.cofundador_nota && <p className="relative mt-3 leading-relaxed text-marfil/90">“{perfil.cofundador_nota}”</p>}
       {whatsapp && (
-        <a
+        <EnlaceContacto
+          perfilId={perfil.id}
+          canal={whatsapp.clave}
           href={whatsapp.href}
           {...(whatsapp.externo && { target: "_blank", rel: "noopener noreferrer" })}
           className="boton relative mt-4 inline-flex min-h-12 items-center justify-center rounded-full bg-marfil px-5 font-semibold text-tinta"
         >
           Proponerme como socio/a
-        </a>
+        </EnlaceContacto>
       )}
     </section>
   );

@@ -204,6 +204,23 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   Salir siendo la última integrante borra la empresa (`borrar_empresa_entera`: R2 a `r2_borrar`,
   portfolio ajeno a 'declarada') solo con ELIMINAR en `/cuenta/empresa/salir`, que ofrece exportar
   el Dataroom; `borrar_mi_cuenta` aplica la regla a cada empresa.
+- Super dataroom (rama `super-dataroom`, migración `20261011120000_super_dataroom.sql`, después de
+  multi_empresa; pruebas `supabase/pruebas/super_dataroom.mjs` y `node scripts/pruebas/vinculo.ts`;
+  vuelta atrás `supabase/rollback-super-dataroom.sql`, que NO es migración; guía `docs/GUIA-MEDICION.md`).
+  North Star = **conexiones INICIADAS** (CI): toque en un canal (`contactos`) de un origen (cuenta
+  vinculada o dispositivo) a un perfil, sin otro toque del par en 24 h; el canal no suma. CI-Q: origen
+  inversor/aliado → emprendedor. Proyectos sin `test-*`, `pecera` ni perfiles del equipo. Fórmulas
+  solo en SQL (`metrica_*`, internas). `actividad` (append-only, lista cerrada, por
+  `registrar_actividad`; NO se llama `eventos`, que es la votación) + `lib/actividad.ts`;
+  atribución en `lib/atribucion.ts` (`?src=nfc&t=s16`, utm, first/last-touch, limpia la URL),
+  sesión de 30 min en `lib/sesion.ts`, `components/Medicion.tsx` en el layout (`?equipo=1`),
+  `MedirPerfil` en /p. Vínculo dispositivo ↔ cuenta: cookie httpOnly de `entrar` → callback con
+  `vincularSinFallar` (`lib/vinculo.ts`: nunca traba el login), aviso `AvisoEntrar` en cada form de
+  login. Borrar la cuenta limpia los dispositivos por trigger del vínculo (no se redefinió
+  `borrar_mi_cuenta`). `metricas_hora` la llena `.github/workflows/metricas.yml` (podando la
+  actividad de más de 90 días). `/admin/vivo` = pantalla del stand (k ≥ 5 en el ticker). Pestaña Medición de /admin
+  (`app/admin/medicion.tsx`, `components/admin/Dataroom.tsx`): snapshot inmutable del Demo Day, CSV en
+  `/admin/csv` y el dataroom. "¿Para qué?" tras un contacto: `lib/motivo.ts` + `PreguntaMotivo` (layout).
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
@@ -268,6 +285,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/sitemap.xml` y `/robots.txt` → `app/sitemap.ts` y `app/robots.ts` (no indexa cuenta,
   admin, auth ni subir)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
+- `/admin/vivo` → pantalla del stand: CI de hoy y ticker anónimo, refresco cada 15 s (`admin_vivo`)
 - `/cuenta/empresa` → cuenta de la empresa: logo, datos, equipo con código, cargo propio, métricas y
   documentos con el concepto del glosario adentro (`?empresa=slug`; sin él, la principal)
 - `/cuenta/empresa/salir` → salir de una empresa (`?empresa=slug`); si es la última integrante,

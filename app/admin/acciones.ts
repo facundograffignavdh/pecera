@@ -63,3 +63,8 @@ export async function participante(perfil: string, participa: boolean) {
 export async function marcarOriginalBorrado(origen: string) {
   return rpc("admin_marcar_original_borrado", { p_origen: origen }, "/admin");
 }
+
+/** Demo Day: guarda una fila inmutable con los números de la feria hasta ahora. */
+export async function congelarDemoDay() {
+  return rpc("admin_congelar_demo_day", {}, "/admin");
+}

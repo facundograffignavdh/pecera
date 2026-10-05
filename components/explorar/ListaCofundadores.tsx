@@ -6,6 +6,7 @@ import Avatar from "@/components/Avatar";
 import { Etiqueta } from "@/components/Etiquetas";
 import { type AccionesMatch, type EstadoMatch, useMatch } from "@/components/explorar/useMatch";
 import { canalesDe } from "@/lib/contacto";
+import { registrarContacto } from "@/lib/medicion";
 import { type Conexion, encaje, MENSAJE_MAX, NIVELES_ENCAJE } from "@/lib/cofundador";
 import { APORTES, aporte, industria, labelDedicacion } from "@/lib/etiquetas";
 import { ROLES } from "@/lib/rol";
@@ -536,6 +537,7 @@ function ContactoMatch({ c }: { c: Conexion }) {
               href={k.href}
               target={k.externo ? "_blank" : undefined}
               rel={k.externo ? "noopener noreferrer" : undefined}
+              onClick={() => registrarContacto({ perfilId: c.perfil_id, canal: k.clave })}
               className="boton inline-flex min-h-10 items-center rounded-full bg-tinta px-4 text-sm font-semibold text-marfil"
             >
               {k.label}

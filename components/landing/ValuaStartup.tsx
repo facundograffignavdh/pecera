@@ -1,4 +1,5 @@
 import { entrar } from "@/app/cuenta/acciones";
+import AvisoEntrar from "@/components/AvisoEntrar";
 import { Etiqueta } from "@/components/landing/Seccion";
 
 // Después de entrar con Google, directo al template de Fundraising (la ronda, el
@@ -45,6 +46,9 @@ export default function ValuaStartup() {
               <LogoGoogle />
               Empezar con Google
             </button>
+            <div className="mt-3 max-w-md">
+              <AvisoEntrar tono="oscuro" />
+            </div>
           </form>
           <p className="mt-3 text-sm text-marfil/65">Entrás con tu cuenta de Google. Sin contraseñas nuevas.</p>
         </div>

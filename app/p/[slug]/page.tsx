@@ -8,6 +8,7 @@ import { EtiquetasPerfil, detalleEmpresas, empresasDe } from "@/components/Etiqu
 import GrillaPitches from "@/components/GrillaPitches";
 import PieLegal from "@/components/PieLegal";
 import VolverAlFeed, { EnlaceVolver } from "@/components/VolverAlFeed";
+import MedirPerfil from "@/components/perfil/MedirPerfil";
 import AccionesPerfil from "@/components/perfil/AccionesPerfil";
 import BarraDueno from "@/components/perfil/BarraDueno";
 import {
@@ -111,6 +112,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
         <Suspense fallback={<EnlaceVolver href="/" />}>
           <VolverAlFeed />
         </Suspense>
+        <MedirPerfil perfilId={perfil.id} />
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
           {/* ---- La tarjeta (a la izquierda y fija en PC) ---- */}
