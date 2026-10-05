@@ -56,15 +56,22 @@ export default function BotonCompartirReel({ item }: { item: ItemFeed }) {
     <button
       type="button"
       onClick={compartir}
-      aria-label={`Compartir el pitch de ${item.perfil.nombre}`}
-      className="flex w-12 flex-col items-center"
+      aria-label="Compartir"
+      className="relative flex h-12 w-12 items-center justify-center"
     >
-      <span className="flex h-12 w-12 items-center justify-center">
-        <IconoCompartir className="icono-sombra h-7 w-7 text-marfil" />
+      <IconoCompartir className="icono-sombra h-7 w-7 text-marfil" />
+      <span aria-live="polite" className="sr-only">
+        {copiado ? "Link copiado" : ""}
       </span>
-      <span aria-live="polite" className="texto-sombra -mt-1 min-h-4 text-xs font-semibold">
-        {copiado ? "Copiado" : "Compartir"}
-      </span>
+      {/* Aviso visual a la izquierda del ícono: no mueve la columna. */}
+      {copiado && (
+        <span
+          aria-hidden
+          className="vidrio pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold text-tinta"
+        >
+          Copiado
+        </span>
+      )}
     </button>
   );
 }

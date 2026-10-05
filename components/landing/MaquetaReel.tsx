@@ -1,6 +1,6 @@
 import Image from "next/image";
 import LogoInicio from "@/components/LogoInicio";
-import { ColumnaReel, DatosReel } from "@/components/ReelPartes";
+import { ColumnaReel, DEGRADADO_REEL, DatosReel } from "@/components/ReelPartes";
 import type { ItemFeed } from "@/types/pecera";
 
 /** Piques que muestra la maqueta (fijo, no se lee de la base). */
@@ -74,13 +74,13 @@ export default function MaquetaReel({ className = "" }: { className?: string }) 
               unoptimized
               className="object-cover object-top"
             />
-            <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-tinta via-tinta/80 to-transparent" />
+            <div className={DEGRADADO_REEL} />
 
             <div className="absolute inset-x-0 top-0 flex justify-center pt-3">
               <LogoInicio variante="feed" />
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 pb-8 pl-5 pr-2 text-marfil">
+            <div className="absolute inset-x-0 bottom-0 pb-4 pl-5 pr-2 text-marfil">
               <div className="flex items-end gap-2">
                 <div className="min-w-0 flex-1" />
                 <ColumnaReel
