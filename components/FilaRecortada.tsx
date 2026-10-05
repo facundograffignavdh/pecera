@@ -36,7 +36,13 @@ export default function FilaRecortada({
 
   useLayoutEffect(() => {
     const fila = ref.current;
-    if (!fila || abierta) return;
+    if (!fila) return;
+    const primera = fila.querySelector<HTMLElement>(":scope > [data-pieza]");
+    // Desplegada, la primera pieza recupera su ancho entero.
+    if (abierta) {
+      if (primera) primera.style.maxWidth = "";
+      return;
+    }
     let ancho = -1;
 
     // Muestra todo, mide y deja el DOM como va a quedar después del render:
@@ -47,6 +53,7 @@ export default function FilaRecortada({
       if (!mas) return;
       for (const n of nodos) n.hidden = false;
       mas.hidden = true;
+      if (primera) primera.style.maxWidth = "";
 
       let k = nodos.findIndex((n) => linea(n, nodos) > 1);
       if (k === -1) {
@@ -58,6 +65,12 @@ export default function FilaRecortada({
       while (k > 1 && linea(mas, [...nodos.slice(0, k), mas]) > 1) {
         k--;
         nodos[k].hidden = true;
+      }
+      // Si la primera sola ya llena la línea (un nombre de empresa largo), se achica
+      // con "…" para que el "+N" quepa al lado.
+      if (primera && linea(mas, [...nodos.slice(0, k), mas]) > 1) {
+        const hueco = parseFloat(getComputedStyle(fila).columnGap) || 0;
+        primera.style.maxWidth = `${fila.clientWidth - mas.offsetWidth - hueco}px`;
       }
       setVisibles(k);
     };

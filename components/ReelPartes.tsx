@@ -8,6 +8,7 @@ import { EtiquetasReel, detalleEmpresas } from "@/components/Etiquetas";
 import { IconoCorazon, IconoSonido, IconoSubtitulos } from "@/components/Iconos";
 import { formatoCompacto } from "@/lib/formato";
 import { dejarDeSeguir, seguir, useSigo } from "@/lib/red";
+import { ROLES, TIPOS } from "@/lib/rol";
 import type { ItemFeed } from "@/types/pecera";
 
 /**
@@ -97,11 +98,12 @@ export function ColumnaReel({
 }
 
 /**
- * Quién es y qué cuenta: avatar con el "+" de seguir, nombre, rol y etiquetas en una
- * línea desplegable, hito en curso y la descripción del pitch en una línea. El avatar y el nombre llevan al perfil.
+ * Quién es y qué cuenta: avatar con el "+" de seguir, nombre con rol y tipo abajo, una
+ * línea desplegable con empresa, etapa y etiquetas, hito en curso y la descripción del pitch en una línea. El avatar y el nombre llevan al perfil.
  */
 export function DatosReel({ item, href, activo }: { item: ItemFeed; href: string; activo: boolean }) {
   const { pitch, perfil } = item;
+  const rol = ROLES[perfil.rol];
   return (
     // Margen derecho del ancho de la columna: un texto largo nunca queda debajo.
     <div className="mt-2 pr-14">
@@ -139,10 +141,15 @@ export function DatosReel({ item, href, activo }: { item: ItemFeed; href: string
               <span className="sr-only"> días de racha</span>
             </span>
           )}
+          {/* Rol y tipo siempre abajo del nombre, fuera de la fila desplegable. */}
+          <div className="mt-0.5 flex min-w-0 items-center gap-2 text-sm">
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${rol.bg}`}>{rol.label}</span>
+            <span className="truncate text-marfil/85">{TIPOS[perfil.tipo]}</span>
+          </div>
         </div>
       </div>
 
-      {/* Rol y etiquetas en una línea; "+N" la despliega. */}
+      {/* Cargo en la empresa, etapa y etiquetas en una línea; "+N" la despliega. */}
       <EtiquetasReel perfil={perfil} id={`etiquetas-${pitch.id}`} activo={activo} />
 
       {item.construyendo && <Construyendo hito={item.construyendo} activo={activo} />}
