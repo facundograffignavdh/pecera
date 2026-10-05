@@ -60,13 +60,25 @@ const pct = (v: number | null | undefined) => (v === null || v === undefined ? "
 const parte = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : "—");
 const rolLabel = (r: string) => (r === "anonimo" ? "Sin cuenta" : (ROLES[r as Rol]?.label ?? r));
 
-export default function DataroomSecciones({ d, fuente }: { d: Dataroom; fuente: string | null }) {
+/** `sufijo`: lo que se suma a los links del filtro para no perder el alcance (`&a=plataforma`). */
+/** `unidad`: "participantes" con el alcance de la feria (todos los roles), si no "proyectos". */
+export default function DataroomSecciones({
+  d,
+  fuente,
+  sufijo = "",
+  unidad = "proyectos",
+}: {
+  d: Dataroom;
+  fuente: string | null;
+  sufijo?: string;
+  unidad?: "proyectos" | "participantes";
+}) {
   const fuentes = Object.keys(d.atribucion.por_fuente).sort();
   return (
     <div className="flex flex-col gap-10">
-      <NorthStar d={d} />
-      <Embudo d={d} fuente={fuente} fuentes={fuentes} />
-      <Liquidez d={d} />
+      <NorthStar d={d} unidad={unidad} />
+      <Embudo d={d} fuente={fuente} fuentes={fuentes} sufijo={sufijo} />
+      <Liquidez d={d} unidad={unidad} />
       <Matriz d={d} />
       <Atribucion d={d} />
       <Cohortes d={d} />
@@ -131,7 +143,7 @@ function Tabla({ resumen, columnas, filas }: { resumen: string; columnas: string
 
 // ---------------------------------------------------------------------------
 
-function NorthStar({ d }: { d: Dataroom }) {
+function NorthStar({ d, unidad }: { d: Dataroom; unidad: string }) {
   const r = d.resumen;
   return (
     <Seccion
@@ -142,7 +154,7 @@ function NorthStar({ d }: { d: Dataroom }) {
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Tile titulo="Conexiones iniciadas" valor={n(r.ci)} />
         <Tile titulo="Calificadas (CI-Q)" valor={n(r.ci_q)} detalle="inversor o aliado → emprendedor" />
-        <Tile titulo="CI por participante" valor={n(r.ci_por_participante)} detalle={`${n(r.proyectos)} proyectos`} />
+        <Tile titulo="CI por participante" valor={n(r.ci_por_participante)} detalle={`${n(r.proyectos)} ${unidad}`} />
         <Tile titulo="Liquidez" valor={pct(r.liquidez)} detalle={`${n(r.proyectos_con_ci)} con al menos una CI`} />
         <Tile titulo="Liquidez calificada" valor={pct(r.liquidez_q)} detalle={`${n(r.proyectos_con_ciq)} con CI-Q`} />
         <Tile
@@ -246,7 +258,7 @@ function Barras({ filas, etiqueta }: { filas: Array<{ label: string; valor: numb
   );
 }
 
-function Embudo({ d, fuente, fuentes }: { d: Dataroom; fuente: string | null; fuentes: string[] }) {
+function Embudo({ d, fuente, fuentes, sufijo }: { d: Dataroom; fuente: string | null; fuentes: string[]; sufijo: string }) {
   const e = d.embudo;
   const opciones = [null, ...fuentes];
   return (
@@ -259,7 +271,7 @@ function Embudo({ d, fuente, fuentes }: { d: Dataroom; fuente: string | null; fu
         {opciones.map((f) => (
           <Link
             key={f ?? "todas"}
-            href={f ? `/admin?v=medicion&f=${encodeURIComponent(f)}` : "/admin?v=medicion"}
+            href={f ? `/admin?v=medicion&f=${encodeURIComponent(f)}${sufijo}` : `/admin?v=medicion${sufijo}`}
             aria-current={fuente === f ? "page" : undefined}
             className={`inline-flex min-h-9 items-center rounded-full border px-3 text-sm ${
               fuente === f ? "border-tinta bg-tinta text-marfil" : "border-tinta/25 text-tinta"
@@ -282,10 +294,10 @@ function Embudo({ d, fuente, fuentes }: { d: Dataroom; fuente: string | null; fu
   );
 }
 
-function Liquidez({ d }: { d: Dataroom }) {
+function Liquidez({ d, unidad }: { d: Dataroom; unidad: string }) {
   const l = d.liquidez;
   return (
-    <Seccion id="liquidez" titulo="Liquidez y concentración" nota="Cuántas conexiones iniciadas recibió cada proyecto.">
+    <Seccion id="liquidez" titulo="Liquidez y concentración" nota={`Cuántas conexiones iniciadas recibió cada uno de los ${unidad}.`}>
       <dl className="grid grid-cols-2 gap-2">
         <Tile titulo="Del total se lo lleva el 10 % de arriba" valor={pct(l.top10_pct)} />
         <Tile titulo="Ceros (vistas y ninguna CI)" valor={n(l.ceros.length)} />

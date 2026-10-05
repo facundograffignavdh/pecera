@@ -5,7 +5,7 @@ import { faltaMigracion } from "@/lib/datos";
 export type Resultado = { ok: boolean; mensaje?: string; slug?: string; codigo?: string };
 
 export const SIN_SESION = "Se cerró tu sesión. Volvé a entrar.";
-const NO_DISPONIBLE = "Esta parte todavía se está activando. Probá de nuevo en un rato.";
+export const NO_DISPONIBLE = "Esta parte todavía se está activando. Probá de nuevo en un rato.";
 
 /** Mensajes de la base (raise exception de feria_lista) → texto para la persona. */
 const MENSAJES: Record<string, string> = {
@@ -44,6 +44,15 @@ const MENSAJES: Record<string, string> = {
   "esa relación no espera tu respuesta": "Esa relación ya fue respondida o no nombra a tu empresa.",
   "demasiados servicios": "Llegaste a 12 servicios. Borrá alguno para sumar otro.",
   "ese servicio no es tuyo": "Ese servicio no es tuyo.",
+  // vivo_feria
+  "la empresa no tiene una integrante emprendedora visible": "La empresa no tiene una integrante emprendedora visible que la represente.",
+  "la empresa no tiene una integrante visible": "La empresa no tiene una integrante con el perfil visible que la represente.",
+  "esa persona ya representa a otra empresa": "Esa persona ya representa a otra empresa en la feria.",
+  "la empresa no participa": "La empresa no participa. Sumala primero.",
+  "tiene que ser una integrante emprendedora visible": "Tiene que ser una integrante emprendedora con el perfil visible.",
+  "tiene que ser una integrante visible": "Tiene que ser una integrante de la empresa con el perfil visible.",
+  "pitch inexistente": "Ese pitch ya no existe. Recargá la página.",
+  "el tag no entra en la descripción (máx. 150)": "#feria21 no entra: la descripción ya tiene casi 150 caracteres. Acortala primero.",
 };
 
 /** Error de Supabase → Resultado con un mensaje que se entiende. Nunca tira. */

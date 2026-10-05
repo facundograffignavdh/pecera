@@ -15,14 +15,14 @@ const TEXTOS: Record<Rol, { si: string; no: string; accion: string }> = {
     accion: "Anotar mi proyecto",
   },
   inversor: {
-    no: "Anotate como inversor presente: los proyectos te ven en la página del evento.",
-    si: "Figurás como inversor presente en la feria.",
-    accion: "Voy a la feria",
+    no: "Anotate en la feria: aparecés en la página del evento y el público te puede votar.",
+    si: "Estás en la votación de la feria. Compartí tu perfil en la carpa para sumar votos.",
+    accion: "Anotarme en la feria",
   },
   aliado: {
-    no: "Anotate como aliado presente: los proyectos saben que pueden buscarte.",
-    si: "Figurás como aliado presente en la feria.",
-    accion: "Voy a la feria",
+    no: "Anotate en la feria: aparecés en la página del evento y el público te puede votar.",
+    si: "Estás en la votación de la feria. Compartí tu perfil en la carpa para sumar votos.",
+    accion: "Anotarme en la feria",
   },
 };
 
