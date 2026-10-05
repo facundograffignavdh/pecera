@@ -128,7 +128,7 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
     };
   });
 
-  const filasEmpresa = (empresas.data ?? []) as Array<{ id: string; slug: string; nombre: string; descripcion: string; industrias: string[]; etapa: string | null; ronda: string | null }>;
+  const filasEmpresa = (empresas.data ?? []) as Array<{ id: string; slug: string; nombre: string; descripcion: string | null; industrias: string[]; etapa: string | null; ronda: string | null }>;
   const logos = await getLogos(filasEmpresa.map((e) => e.id));
   const fichasEmpresa: FichaDirectorio[] = filasEmpresa.map((e) => ({
     clase: "empresa",
@@ -136,7 +136,7 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
     nombre: e.nombre,
     rol: null,
     tipo: null,
-    descripcion: e.descripcion,
+    descripcion: e.descripcion ?? "",
     avatar_url: logos.get(e.id) ?? null,
     industrias: e.industrias ?? [],
     etapa: e.etapa,

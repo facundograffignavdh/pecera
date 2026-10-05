@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { IconoCorazon } from "@/components/Iconos";
+import BotonCompartirReel from "@/components/BotonCompartirReel";
 import { ColumnaReel, DatosReel } from "@/components/ReelPartes";
 import Subtitulos from "@/components/Subtitulos";
 import { registrarActividad } from "@/lib/actividad";
@@ -278,7 +279,7 @@ export default function Reel({
 
       {/* El bloque deja pasar los toques al video (doble toque en toda la pantalla);
           solo links y botones los capturan. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 pb-[max(2rem,calc(env(safe-area-inset-bottom)_+_0.75rem))] pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-marfil">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 pb-[max(2rem,calc(env(safe-area-inset-bottom)_+_0.75rem),calc(var(--alto-nav)_+_0.75rem))] pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-marfil">
         <div className="flex items-end gap-2">
           {/* Arriba del nombre y a la izquierda de la columna: el bloque está
               anclado abajo, así que los subtítulos crecen hacia arriba y nunca
@@ -299,6 +300,7 @@ export default function Reel({
             onAlternarPique={alTocarCorazon}
             onAlternarSubtitulos={onAlternarSubtitulos}
             onAlternarSonido={onAlternarSonido}
+            compartir={<BotonCompartirReel item={item} />}
           />
         </div>
 

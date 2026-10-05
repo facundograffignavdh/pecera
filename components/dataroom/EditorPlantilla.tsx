@@ -238,7 +238,7 @@ export default function EditorPlantilla({
         <Revision p={p} valores={valores} irA={ir} faltan={progreso.faltan} />
       )}
 
-      <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 flex gap-2 rounded-full bg-marfil/95 p-1.5 shadow-[0_8px_24px_rgb(28_27_22/0.18)]">
+      <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom),calc(var(--alto-nav)_+_0.5rem))] z-10 flex gap-2 rounded-full bg-marfil/95 p-1.5 shadow-[0_8px_24px_rgb(28_27_22/0.18)]">
         <button
           type="button"
           onClick={() => ir(paso - 1)}

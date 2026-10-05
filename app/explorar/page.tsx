@@ -8,9 +8,17 @@ import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { SelloFeria21 } from "@/components/eventos/MarcaFeria21";
 import { getTags } from "@/lib/datos";
 import { getDirectorio } from "@/lib/explorar";
+import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { TAG_FERIA } from "@/lib/hashtags";
 
 export const revalidate = 60;
+
+const MAS = [
+  { href: "/", label: "Feed", bajada: "Los pitches, uno atrás del otro" },
+  { href: "/red", label: "Mi red", bajada: "Los perfiles que seguís" },
+  { href: `/eventos/${EVENTO_ACTUAL.slug}`, label: EVENTO_ACTUAL.nombre, bajada: "Programa y votación" },
+  { href: "/sumate", label: "Qué es Pecera", bajada: "Cómo funciona y cómo sumarte" },
+];
 
 export const metadata: Metadata = {
   title: "Explorar startups, inversores y aliados — Pecera",
@@ -81,6 +89,31 @@ export default async function ExplorarPage() {
             </ul>
           )}
           </div>
+        </section>
+
+        {/* Lo que no entra en la barra de abajo. */}
+        <section aria-labelledby="mas-en-pecera" className="mt-10">
+          <h2 id="mas-en-pecera" className="font-display text-sm font-semibold uppercase tracking-wide text-tinta/65">
+            Más en Pecera
+          </h2>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {MAS.map((m) => (
+              <li key={m.href}>
+                <Link
+                  href={m.href}
+                  className="boton group flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-tinta/12 px-4 py-3 text-tinta hover:border-arcilla"
+                >
+                  <span>
+                    <span className="block font-medium">{m.label}</span>
+                    <span className="block text-sm text-tinta/70">{m.bajada}</span>
+                  </span>
+                  <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-1">
+                    &rarr;
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <PieLegal tono="claro" className="mt-10 pb-8" />

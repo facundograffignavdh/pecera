@@ -111,7 +111,7 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
       <section
         ref={(el) => registrarRef(items.length, el)}
         data-indice={items.length}
-        className="flex h-dvh snap-start snap-always flex-col items-center justify-center gap-6 bg-marfil px-6 text-center"
+        className="flex h-dvh snap-start snap-always flex-col items-center justify-center gap-6 bg-marfil px-6 pb-[var(--alto-nav)] text-center"
       >
         <h2 className="font-display text-3xl font-semibold text-tinta">
           Eso es todo por hoy

@@ -25,7 +25,7 @@ export default function TarjetaTesis({ tesis }: { tesis: Tesis | null }) {
     set(lista.includes(v) ? lista.filter((x) => x !== v) : [...lista, v]);
 
   return (
-    <Tarjeta titulo="Tu tesis de inversión" etiqueta="Inversor" bajada="Qué buscás y dónde. Industrias, rondas y ticket se editan en Tu perfil, paso 3.">
+    <Tarjeta titulo="Tu tesis de inversión" etiqueta="Inversor" bajada="Qué buscás y dónde. Industrias, rondas y ticket van en las etiquetas de tu tarjeta.">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -68,7 +68,7 @@ export default function TarjetaTesis({ tesis }: { tesis: Tesis | null }) {
           {pendiente ? "Guardando…" : "Guardar tesis"}
         </button>
         {aviso?.mensaje && <Aviso ok={aviso.ok}>{aviso.mensaje}</Aviso>}
-        <Link href="#paso-3" className="text-xs font-medium text-tinta underline underline-offset-4">
+        <Link href="#editar-etiquetas" className="text-xs font-medium text-tinta underline underline-offset-4">
           Editar industrias, rondas y ticket
         </Link>
       </form>

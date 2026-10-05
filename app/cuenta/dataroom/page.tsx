@@ -75,7 +75,7 @@ export default async function DataroomPage({ searchParams }: PageProps<"/cuenta/
   const vacio = activos.length === 0 && datos.length === 0;
 
   return (
-    <Marco volver={ruta("/cuenta#empresa-elegida")} textoVolver="Volver a Mi perfil" ancho="max-w-md md:max-w-3xl lg:max-w-5xl">
+    <Marco volver={ruta("/cuenta/empresa?pestana=metricas")} textoVolver="Volver a la empresa" ancho="max-w-md md:max-w-3xl lg:max-w-5xl">
       <EmpresaActual empresa={{ id: empresa.id, slug: empresa.slug }}>
         <EscucharDataroom empresaId={empresa.id} />
         <div className="mt-6">

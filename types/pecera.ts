@@ -11,7 +11,9 @@ export type TipoPerfil =
   // feria_pro: aliados (y corporativos que invierten) más allá de mentor/coach.
   | "profesional"
   | "empresa"
-  | "institucion";
+  | "institucion"
+  // persona_empresa: la cuenta es de una persona; el tipo de entidad va en su empresa.
+  | "persona";
 
 export type Perfil = {
   id: string;
@@ -59,6 +61,9 @@ export type Perfil = {
   empresas?: EmpresaDePerfil[];
 };
 
+/** El perfil propio, leído con la sesión (incluye si está oculto). */
+export type PerfilPropio = Perfil & { oculto: boolean };
+
 /** Lo mínimo de una empresa para mostrarla junto a una persona. */
 export type EmpresaResumen = { slug: string; nombre: string; logo_url?: string | null };
 
@@ -69,7 +74,8 @@ export type Empresa = {
   id: string;
   slug: string;
   nombre: string;
-  descripcion: string;
+  /** null: creada con lo básico (persona_empresa), sin descripción todavía. */
+  descripcion: string | null;
   web: string | null;
   linkedin: string | null;
   instagram: string | null;

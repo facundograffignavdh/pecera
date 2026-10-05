@@ -27,7 +27,7 @@ export default async function SalirEmpresaPage({ searchParams }: PageProps<"/cue
   const { empresa: pedida } = await searchParams;
   const { supabase, user, empresas, empresa, multi } = await cuentaConEmpresa(pedida);
   if (!user) redirect("/cuenta");
-  if (!empresa) redirect("/cuenta#tarjeta-mis-empresas");
+  if (!empresa) redirect("/cuenta#seccion-empresas");
 
   // Sin multi_empresa, la única empresa se queda (aunque no quede nadie), como siempre.
   const [previaRes, miembrosRes] = await Promise.all([

@@ -21,6 +21,8 @@ export const TIPOS: Record<TipoPerfil, string> = {
   profesional: "Profesional",
   empresa: "Empresa",
   institucion: "Universidad o institución",
+  // Cuenta personal: no lleva etiqueta (el tipo de entidad va en cada empresa).
+  persona: "",
 };
 
 /** Iniciales de hasta dos palabras: "Raíz Verde" → "RV". */

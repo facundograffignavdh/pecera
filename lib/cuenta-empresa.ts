@@ -20,6 +20,8 @@ export type EmpresaMia = MiEmpresa & {
   es_principal: boolean;
   /** Su cargo en esta empresa. */
   cargo: string | null;
+  /** Tipo de empresa (persona_empresa); null si no lo cargaron o falta la migración. */
+  tipo?: string | null;
 };
 
 export const MAX_EMPRESAS = 5;
@@ -31,6 +33,7 @@ type FilaMisEmpresas = Omit<MiEmpresa, "logo_url"> & {
   logo_url: string | null;
   cargo: string | null;
   es_principal: boolean;
+  tipo?: string | null;
 };
 
 /**
@@ -39,7 +42,9 @@ type FilaMisEmpresas = Omit<MiEmpresa, "logo_url"> & {
  * empresas (feria_lista).
  */
 export async function leerMisEmpresas(supabase: Supa): Promise<{ empresas: EmpresaMia[]; multi: boolean; disponible: boolean }> {
-  const multi = await supabase.rpc("mis_empresas");
+  // persona_empresa suma el tipo; sin ella, la de multi_empresa.
+  let multi = await supabase.rpc("mis_empresas_v2");
+  if (faltaMigracion(multi.error)) multi = await supabase.rpc("mis_empresas");
   if (!faltaMigracion(multi.error)) {
     if (multi.error) console.error(`Supabase (mis_empresas): ${multi.error.message}`);
     const filas = (multi.data ?? []) as FilaMisEmpresas[];

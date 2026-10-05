@@ -16,7 +16,7 @@ export default function AccionLeccion({ accion }: { accion: Accion }) {
   if (accion.tipo !== "plantilla") {
     const destino = {
       pitch: { href: "/cuenta#mi-pitch", label: "Subir o revisar mi Pitch", texto: "Tu Pitch vive en tu perfil y en el feed." },
-      transparencia: { href: "/cuenta#tarjeta-transparencia", label: "Cargar mis métricas", texto: "Cargalas en Transparencia: nacen privadas y van a tu Dataroom." },
+      transparencia: { href: "/cuenta/empresa?pestana=metricas", label: "Cargar mis métricas", texto: "Cargalas en Transparencia: nacen privadas y van a tu Dataroom." },
       dataroom: { href: "/cuenta/dataroom", label: "Abrir mi Dataroom", texto: "Revisá qué categorías tienen información y qué falta." },
     }[accion.tipo];
     return (

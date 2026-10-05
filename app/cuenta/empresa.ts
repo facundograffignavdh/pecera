@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { validarSlug } from "@/lib/cuenta";
+import { slugDesdeNombre, validarSlug } from "@/lib/cuenta";
 import { type Resultado, SIN_SESION, traducir } from "@/lib/errores-base";
 import {
   CARGOS,
@@ -9,6 +9,7 @@ import {
   INDUSTRIAS,
   MAX_INDUSTRIAS_PROYECTO,
   RONDAS,
+  TIPOS_EMPRESA,
   esValor,
 } from "@/lib/etiquetas";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
@@ -86,33 +87,39 @@ function validarEmpresa(d: ReturnType<typeof datosEmpresa>): string | null {
   return null;
 }
 
-export async function crearEmpresa(_previo: Resultado, formData: FormData): Promise<Resultado> {
+/**
+ * Empresa o proyecto con lo mínimo: nombre, tipo y el cargo propio (persona_empresa).
+ * La dirección sale del nombre; si está tomada, prueba con -2, -3… El logo, la
+ * descripción y el resto se cargan después en "Administrar".
+ */
+export async function crearEmpresaBasica(_previo: Resultado, formData: FormData): Promise<Resultado> {
   const { supabase, user } = await conSesion();
   if (!user) return { ok: false, mensaje: SIN_SESION };
 
-  const d = datosEmpresa(formData);
-  const slug = texto(formData, "slug").toLowerCase();
+  const nombre = texto(formData, "nombre");
+  const tipo = texto(formData, "tipo");
   const cargo = texto(formData, "cargo");
-  const invalido = validarEmpresa(d) ?? validarSlug(slug);
-  if (invalido) return { ok: false, mensaje: invalido };
+  if (!nombre || nombre.length > 80) return { ok: false, mensaje: "Poné el nombre (hasta 80 caracteres)." };
+  const base = slugDesdeNombre(nombre).slice(0, 55).replace(/-+$/, "");
+  if (validarSlug(base)) return { ok: false, mensaje: "Usá un nombre con al menos 3 letras o números." };
 
-  const args = {
-    p_nombre: d.nombre,
-    p_slug: slug,
-    p_descripcion: d.descripcion,
-    p_web: d.web || null,
-    p_industrias: d.industrias,
-    p_etapa: d.etapa || null,
-    p_ronda: d.ronda || null,
-    p_cargo: esValor(CARGOS, cargo) ? cargo : null,
-  };
-  // Con multi_empresa, hasta 5; sin ella, la de siempre (una sola).
-  let { data, error } = await supabase.rpc("crear_empresa_v2", args);
-  if (faltaMigracion(error)) ({ data, error } = await supabase.rpc("crear_empresa", args));
-  if (error) return traducir(error, "crear_empresa");
-
-  refrescar(String(data), true);
-  return { ok: true, slug: String(data), mensaje: "¡Empresa creada! Invitá a tu equipo con el código." };
+  for (let intento = 1; intento <= 5; intento++) {
+    const slug = intento === 1 ? base : `${base}-${intento}`;
+    const { data, error } = await supabase.rpc("crear_empresa_basica", {
+      p_nombre: nombre,
+      p_slug: slug,
+      p_tipo: esValor(TIPOS_EMPRESA, tipo) ? tipo : null,
+      p_cargo: esValor(CARGOS, cargo) ? cargo : null,
+    });
+    if (error?.code === "23505" && error.message.includes("slug")) continue;
+    if (faltaMigracion(error)) {
+      return { ok: false, mensaje: "Estamos actualizando Pecera: en un rato vas a poder crear la empresa desde acá." };
+    }
+    if (error) return traducir(error, "crear_empresa_basica");
+    refrescar(String(data), true);
+    return { ok: true, slug: String(data), mensaje: "¡Listo! Completá el logo y los datos en Administrar." };
+  }
+  return { ok: false, mensaje: "Ya hay empresas con ese nombre. Probá con uno un poco distinto." };
 }
 
 export async function unirseEmpresa(_previo: Resultado, formData: FormData): Promise<Resultado> {
@@ -164,6 +171,56 @@ export async function editarEmpresa(_previo: Resultado, formData: FormData): Pro
 
   refrescar(empresa.slug);
   return { ok: true, mensaje: "Listo, guardado." };
+}
+
+/**
+ * "Guardar cambios" de una pestaña de Administrar (Información o Contacto). El form
+ * trae todos los campos (los de la otra pestaña, como estaban guardados), porque la
+ * base edita la empresa entera. Con persona_empresa, el tipo y la descripción
+ * opcional; sin ella, la función de antes (que pide descripción). Si cambió el
+ * cargo propio, también lo guarda.
+ */
+export async function guardarEmpresaPestana(_previo: Resultado, formData: FormData): Promise<Resultado> {
+  const { supabase, user } = await conSesion();
+  if (!user) return { ok: false, mensaje: SIN_SESION };
+  const empresa = await empresaParaAccion(supabase, formData.get("empresa_id"));
+  if (!empresa) return { ok: false, mensaje: NO_ES_TUYA };
+
+  if (formData.get("es_dueno") === "1") {
+    const d = datosEmpresa(formData);
+    const tipo = texto(formData, "tipo");
+    const invalido = validarEmpresa({ ...d, descripcion: d.descripcion || "-" });
+    if (invalido) return { ok: false, mensaje: invalido };
+    let { error } = await supabase.rpc("editar_empresa_v3_en", {
+      p_empresa: empresa.id,
+      p_nombre: d.nombre,
+      p_tipo: esValor(TIPOS_EMPRESA, tipo) ? tipo : null,
+      p_descripcion: d.descripcion || null,
+      p_web: d.web || null,
+      p_linkedin: d.linkedin || null,
+      p_instagram: d.instagram || null,
+      p_industrias: d.industrias,
+      p_etapa: d.etapa || null,
+      p_ronda: d.ronda || null,
+      p_ubicacion: d.ubicacion || null,
+    });
+    if (faltaMigracion(error)) {
+      if (!d.descripcion) return { ok: false, mensaje: "Contá en pocas líneas qué hace la empresa." };
+      const r = await editarEmpresa(_previo, formData);
+      if (!r.ok) return r;
+      error = null;
+    }
+    if (error) return traducir(error, "editar_empresa");
+  }
+
+  const cargoNuevo = texto(formData, "cargo");
+  if (formData.has("cargo") && cargoNuevo !== texto(formData, "cargo_actual")) {
+    const r = await cambiarCargo(empresa.id, cargoNuevo);
+    if (!r.ok) return r;
+  }
+
+  refrescar(empresa.slug, true);
+  return { ok: true, mensaje: "Cambios guardados." };
 }
 
 /**

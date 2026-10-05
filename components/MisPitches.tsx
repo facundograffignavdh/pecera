@@ -95,7 +95,7 @@ export default function MisPitches({
       {conPerfil && (
         <div className="flex flex-col gap-2">
           {/* <a> y no <Link>: /subir redirige a Google Forms. */}
-          <a href="/subir" className={claseBoton}>
+          <a id="subir-pitch" href="/subir" className={`resaltable scroll-mt-24 ${claseBoton}`}>
             {principal ? "Reemplazar mi Pitch" : "Subir mi Pitch"}
           </a>
           <p className="break-all text-center text-xs text-tinta/70">
