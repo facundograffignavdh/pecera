@@ -233,6 +233,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `admin_feria` (`components/admin/GestionFeria.tsx`). Métricas con alcance (`?alcance=plataforma`
   en vivo, `?a=plataforma` en Medición; por defecto la feria): `*_en(…, p_alcance)`; el Demo Day
   congela dos filas (`demo_day_snapshots.alcance`). Sin la migración, todo cae a lo de antes.
+  Desde `20261013120000_feria_todos_los_roles.sql` (después de vivo_feria; pruebas
+  `supabase/pruebas/feria_todos_los_roles.mjs`; vuelta atrás `supabase/rollback-feria-todos-los-roles.sql`,
+  que NO es migración) compite cualquier rol: `votar`, ranking, representante y métricas sin filtro de
+  rol. En la feria se dice "participantes" (no "proyectos") y el ranking es "Ranking del público".
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
@@ -360,7 +364,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `empresa_datos` (clave, valor, url https, visible): privado por defecto; anon solo ve lo
   visible de empresas visibles. RPCs `mis_datos_empresa`, `guardar_dato_empresa` (vacío = borrar).
 - `eventos` (votacion_abierta, resultados_visibles, activo), `evento_participantes`, `votos`
-  (PK evento + votante). Solo reciben votos perfiles `emprendedor`; nadie se vota ni vota a
+  (PK evento + votante). Recibe votos cualquier perfil anotado y visible (desde
+  `20261013120000_feria_todos_los_roles.sql`; antes, solo `emprendedor`); nadie se vota ni vota a
   su empresa. Resultados visibles solo si el equipo los muestra (o para admins).
 - feria_pro (`20261007120000_feria_pro.sql`, guía en `docs/FERIA-PRO.md`): tipos de perfil
   `profesional`, `empresa`, `institucion`; especialidades nuevas; WhatsApp `+E.164` además de

@@ -42,8 +42,9 @@ export function porcentaje(v: number | null | undefined) {
 /**
  * Pestaña "Medición" de /admin (super dataroom): el snapshot del Demo Day, los CSV y
  * el dataroom desde el comienzo de la feria. `filtro` (?f=) = fuente del embudo;
- * `alcance` (?a=plataforma) = qué cuenta como proyecto para la liquidez y la CI por
- * participante (por defecto, los participantes del evento). Solo agregados.
+ * `alcance` (?a=plataforma) = quiénes cuentan para la liquidez y la CI por participante:
+ * por defecto, los participantes del evento (todos los roles anotados); si no, los
+ * proyectos de la plataforma. Solo agregados.
  * Definiciones en docs/GUIA-MEDICION.md.
  */
 export default async function Medicion({
@@ -89,8 +90,8 @@ export default async function Medicion({
       </p>
 
       {!sinAlcance && (
-        <nav aria-label="Qué proyectos cuentan" className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-tinta/80">Proyectos:</span>
+        <nav aria-label="Quiénes cuentan" className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-tinta/80">Quiénes cuentan:</span>
           {(
             [
               ["evento", EVENTO_ACTUAL.nombre, `/admin?v=medicion${filtro === "todos" ? "" : `&f=${encodeURIComponent(filtro)}`}`],
@@ -169,7 +170,12 @@ export default async function Medicion({
         </p>
       </section>
 
-      <DataroomSecciones d={dataroom.data as Dataroom} fuente={fuente} sufijo={sufijo} />
+      <DataroomSecciones
+        d={dataroom.data as Dataroom}
+        fuente={fuente}
+        sufijo={sufijo}
+        unidad={!sinAlcance && alcance === "evento" ? "participantes" : "proyectos"}
+      />
     </div>
   );
 }

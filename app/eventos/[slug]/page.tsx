@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import Avatar from "@/components/Avatar";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
@@ -10,7 +9,6 @@ import { GaleriaEdicion, PortadaFeria21, TituloFeria } from "@/components/evento
 import Votacion from "@/components/eventos/Votacion";
 import { getEstadoEvento } from "@/lib/datos";
 import { EVENTO_ACTUAL, EVENTOS, getEventoDefinido } from "@/lib/eventos";
-import { ROLES, TIPOS } from "@/lib/rol";
 
 export const revalidate = 60;
 
@@ -48,8 +46,8 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
   if (!evento) notFound();
 
   const estado = await getEstadoEvento(evento.slug);
-  const proyectos = estado.participantes.filter((p) => p.rol === "emprendedor");
-  const presentes = estado.participantes.filter((p) => p.rol !== "emprendedor");
+  // Compite cualquier perfil anotado: emprendedores, inversores y aliados.
+  const participantes = estado.participantes;
   // La Feria 21 lleva la identidad de Semana 21 (verde, mayúsculas, trazo amarillo).
   const feria = evento.slug === EVENTO_ACTUAL.slug;
 
@@ -88,7 +86,7 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
               href="#votacion"
               className="inline-flex min-h-11 items-center rounded-full bg-naranja px-5 text-sm font-semibold text-tinta transition-[background-color,transform] duration-200 ease-pecera hover:bg-pecera active:scale-[0.98]"
             >
-              {estado.votacionAbierta ? "Votar ahora" : "Ver los proyectos"}
+              {estado.votacionAbierta ? "Votar ahora" : "Ver participantes"}
             </a>
             <Link
               href="/cuenta"
@@ -197,17 +195,17 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
         {/* Votación */}
         <section id="votacion" aria-labelledby="titulo-votacion" className="mt-10 scroll-mt-24">
           <Titulo id="titulo-votacion" feria={feria}>
-            Proyectos
+            {estado.resultadosVisibles ? "Ranking del público" : "Participantes"}
           </Titulo>
           {!estado.disponible ? (
             <p className="mt-3 rounded-2xl bg-tinta/5 px-4 py-3 text-sm text-tinta">
               Estamos preparando la votación. Volvé en un rato.
             </p>
-          ) : proyectos.length === 0 ? (
+          ) : participantes.length === 0 ? (
             <p className="mt-3 rounded-2xl bg-tinta/5 px-4 py-3 text-sm text-tinta">
-              Todavía no se anotó ningún proyecto. ¿Tenés uno?{" "}
+              Todavía no se anotó nadie. ¿Vas a estar?{" "}
               <Link href="/cuenta" className="font-medium underline underline-offset-4">
-                Anotalo desde tu perfil
+                Anotate desde tu perfil
               </Link>
               .
             </p>
@@ -215,7 +213,7 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
             <div className="mt-4">
               <Votacion
                 evento={evento.slug}
-                proyectos={proyectos}
+                participantes={participantes}
                 abierta={estado.votacionAbierta}
                 resultadosVisibles={estado.resultadosVisibles}
                 resultados={estado.resultados}
@@ -230,33 +228,6 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
 
         {feria && <GaleriaEdicion />}
 
-        {presentes.length > 0 && (
-          <section aria-labelledby="presentes" className="mt-10">
-            <Titulo id="presentes" feria={feria}>
-              También en la feria
-            </Titulo>
-            <p className="mt-1 text-sm text-tinta/70">Inversores y aliados que van a estar. Buscalos.</p>
-            <ul className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
-              {presentes.map((p) => (
-                <li key={p.perfil_id}>
-                  <Link
-                    href={`/p/${p.slug}`}
-                    className="flex min-h-14 items-center gap-3 rounded-2xl border border-tinta/10 px-3 py-2 transition-colors duration-200 ease-pecera hover:border-arcilla"
-                  >
-                    <Avatar perfil={p} size={44} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-tinta">{p.nombre}</span>
-                      <span className="block truncate text-sm text-tinta/60">{TIPOS[p.tipo]}</span>
-                    </span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium text-marfil ${ROLES[p.rol].bg}`}>
-                      {ROLES[p.rol].label}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
 
         <PieLegal tono="claro" className="mt-10 pb-8" />
       </div>

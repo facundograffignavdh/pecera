@@ -78,8 +78,8 @@ const normal = (t: string) =>
 /**
  * Gestión de la feria en /admin: quién participa (perfiles y empresas) y qué pitches
  * llevan #feria21. Todo lo decide la base (cada RPC exige admin); acá solo se filtra.
- * "Para revisar" junta lo que no cierra: pitch con #feria21 de quien no participa,
- * participante sin pitch y empresas con dos o más integrantes anotadas (se reparten
+ * Compite cualquier rol. "Para revisar" junta lo que no cierra: pitch con #feria21 de
+ * quien no participa, participante sin pitch y empresas con dos o más integrantes anotadas (se reparten
  * los votos).
  */
 export default function GestionFeria({ datos }: { datos: DatosFeria }) {
@@ -180,7 +180,7 @@ export default function GestionFeria({ datos }: { datos: DatosFeria }) {
 }
 
 function revisarPerfil(p: PerfilFeria) {
-  if (!p.visible || p.rol !== "emprendedor") return false;
+  if (!p.visible) return false;
   return (p.participa && p.pitches === 0) || (!p.participa && p.pitches_feria > 0);
 }
 
@@ -192,7 +192,6 @@ function FilaPerfil({ p }: { p: PerfilFeria }) {
   const avisos: string[] = [];
   if (p.participa && p.pitches === 0) avisos.push("sin pitch publicado");
   if (!p.participa && p.pitches_feria > 0) avisos.push("tiene pitch con #feria21");
-  if (p.participa && p.rol !== "emprendedor") avisos.push("no compite: no es emprendedor");
   return (
     <li className={`${CAJA} flex items-center justify-between gap-3`}>
       <span className="min-w-0">
@@ -226,7 +225,7 @@ function FilaPerfil({ p }: { p: PerfilFeria }) {
 }
 
 function FilaEmpresa({ e }: { e: EmpresaFeria }) {
-  const elegibles = e.integrantes.filter((i) => i.rol === "emprendedor" && i.visible);
+  const elegibles = e.integrantes.filter((i) => i.visible);
   const anotadas = e.integrantes.filter((i) => i.participa).length;
   return (
     <li className={`${CAJA} flex flex-col gap-2`}>
@@ -255,7 +254,7 @@ function FilaEmpresa({ e }: { e: EmpresaFeria }) {
         ) : elegibles.length > 0 ? (
           <BotonAccion accion={participanteEmpresa.bind(null, e.id, true)}>Sumar</BotonAccion>
         ) : (
-          <span className="text-right text-xs text-tinta/70">Sin integrante emprendedora visible</span>
+          <span className="text-right text-xs text-tinta/70">Sin integrante visible</span>
         )}
       </div>
       {e.representante && <ElegirRepresentante empresa={e} elegibles={elegibles} />}

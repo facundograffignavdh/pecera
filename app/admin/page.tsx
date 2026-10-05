@@ -818,7 +818,7 @@ async function Evento({ supabase }: { supabase: Supabase }) {
               </span>
               <span className="flex items-center gap-3">
                 <span className="text-sm font-semibold tabular-nums text-tinta">
-                  {p.rol === "emprendedor" ? `${votos.get(p.perfil_id) ?? 0} votos` : "no compite"}
+                  {`${votos.get(p.perfil_id) ?? 0} votos`}
                 </span>
                 <BotonAccion
                   accion={participante.bind(null, p.perfil_id, false)}

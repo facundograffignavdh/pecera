@@ -20,10 +20,11 @@ function hace(minutos: number) {
   return `hace ${h} h`;
 }
 
-function frase(industriaDestino: string | null) {
+/** `quien`: "un participante" en la feria (cualquier rol), "un proyecto" en la plataforma. */
+function frase(industriaDestino: string | null, quien: string) {
   return industriaDestino
-    ? `Alguien inició una conexión con un proyecto de ${industria(industriaDestino).label}`
-    : "Alguien inició una conexión con un proyecto";
+    ? `Alguien inició una conexión con ${quien} de ${industria(industriaDestino).label}`
+    : `Alguien inició una conexión con ${quien}`;
 }
 
 /**
@@ -71,7 +72,9 @@ export default function Vivo({ alcance }: { alcance: Alcance }) {
     datos && datos.proyectos_con_ci !== null && datos.proyectos > 0
       ? Math.round((datos.proyectos_con_ci / datos.proyectos) * 100)
       : null;
-  const deQuien = conAlcance && alcance === "evento" ? `de los proyectos de ${EVENTO_ACTUAL.nombre}` : "de los proyectos";
+  // En la feria compite cualquier rol: son "participantes", no "proyectos".
+  const enFeria = conAlcance && alcance === "evento";
+  const deQuien = enFeria ? `de los participantes de ${EVENTO_ACTUAL.nombre}` : "de los proyectos";
 
   return (
     <main className="tema-fijo flex min-h-dvh flex-col bg-pecera px-[max(1rem,3vw)] pb-[max(1rem,2dvh,env(safe-area-inset-bottom))] pt-[max(1rem,2.5dvh,env(safe-area-inset-top))] text-tinta lg:h-dvh lg:overflow-hidden">
@@ -119,7 +122,7 @@ export default function Vivo({ alcance }: { alcance: Alcance }) {
                 key={`${datos?.actualizado}-${i}`}
                 className="aparecer flex items-baseline justify-between gap-4 border-t-2 border-tinta/20 pt-[0.8dvh] text-[clamp(1rem,2.2dvh,1.8rem)] leading-snug"
               >
-                <span>{frase(t.industria)}</span>
+                <span>{frase(t.industria, enFeria ? "un participante" : "un proyecto")}</span>
                 <span className="shrink-0">{hace(t.minutos)}</span>
               </li>
             ))}
@@ -140,14 +143,14 @@ export default function Vivo({ alcance }: { alcance: Alcance }) {
   );
 }
 
-/** "Feria 21 / Toda la plataforma": qué cuenta como proyecto para el %. */
+/** "Feria 21 / Toda la plataforma": quiénes cuentan para el % (participantes o proyectos). */
 function ElegirAlcance({ alcance }: { alcance: Alcance }) {
   const opciones = [
     { id: "evento", label: EVENTO_ACTUAL.nombre, href: "/admin/vivo" },
     { id: "plataforma", label: "Toda la plataforma", href: "/admin/vivo?alcance=plataforma" },
   ] as const;
   return (
-    <nav aria-label="Qué proyectos cuentan" className="flex rounded-full border-2 border-tinta p-0.5">
+    <nav aria-label="Quiénes cuentan" className="flex rounded-full border-2 border-tinta p-0.5">
       {opciones.map((o) => (
         <Link
           key={o.id}
@@ -181,7 +184,7 @@ function RankingEnVivo({ ranking }: { ranking: Ranking | null }) {
     <section aria-labelledby="ranking-titulo" className="flex min-h-[70dvh] flex-col lg:min-h-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h2 id="ranking-titulo" className="font-display text-[clamp(1.5rem,4dvh,3.2rem)] font-semibold leading-tight">
-          Votación del público
+          Ranking del público
         </h2>
         {ranking && (
           <p className="text-[clamp(1rem,2.4dvh,2rem)] tabular-nums">
@@ -213,7 +216,7 @@ function RankingEnVivo({ ranking }: { ranking: Ranking | null }) {
         <p className="mt-[1dvh] text-[clamp(0.9rem,2dvh,1.6rem)]">
           {hayEmpate && "= puesto compartido: mismos votos."}
           {hayEmpate && ranking.fuera > 0 && " "}
-          {ranking.fuera > 0 && `Y ${ranking.fuera} ${ranking.fuera === 1 ? "proyecto más" : "proyectos más"} con votos.`}
+          {ranking.fuera > 0 && `Y ${ranking.fuera} ${ranking.fuera === 1 ? "participante más" : "participantes más"} con votos.`}
         </p>
       )}
     </section>

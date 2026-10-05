@@ -16,8 +16,9 @@ qué mirar durante la feria. Rama `super-dataroom`, migración
   destino es un emprendedor.
 - **Proyecto (participante)**: depende del filtro **Feria 21 / Toda la plataforma**
   (por defecto, Feria 21; migración `20261012120000_vivo_feria.sql`).
-  - *Feria 21*: perfil emprendedor visible anotado en la Feria 21 (por su cuenta, a mano o
-    como representante de su empresa), con o sin pitch.
+  - *Feria 21*: **participantes**: perfil visible de cualquier rol (emprendedor, inversor o
+    aliado) anotado en la Feria 21 (por su cuenta, a mano o como representante de su empresa),
+    con o sin pitch. El panel y la pantalla del stand los llaman "participantes".
   - *Toda la plataforma*: perfil visible con al menos un pitch publicado.
   En los dos casos no cuentan los `test-*`, el perfil `pecera` ni los de cuentas del equipo
   (`admins`, `equipo_ingesta`). El filtro cambia solo el denominador (liquidez, % con al menos

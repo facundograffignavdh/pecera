@@ -17,7 +17,7 @@ ponerlo en marcha y cómo operar la feria. La auditoría con los pendientes est�
 | Perfil con nombre, tipo, rol, descripción y contacto | Formulario en 4 pasos con **etiquetas por rol**: etapa (idea → escalando), industrias, ronda que busca y cargo (CEO, CTO, CFO…) para innovadores; rondas, ticket e industrias de interés para inversores; especialidades con colores para aliados (mentoría, coaching, legal, fundraising…) |
 | Cada persona suelta | **Empresas**: alguien la crea, pasa un código de 8 caracteres, el equipo se suma con su cargo. Página pública `/e/slug` con el equipo y **todos los pitches juntos** |
 | Nada de métricas | **Transparencia**: 42 métricas y documentos (MRR, churn, CAC, MOAT, pitch deck, cap table, SAFE…), **privados** hasta que el equipo comparte cada uno |
-| Sin eventos | **Feria 21** en `/eventos/feria-21`: programa del 7 al 9 de octubre + Demo Day, cómo votar y **votación del público** (un voto por cuenta de Google, solo compiten proyectos) |
+| Sin eventos | **Feria 21** en `/eventos/feria-21`: programa del 7 al 9 de octubre + Demo Day, cómo votar y **votación del público** (un voto por cuenta de Google; compite cualquier perfil anotado: emprendedor, inversor o aliado) |
 | Sin material educativo | **Docs**: 98 conceptos con ejemplo y buscador (`/docs/conceptos`) y 16 documentos legales con kit por etapa (`/docs/legales`). Todo se comparte con link directo |
 | Doble toque en parte del video | **Doble toque en toda la pantalla**, ráfaga de corazones (tap-tap-tap), vibración, pista la primera vez y el pop-up espera a que termine la ráfaga |
 | Sin navegación | **Menú** (☰ arriba a la izquierda): Feed, Feria 21, Docs, Sumate, Mi perfil |
@@ -79,13 +79,14 @@ funciona igual: guarda lo básico del perfil, avisa y las páginas nuevas muestr
 
 ### Inversor
 Entra como **Inversor**: tipo (ángel, fondo, aceleradora), **rondas** que mira, **ticket** y
-hasta 6 **industrias de interés**. Puede anotarse en la Feria 21 como "presente" (aparece en
-"También en la feria", no compite). Vota como cualquiera.
+hasta 6 **industrias de interés**. Puede anotarse en la Feria 21 y compite en el ranking del
+público como cualquier participante (migración `20261013120000_feria_todos_los_roles.sql`). Vota
+como cualquiera.
 
 ### Aliado (mentor, coach, aceleradora, incubadora)
 Entra como **Aliado**: hasta 5 **especialidades**, cada una con su color (mentoría y coaching en
 verde, fundraising y ventas en arcilla, legal en tierra, tecnología en azul…). Igual que el
-inversor, figura como presente en la feria.
+inversor, si se anota en la feria compite en el ranking del público.
 
 ### Público
 No necesita cuenta para mirar el feed, perfiles, empresas, el evento ni Docs. Para **votar**

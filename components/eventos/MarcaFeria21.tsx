@@ -95,7 +95,7 @@ export function PortadaFeria21({ evento, votacionAbierta }: { evento: Evento; vo
             href="#votacion"
             className="boton inline-flex min-h-12 items-center rounded-full bg-s21-amarillo px-6 text-sm font-bold uppercase tracking-wide text-[#353535] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
-            {votacionAbierta ? "Votar ahora" : "Ver los proyectos"}
+            {votacionAbierta ? "Votar ahora" : "Ver participantes"}
           </a>
           <Link
             href="/cuenta"
