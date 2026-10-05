@@ -242,9 +242,9 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `supabase/rollback-persona-empresa.sql`, que NO es migración). **Una cuenta = una persona** (como
   LinkedIn): `perfiles.tipo = 'persona'` en las cuentas nuevas (no se muestra); el tipo de entidad va en
   `empresas.tipo` (`TIPOS_EMPRESA` en `lib/etiquetas.ts`, espejo del CHECK) y el rol en cada una es
-  `empresa_miembros.cargo`. Una persona puede no tener empresas. Los perfiles viejos con tipo de
-  entidad ven `ConvertirEnEmpresa` (guiado, se puede posponer; `convertirEnEmpresa` crea la empresa,
-  la foto puede pasar a logo, el slug no cambia); `supabase/consultas/perfiles-como-empresa.sql` los lista.
+  `empresa_miembros.cargo`. Una persona puede no tener empresas. El alta y la pantalla de entrar lo
+  explican (`AvisoCuentaPersonal`): primero tu perfil, después tu emprendimiento como empresa. Los
+  perfiles viejos no se tocan.
   - El cuerpo de /p/[slug] es `components/perfil/VistaPerfil.tsx`: /p lo usa sin slots (el visitante ve
     lo de siempre) y /cuenta con slots de dueño. Cada sección: `SeccionEditable` ("+ Agregar" si está
     vacía, lápiz si tiene datos; `#editar-<clave>` la abre) → `FormSeccion` en una `Hoja`

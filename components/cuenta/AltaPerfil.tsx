@@ -4,6 +4,7 @@ import { unstable_rethrow } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { crearPerfilPersonal } from "@/app/cuenta/seccion";
 import EditorFoto from "@/components/EditorFoto";
+import AvisoCuentaPersonal from "@/components/cuenta/AvisoCuentaPersonal";
 import { Campo, MensajeError, claseInput, describir } from "@/components/perfil/editores/campos";
 import {
   CONSENTIMIENTO,
@@ -105,14 +106,12 @@ export default function AltaPerfil({ rolInicial }: { rolInicial?: Rol }) {
     <form action={accion} noValidate className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">Creá tu perfil personal</h1>
-        <p className="leading-relaxed text-tinta/80">
-          Pecera funciona como LinkedIn: tu cuenta es personal y después agregás tu emprendimiento.
-        </p>
       </header>
+      <AvisoCuentaPersonal />
 
       <EditorFoto nombre={nombre || "?"} rol={rol || "emprendedor"} foto={foto?.url ?? null} guardarEnElActo={false} onCambio={setFoto} />
 
-      <Campo id="alta-nombre" label="Tu nombre y apellido" error={errores.nombre}>
+      <Campo id="alta-nombre" label="Tu nombre y apellido" error={errores.nombre} ayuda="El tuyo, no el de tu emprendimiento: ese va en tu empresa.">
         <input
           id="alta-nombre"
           name="nombre"
@@ -123,7 +122,7 @@ export default function AltaPerfil({ rolInicial }: { rolInicial?: Rol }) {
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           aria-invalid={!!errores.nombre}
-          aria-describedby={describir("alta-nombre", errores.nombre)}
+          aria-describedby={describir("alta-nombre", errores.nombre, true)}
           className={claseInput(errores.nombre)}
         />
       </Campo>
@@ -255,7 +254,7 @@ export default function AltaPerfil({ rolInicial }: { rolInicial?: Rol }) {
         </div>
       )}
       <p className="text-center text-sm text-tinta/70">
-        Después sumás tu empresa, tu experiencia y tu pitch desde tu perfil, cuando quieras.
+        Después creás tu empresa (o te sumás a la de tu equipo), tu experiencia y tu pitch desde tu perfil.
       </p>
     </form>
   );

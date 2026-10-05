@@ -12,8 +12,8 @@ import SelectorTema from "@/components/SelectorTema";
 import BuildPublico from "@/components/build/BuildPublico";
 import AccionesPitch from "@/components/cuenta/AccionesPitch";
 import AltaPerfil from "@/components/cuenta/AltaPerfil";
+import AvisoCuentaPersonal from "@/components/cuenta/AvisoCuentaPersonal";
 import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
-import ConvertirEnEmpresa from "@/components/cuenta/ConvertirEnEmpresa";
 import EmpresasDueno from "@/components/cuenta/EmpresasDueno";
 import ResaltarAncla from "@/components/cuenta/ResaltarAncla";
 import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
@@ -61,9 +61,6 @@ export const metadata: Metadata = {
 };
 
 const BOTON_PRIMARIO = boton("primario", "lg");
-
-/** Tipos de perfil de antes que son de una entidad: se ofrece pasarlos a una empresa. */
-const TIPOS_ENTIDAD = new Set(["startup", "emprendimiento", "aceleradora", "incubadora", "fondo", "empresa", "institucion"]);
 
 /**
  * Mi perfil. Sin sesión: entrar con Google. Sin perfil: el alta mínima (persona).
@@ -154,6 +151,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <p className="leading-relaxed text-tinta/80">
               Entrá con tu cuenta de Google para crear tu perfil personal o editarlo.
             </p>
+            <AvisoCuentaPersonal />
             <AvisoNavegadorInterno />
             {error === "login" && (
               <p role="alert" className="rounded-2xl border-2 border-arcilla px-4 py-3 text-sm font-medium text-tinta">
@@ -190,9 +188,6 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <EnVivo canal={`perfil-${user.id}`} filtro={`usuario_id=eq.${user.id}`} />
             <div className="mt-2 flex flex-col gap-3">
               {creado === "1" && <Creado perfil={perfil} fotoFallo={foto === "error"} />}
-              {TIPOS_ENTIDAD.has(perfil.tipo) && extras?.disponible && (
-                <ConvertirEnEmpresa nombre={perfil.nombre} tipo={perfil.tipo} conFoto={!!perfil.avatar_url} />
-              )}
               <RelacionesPendientes relaciones={pendientes} />
             </div>
 
