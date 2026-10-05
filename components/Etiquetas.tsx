@@ -9,7 +9,8 @@ import {
   labelTicket,
   pasoEtapa,
 } from "@/lib/etiquetas";
-import FilaDosLineas from "@/components/FilaDosLineas";
+import FilaRecortada from "@/components/FilaRecortada";
+import { ROLES, TIPOS } from "@/lib/rol";
 import type { EmpresaDePerfil, Perfil } from "@/types/pecera";
 
 /**
@@ -151,15 +152,19 @@ export function EtiquetasPerfil({
 }
 
 /**
- * Versión del reel: empresa, etapa y etiquetas en dos líneas como mucho. Chips de
- * vidrio oscuro con texto marfil: se leen sobre el gradiente. Lo que no entra se
- * resume en un "+N" al final (`FilaDosLineas`). Con varias empresas va la principal
- * y un chip "+N" propio; la lista completa está en el perfil, a un toque.
+ * Versión del reel: rol, tipo, empresa, etapa y etiquetas en una sola línea sobre el
+ * video; lo que no entra se resume en un "+N" que despliega la fila (`FilaRecortada`).
+ * Chips de vidrio oscuro con texto marfil: se leen sobre el gradiente. Con varias
+ * empresas va la principal y un chip "+N" propio; la lista completa está en el perfil.
  */
 export function EtiquetasReel({
   perfil,
+  id,
+  activo,
 }: {
-  perfil: ConEtiquetas & Pick<Perfil, "empresa" | "empresas" | "empresa_id">;
+  perfil: ConEtiquetas & Pick<Perfil, "tipo" | "empresa" | "empresas" | "empresa_id">;
+  id: string;
+  activo: boolean;
 }) {
   const chips: Array<{ clave: string; texto: string }> = [];
   if (perfil.rol === "inversor") {
@@ -177,9 +182,15 @@ export function EtiquetasReel({
   const [primera, ...resto] = empresasDe(perfil);
   const c = cargo(primera?.cargo);
   const etapa = perfil.rol === "emprendedor" ? perfil.etapa : null;
-  if (!primera && !etapa && !chips.length) return null;
+  const rol = ROLES[perfil.rol];
+  const tipo = TIPOS[perfil.tipo];
 
-  const piezas: React.ReactNode[] = [];
+  const piezas: React.ReactNode[] = [
+    <span key="rol" className="flex min-w-0 items-center gap-2">
+      <span className={`shrink-0 rounded-full px-2 py-0.5 font-medium ${rol.bg}`}>{rol.label}</span>
+      {tipo && <span className="texto-sombra truncate font-medium text-marfil/85">{tipo}</span>}
+    </span>,
+  ];
   if (primera) {
     piezas.push(
       <span key="empresa" className="flex min-w-0 max-w-full items-center gap-1.5">
@@ -208,9 +219,11 @@ export function EtiquetasReel({
   }
 
   return (
-    <FilaDosLineas
+    <FilaRecortada
       piezas={piezas}
-      className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs"
+      id={id}
+      activo={activo}
+      className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs"
       claseMas={`px-2 font-semibold ${CHIP_REEL}`}
     />
   );

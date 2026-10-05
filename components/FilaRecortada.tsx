@@ -3,31 +3,44 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 /**
- * Fila de piezas que ocupa como mucho dos líneas: las que no entran se esconden
- * desde el final y su lugar lo toma un "+N". Se mide con el ancho real (cambia
- * con la pantalla y el tamaño de letra), así que hace falta el navegador.
+ * Fila de piezas en una sola línea: las que no entran se esconden desde el final y
+ * su lugar lo toma un botón "+N" que despliega la fila entera ("menos" la vuelve a
+ * plegar). Se mide con el ancho real (cambia con la pantalla y el tamaño de letra),
+ * así que hace falta el navegador. Al dejar de ser el reel activo vuelve a plegarse.
  */
-export default function FilaDosLineas({
+export default function FilaRecortada({
   piezas,
+  id,
+  activo,
   className = "",
   claseMas = "",
 }: {
-  /** Cada pieza con su `key`, en orden de importancia: se esconden las últimas. */
+  /** En orden de importancia: se esconden las últimas. */
   piezas: ReactNode[];
+  id: string;
+  activo: boolean;
   className?: string;
   claseMas?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visibles, setVisibles] = useState(piezas.length);
   const total = piezas.length;
+  const [visibles, setVisibles] = useState(total);
+  const [abierta, setAbierta] = useState(false);
+
+  // Ajuste en render, no en efecto (como en Reel y Subtitulos).
+  const [erasActivo, setErasActivo] = useState(activo);
+  if (erasActivo !== activo) {
+    setErasActivo(activo);
+    if (!activo) setAbierta(false);
+  }
 
   useLayoutEffect(() => {
     const fila = ref.current;
-    if (!fila) return;
+    if (!fila || abierta) return;
     let ancho = -1;
 
     // Muestra todo, mide y deja el DOM como va a quedar después del render:
-    // así no se ve ni un cuadro con tres líneas.
+    // así no se ve ni un cuadro con la fila desbordada.
     const medir = () => {
       const nodos = Array.from(fila.querySelectorAll<HTMLElement>(":scope > [data-pieza]"));
       const mas = fila.querySelector<HTMLElement>(":scope > [data-mas]");
@@ -35,14 +48,14 @@ export default function FilaDosLineas({
       for (const n of nodos) n.hidden = false;
       mas.hidden = true;
 
-      let k = nodos.findIndex((n) => linea(n, nodos) > 2);
+      let k = nodos.findIndex((n) => linea(n, nodos) > 1);
       if (k === -1) {
         setVisibles(nodos.length);
         return;
       }
       for (const n of nodos.slice(k)) n.hidden = true;
       mas.hidden = false;
-      while (k > 0 && linea(mas, [...nodos.slice(0, k), mas]) > 2) {
+      while (k > 1 && linea(mas, [...nodos.slice(0, k), mas]) > 1) {
         k--;
         nodos[k].hidden = true;
       }
@@ -58,20 +71,33 @@ export default function FilaDosLineas({
     });
     observador.observe(fila);
     return () => observador.disconnect();
-  }, [total]);
+  }, [total, abierta]);
 
   const ocultas = total - visibles;
   return (
-    <div ref={ref} className={className}>
+    <div ref={ref} id={id} className={className}>
       {piezas.map((p, i) => (
-        <span key={i} data-pieza hidden={i >= visibles} className="flex min-w-0 max-w-full">
+        <span key={i} data-pieza hidden={!abierta && i >= visibles} className="flex min-w-0 max-w-full">
           {p}
         </span>
       ))}
-      <span data-mas hidden={ocultas === 0} className={claseMas}>
-        <span aria-hidden>+{ocultas}</span>
-        <span className="sr-only">y {ocultas} etiquetas más</span>
-      </span>
+      <button
+        type="button"
+        data-mas
+        hidden={!abierta && ocultas === 0}
+        aria-expanded={abierta}
+        aria-controls={id}
+        aria-label={abierta ? "Ver menos etiquetas" : `Ver ${ocultas} ${ocultas === 1 ? "etiqueta" : "etiquetas"} más`}
+        onClick={(e) => {
+          // El video es hermano, no ancestro; igual no dejamos que el toque siga.
+          e.stopPropagation();
+          setAbierta((a) => !a);
+        }}
+        // Chico a la vista; el ::after lleva la zona táctil a 44 px.
+        className={`pointer-events-auto relative shrink-0 after:absolute after:-inset-x-2 after:-inset-y-3 ${claseMas}`}
+      >
+        {abierta ? "menos" : `+${ocultas}`}
+      </button>
     </div>
   );
 }
