@@ -82,7 +82,7 @@ export const PESTANA = "Respuestas de formulario 1";
 export const DESCRIPCION_MAX = 150;
 
 export const DURACION_MAX_S = 90;
-export const VIDEO_MAX_BYTES = 40 * 1024 * 1024;
+export const VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 export const TOTAL_MAX_BYTES = 8 * 1024 * 1024 * 1024;
 export const POSTER_MAX_BYTES = 100 * 1024;
 export const AVATAR_LADO = 256;
