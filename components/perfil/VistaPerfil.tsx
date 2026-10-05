@@ -25,6 +25,7 @@ import { cargo } from "@/lib/etiquetas";
 import type { NewsletterLink } from "@/lib/newsletter";
 import type { Racha } from "@/lib/racha";
 import { ROLES, TIPOS } from "@/lib/rol";
+import type { Score } from "@/lib/score";
 import type { EmpresaDePerfil, ItemPortafolio, Metricas, Perfil, Pitch } from "@/types/pecera";
 
 /** Degradé de la franja de arriba según el rol: se reconoce de un vistazo. */
@@ -46,6 +47,8 @@ export type DatosVistaPerfil = {
   newsletter: NewsletterLink | null;
   portfolio: DatosPortfolio | null;
   logos: Map<string, string>;
+  /** Score crediticio de cada empresa, por id (lib/datos getScoresEmpresas). Una que falte no muestra insignia. */
+  scores?: Map<string, Score>;
 };
 
 /**
@@ -80,7 +83,7 @@ export type SlotsPerfil = Partial<
  * /cuenta (con los botones de editar de cada sección).
  */
 export default function VistaPerfil({ datos, slots = {} }: { datos: DatosVistaPerfil; slots?: SlotsPerfil }) {
-  const { perfil, pitches, portafolio, racha, metricas, seguidores, build, newsletter, portfolio, logos } = datos;
+  const { perfil, pitches, portafolio, racha, metricas, seguidores, build, newsletter, portfolio, logos, scores } = datos;
   const parte = (clave: keyof SlotsPerfil, publica: ReactNode) => (clave in slots ? slots[clave] : publica);
 
   const rol = ROLES[perfil.rol];
@@ -148,7 +151,7 @@ export default function VistaPerfil({ datos, slots = {} }: { datos: DatosVistaPe
           empresas.length > 0 && (
             <div className="flex flex-col gap-2">
               {empresas.map((e) => (
-                <TarjetaEmpresaPerfil key={e.slug} empresa={e} cargo={cargo(e.cargo)?.label ?? null} />
+                <TarjetaEmpresaPerfil key={e.slug} empresa={e} cargo={cargo(e.cargo)?.label ?? null} score={e.id ? scores?.get(e.id) : undefined} />
               ))}
             </div>
           )

@@ -2,9 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import EnlaceContacto from "@/components/EnlaceContacto";
 import { Etiqueta } from "@/components/Etiquetas";
+import { InsigniaScore, textoScore } from "@/components/InsigniaScore";
 import { canalesDe } from "@/lib/contacto";
 import { aporte, labelDedicacion, necesidad, tipoPortafolio } from "@/lib/etiquetas";
 import type { Racha } from "@/lib/racha";
+import type { Score } from "@/lib/score";
 import type { EmpresaResumen, ItemPortafolio, Perfil } from "@/types/pecera";
 
 /**
@@ -161,11 +163,20 @@ export function BloquePortafolio({ items }: { items: ItemPortafolio[] }) {
 }
 
 /** La empresa del perfil, con su logo: Empresa → Nombre, a un toque de su página. */
-export function TarjetaEmpresaPerfil({ empresa, cargo }: { empresa: EmpresaResumen; cargo: string | null }) {
+export function TarjetaEmpresaPerfil({
+  empresa,
+  cargo,
+  score,
+}: {
+  empresa: EmpresaResumen;
+  cargo: string | null;
+  /** Su score crediticio (lib/score.ts); sin él (no se pudo calcular) no se dibuja la insignia. */
+  score?: Score;
+}) {
   return (
     <Link
       href={`/e/${empresa.slug}`}
-      aria-label={`Empresa: ${empresa.nombre}. Ver la página de la empresa`}
+      aria-label={`Empresa: ${empresa.nombre}.${score ? ` ${textoScore(score)}.` : ""} Ver la página de la empresa`}
       className="boton group flex min-h-16 items-center gap-3 rounded-2xl border border-tinta/12 bg-marfil px-3 py-2.5 hover:border-arcilla"
     >
       <LogoEmpresa nombre={empresa.nombre} logo={empresa.logo_url ?? null} size={44} />
@@ -175,6 +186,7 @@ export function TarjetaEmpresaPerfil({ empresa, cargo }: { empresa: EmpresaResum
         </span>
         <span className="block truncate font-display text-lg font-semibold leading-tight text-tinta">{empresa.nombre}</span>
       </span>
+      {score && <InsigniaScore score={score} />}
       <span aria-hidden className="text-lg text-tinta/50 transition-transform duration-200 group-hover:translate-x-1">
         &rarr;
       </span>

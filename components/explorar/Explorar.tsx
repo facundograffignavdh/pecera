@@ -5,10 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { useDeferredValue, useMemo, useState } from "react";
 import Avatar from "@/components/Avatar";
 import LogoEntidad from "@/components/LogoEntidad";
+import { InsigniaScore } from "@/components/InsigniaScore";
 import { ESPECIALIDADES, ETAPAS, INDUSTRIAS, RONDAS_INTERES, labelEtapa, labelIndustria, labelRonda } from "@/lib/etiquetas";
 import type { FichaDirectorio } from "@/lib/explorar";
 import { GEOGRAFIAS, labelGeografia } from "@/lib/portfolio";
 import { ROLES, TIPOS } from "@/lib/rol";
+import { ORDEN_LETRAS, type Letra } from "@/lib/score";
 
 type Vista = "todo" | "startups" | "inversores" | "aliados";
 
@@ -20,6 +22,16 @@ const VISTAS: Array<{ id: Vista; label: string }> = [
 ];
 
 const POR_PAGINA = 30;
+
+/** Filtro por score crediticio (solo startups): esa letra o mejor; la D, solo las D (las de más riesgo). */
+type FiltroScore = "" | Letra;
+const OPCIONES_SCORE: Array<{ valor: FiltroScore; label: string }> = [
+  { valor: "", label: "Todo score" },
+  { valor: "A", label: "Score A (riesgo bajo)" },
+  { valor: "B", label: "Score B o mejor" },
+  { valor: "C", label: "Score C o mejor" },
+  { valor: "D", label: "Solo score D (riesgo alto)" },
+];
 const SELECT =
   "min-h-11 rounded-full border border-tinta/20 bg-marfil px-3.5 text-sm text-tinta focus:outline-2 focus:outline-offset-2 focus:outline-arcilla";
 
@@ -71,6 +83,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
   const [geografia, setGeografia] = useState("");
   const [especialidad, setEspecialidad] = useState("");
   const [conPortfolio, setConPortfolio] = useState(false);
+  const [score, setScore] = useState<FiltroScore>("");
   const [pagina, setPagina] = useState(1);
   const qDiferida = useDeferredValue(q);
 
@@ -86,6 +99,12 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
         if (industria && !f.industrias.includes(industria) && !f.industriasPortfolio.includes(industria)) return false;
         if (vista === "startups" && etapa && f.etapa !== etapa) return false;
         if (vista === "startups" && ronda && f.ronda !== ronda) return false;
+        if (vista === "startups" && score) {
+          // El score es de las empresas: una persona no lo tiene, así que con este filtro no aparece.
+          const letra = f.clase === "empresa" && f.score ? f.score.letra : undefined;
+          if (!letra) return false;
+          if (score === "D" ? letra !== "D" : ORDEN_LETRAS.indexOf(letra) < ORDEN_LETRAS.indexOf(score)) return false;
+        }
         if (vista === "inversores" && ronda && !f.rondas_interes.includes(ronda)) return false;
         if (vista === "inversores" && geografia && !f.geografias.includes(geografia)) return false;
         if (vista === "inversores" && conPortfolio && f.inversiones === 0) return false;
@@ -95,7 +114,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
         return palabras.every((p) => t.includes(p));
       })
       .map(({ f }) => f);
-  }, [indice, qDiferida, vista, industria, etapa, ronda, geografia, especialidad, conPortfolio]);
+  }, [indice, qDiferida, vista, industria, etapa, ronda, geografia, especialidad, conPortfolio, score]);
 
   function cambiarVista(v: Vista) {
     setVista(v);
@@ -104,6 +123,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
     setGeografia("");
     setEspecialidad("");
     setConPortfolio(false);
+    setScore("");
     setPagina(1);
     // La URL refleja la búsqueda: se puede compartir.
     const params = new URLSearchParams(window.location.search);
@@ -113,7 +133,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
   }
 
   const visibles = resultados.slice(0, pagina * POR_PAGINA);
-  const hayFiltros = !!(industria || etapa || ronda || geografia || especialidad || conPortfolio || q);
+  const hayFiltros = !!(industria || etapa || ronda || geografia || especialidad || conPortfolio || score || q);
 
   return (
     <div className="flex flex-col gap-4">
@@ -177,6 +197,11 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
                 <option key={r.valor} value={r.valor}>Busca {r.label}</option>
               ))}
             </select>
+            <select aria-label="Score crediticio: riesgo de inversión" value={score} onChange={(e) => { setScore(e.target.value as FiltroScore); setPagina(1); }} className={SELECT}>
+              {OPCIONES_SCORE.map((o) => (
+                <option key={o.valor} value={o.valor}>{o.label}</option>
+              ))}
+            </select>
           </>
         )}
         {vista === "inversores" && (
@@ -226,6 +251,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
                 setGeografia("");
                 setEspecialidad("");
                 setConPortfolio(false);
+                setScore("");
                 window.history.replaceState(null, "", vista === "todo" ? "?" : `?ver=${vista}`);
               }}
               className="font-medium text-tinta underline underline-offset-4"
@@ -296,6 +322,7 @@ function Ficha({ f }: { f: FichaDirectorio }) {
           >
             {f.clase === "empresa" ? "Empresa" : ROLES[f.rol!].label}
           </span>
+          {f.score && <InsigniaScore score={f.score} />}
         </span>
         <span className="mt-0.5 line-clamp-2 block text-sm text-tinta/75">{f.descripcion}</span>
         {linea.length > 0 && <span className="mt-1 block truncate text-xs text-tinta/60">{linea.join(" · ")}</span>}

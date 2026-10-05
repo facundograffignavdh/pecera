@@ -264,6 +264,25 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     mensaje con `/?src=compartir#<pitch>` y `/sumate`.
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
+- Score crediticio A-D (rama `score-crediticio`; **sin migración**: se calcula en la app). Categoriza el
+  riesgo de inversión según cuánta información de la empresa es **transparente** en su Dataroom
+  (documentos y datos con el switch en "Transparente"; lo privado no cuenta). TODA empresa tiene score y
+  arranca en D; A es el menor riesgo. La fórmula vive solo en `lib/score.ts` (sin imports en runtime, para
+  probarla con `node scripts/pruebas/score.ts`, que tiene que terminar en "0 fallas"): 9 áreas del
+  Dataroom (sin "Otros") con pesos que suman 100 (finanzas 20, tracción 20, legal 15, fundraising 10,
+  fundadores 10, producto 8, mercado 7, modelo 5, empresa 5); un área suma entera si tiene UNA pieza que
+  cuenta (plantilla completa, link https o escrito de ≥ 200 caracteres; un dato de Transparencia con
+  valor). Umbrales: C ≥ 30, B ≥ 60 y con finanzas y tracción, A ≥ 85 y con finanzas, tracción y legal.
+  Cambiar pesos o umbrales cambia el score de todas: va con la prueba. `lib/score-empresa.ts` lo conecta
+  con los catálogos (`CATEGORIA_DE_DATO`, `DATOS`, `PLANTILLAS`), y de ahí sale "qué métricas, documentos
+  y templates suben el score" (`METRICAS_SCORE`): un dato o template nuevo aparece solo. Lectura:
+  `getScoresEmpresas` (`lib/datos.ts`, por lotes, anon; si falla, sin insignia, nunca un D falso).
+  Se muestra en `/e/[slug]` (`PanelScore`), en la tarjeta de empresa de /p y /cuenta, en el Dataroom del
+  dueño (público vs. potencial con lo privado) y en /explorar (insignia + filtro en Startups). La "i"
+  (`Info`) explica cómo mejorarlo. `InsigniaScore.tsx` es aparte y liviano: Explorar la carga en el cliente.
+  **Pendiente legal**: el texto de la "i" aclara que mide cuánta información hay, no si es verdadera, y que
+  no es una calificación de riesgo regulada ni asesoramiento; antes del lanzamiento, que el abogado revise
+  el nombre "crediticio" y los rótulos "Riesgo bajo/alto" (calificadoras de riesgo, CNV).
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)

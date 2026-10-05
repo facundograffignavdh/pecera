@@ -9,6 +9,7 @@ import InsigniaBuild from "@/components/build/InsigniaBuild";
 import ProductoPublico from "@/components/empresa/ProductoPublico";
 import Ronda from "@/components/empresa/Ronda";
 import TransparenciaPublica from "@/components/empresa/TransparenciaPublica";
+import { PanelScore } from "@/components/ScoreEmpresa";
 import PitchDestacado, { PosterPitch } from "@/components/PitchDestacado";
 import Revelar from "@/components/Revelar";
 import Encabezado from "@/components/Encabezado";
@@ -21,6 +22,7 @@ import { getApoyos, getDocumentosPublicos, getEmpresa, getLogos } from "@/lib/da
 import { defTipo } from "@/lib/portfolio";
 import { ROLES } from "@/lib/rol";
 import { cargo, labelIndustria, labelRonda } from "@/lib/etiquetas";
+import { scoreDeEmpresa } from "@/lib/score-empresa";
 import { defDato } from "@/lib/transparencia";
 
 export const revalidate = 60;
@@ -71,6 +73,8 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
     getApoyos(empresa.id),
     getLogos([empresa.id]),
   ]);
+  // Score crediticio: solo de lo transparente (documentos y datos visibles), sin consultas de más.
+  const score = scoreDeEmpresa({ documentos, datos: datos.datos });
   const hayTransparencia = documentos.length > 0 || datos.datos.some((d) => defDato(d.clave)?.categoria !== "Ronda");
 
   const canales = [
@@ -125,6 +129,8 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
             </div>
           )}
         </header>
+
+        <PanelScore score={score} nombre={empresa.nombre} className="mt-5" />
 
         {empresa.descripcion && (
           <DescripcionConTags

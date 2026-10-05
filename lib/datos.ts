@@ -8,6 +8,8 @@ import type { Producto } from "@/lib/producto";
 import { supabase } from "@/lib/supabase";
 import { hashtagsDe, normalizarTag } from "@/lib/hashtags";
 import { calcularRacha, type Racha } from "@/lib/racha";
+import type { DatoScore, DocumentoScore, Score } from "@/lib/score";
+import { scoreDeEmpresa } from "@/lib/score-empresa";
 import type {
   DatoEmpresa,
   Empresa,
@@ -450,6 +452,51 @@ export async function getLogos(empresaIds: string[]): Promise<Map<string, string
     return new Map();
   }
   return new Map((data ?? []).map((l) => [l.empresa_id, urlMedia(l.clave)]));
+}
+
+/**
+ * Score crediticio (A-D) de cada empresa, por id, según lo TRANSPARENTE de su Dataroom
+ * (documentos y datos con el switch en "Transparente"; la RLS ya deja solo eso y
+ * lo de empresas visibles). Se calcula acá, sin tabla ni migración. No lanza: si la
+ * consulta falla, el mapa queda sin esa empresa y la página no dibuja la insignia
+ * (nunca un "Sin score" que no es verdad). Sin las migraciones del Dataroom o de
+ * Transparencia, esa parte cuenta como vacía.
+ */
+export async function getScoresEmpresas(empresaIds: string[]): Promise<Map<string, Score>> {
+  const ids = [...new Set(empresaIds)].filter(Boolean);
+  if (ids.length === 0) return new Map();
+  const [docs, datos] = await Promise.all([
+    supabase
+      .from("empresa_documentos")
+      .select("empresa_id, categoria, tipo, completo, url, cuerpo, visible, archivado")
+      .in("empresa_id", ids)
+      .eq("visible", true)
+      .eq("archivado", false)
+      .overrideTypes<Array<DocumentoScore & { empresa_id: string }>, { merge: false }>(),
+    supabase
+      .from("empresa_datos")
+      .select("empresa_id, clave, valor, url, visible")
+      .in("empresa_id", ids)
+      .eq("visible", true)
+      .overrideTypes<Array<DatoScore & { empresa_id: string }>, { merge: false }>(),
+  ]);
+  for (const [donde, r] of [["documentos", docs], ["datos", datos]] as const) {
+    if (r.error && !faltaMigracion(r.error)) {
+      console.error(`Supabase (getScoresEmpresas, ${donde}): ${r.error.message}`);
+      return new Map();
+    }
+  }
+  const documentos = docs.error ? [] : (docs.data ?? []);
+  const deDatos = datos.error ? [] : (datos.data ?? []);
+  return new Map(
+    ids.map((id) => [
+      id,
+      scoreDeEmpresa({
+        documentos: documentos.filter((d) => d.empresa_id === id),
+        datos: deDatos.filter((d) => d.empresa_id === id),
+      }),
+    ])
+  );
 }
 
 /** Slugs publicados, para `generateStaticParams`. */

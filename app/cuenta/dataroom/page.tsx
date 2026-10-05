@@ -7,10 +7,12 @@ import { EmpresaActual } from "@/components/cuenta/EmpresaActual";
 import SelectorEmpresa from "@/components/cuenta/SelectorEmpresa";
 import { BotonArchivar, FilaDato, FilaDocumento } from "@/components/dataroom/FilasDataroom";
 import Marco, { SinEmpresa, SinSesion } from "@/components/dataroom/Marco";
+import { PanelScore } from "@/components/ScoreEmpresa";
 import { conEmpresa } from "@/lib/cuenta";
 import { cuentaConEmpresa, rpcEn } from "@/lib/cuenta-empresa";
 import { CATEGORIAS_DATAROOM, CATEGORIA_DE_DATO, type Documento, haceCuanto } from "@/lib/dataroom";
 import { PLANTILLAS, plantilla, progresoPlantilla } from "@/lib/plantillas";
+import { scoreDeEmpresa } from "@/lib/score-empresa";
 import { defDato } from "@/lib/transparencia";
 import type { DatoEmpresa } from "@/types/pecera";
 import { boton } from "@/lib/ui";
@@ -73,6 +75,10 @@ export default async function DataroomPage({ searchParams }: PageProps<"/cuenta/
   const conInfo = porCategoria.filter((c) => c.estado === "con-info").length;
   const transparentes = activos.filter((d) => d.visible).length + datos.filter((d) => d.visible).length;
   const vacio = activos.length === 0 && datos.length === 0;
+  // Score crediticio: el público (solo lo transparente, como lo ve un inversor) y el potencial
+  // (con lo privado), para decirle qué letra tendría si hace transparente lo que ya subió.
+  const scorePublico = scoreDeEmpresa({ documentos: activos, datos });
+  const scorePotencial = scoreDeEmpresa({ documentos: activos, datos }, { soloVisibles: false });
 
   return (
     <Marco volver={ruta("/cuenta/empresa?pestana=metricas")} textoVolver="Volver a la empresa" ancho="max-w-md md:max-w-3xl lg:max-w-5xl">
@@ -89,6 +95,8 @@ export default async function DataroomPage({ searchParams }: PageProps<"/cuenta/
             transparente.
           </p>
         </header>
+
+        <PanelScore score={scorePublico} nombre={empresa.nombre} propio={{ potencial: scorePotencial }} className="mt-6" />
 
         <section aria-labelledby="progreso-titulo" className="mt-6 flex flex-col gap-3 rounded-3xl border border-tinta/10 bg-tinta/[0.03] px-4 py-5">
           <div className="flex items-baseline justify-between gap-3">

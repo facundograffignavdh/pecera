@@ -5,6 +5,7 @@ import { useActionState, useState, useTransition } from "react";
 import { crearEmpresaBasica, elegirPrincipal, unirseEmpresa } from "@/app/cuenta/empresa";
 import { ChipsUnico } from "@/components/Chips";
 import { LogoEmpresa } from "@/components/perfil/Bloques";
+import { ScoreConGuia } from "@/components/ScoreEmpresa";
 import { BotonAgregar } from "@/components/perfil/SeccionEditable";
 import { Campo, MensajeError, claseInput } from "@/components/perfil/editores/campos";
 import Hoja from "@/components/ui/Hoja";
@@ -13,6 +14,7 @@ import { conEmpresa } from "@/lib/cuenta";
 import type { EmpresaMia } from "@/lib/cuenta-empresa";
 import type { Resultado } from "@/lib/errores-base";
 import { CARGOS, TIPOS_EMPRESA, cargo, conTono, labelTipoEmpresa } from "@/lib/etiquetas";
+import type { Score } from "@/lib/score";
 import { boton } from "@/lib/ui";
 
 const OPCIONES_CARGOS = conTono(CARGOS);
@@ -24,7 +26,16 @@ const INICIAL: Resultado = { ok: false };
  * empresa": crearla con lo básico o sumarse con el código del equipo. Una persona
  * puede no tener ninguna.
  */
-export default function EmpresasDueno({ empresas, max }: { empresas: EmpresaMia[]; max: number }) {
+export default function EmpresasDueno({
+  empresas,
+  max,
+  scores = {},
+}: {
+  empresas: EmpresaMia[];
+  max: number;
+  /** Score crediticio de cada empresa, por id (lo transparente). La "i" explica cómo mejorarlo. */
+  scores?: Record<string, Score>;
+}) {
   const [abierta, setAbierta] = useState(false);
   const [vez, setVez] = useState(0);
   const [lista, setLista] = useState<{ mensaje: string; slug: string | null } | null>(null);
@@ -54,7 +65,7 @@ export default function EmpresasDueno({ empresas, max }: { empresas: EmpresaMia[
         const tipo = labelTipoEmpresa(e.tipo);
         const c = cargo(e.cargo)?.label;
         return (
-          <div key={e.id} className="flex min-h-16 flex-wrap items-center gap-3 rounded-2xl border border-tinta/12 bg-marfil px-3 py-2.5">
+          <div key={e.id} className="relative flex min-h-16 flex-wrap items-center gap-3 rounded-2xl border border-tinta/12 bg-marfil px-3 py-2.5">
             <Link href={`/e/${e.slug}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla">
               <LogoEmpresa nombre={e.nombre} logo={e.logo_url ?? null} size={44} />
               <span className="min-w-0 flex-1">
@@ -67,6 +78,15 @@ export default function EmpresasDueno({ empresas, max }: { empresas: EmpresaMia[
             <Link href={conEmpresa("/cuenta/empresa", e.slug)} className={`${boton("secundario", "sm")} shrink-0 px-4`}>
               Administrar
             </Link>
+            {scores[e.id] && (
+              <div className="flex basis-full items-center gap-2 pl-14 text-sm text-tinta/70">
+                <ScoreConGuia
+                  score={scores[e.id]}
+                  propio={{ potencial: scores[e.id], hrefDataroom: conEmpresa("/cuenta/dataroom", e.slug) }}
+                />
+                <span>Tocá la i para ver cómo mejorarlo</span>
+              </div>
+            )}
             {empresas.length > 1 && !e.es_principal && (
               <button
                 type="button"
