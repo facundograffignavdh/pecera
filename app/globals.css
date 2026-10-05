@@ -238,16 +238,16 @@ video {
   --alto-nav: 0px;
 }
 body:has(.nav-inferior) {
-  --alto-nav: calc(3.5rem + env(safe-area-inset-bottom));
+  /* Píldora de 4rem + su margen de abajo (0,75rem o la barra de inicio del iPhone). */
+  --alto-nav: calc(4rem + max(0.75rem, env(safe-area-inset-bottom)));
 }
 .nav-inferior {
-  border-width: 1px 0 0;
-  box-shadow: 0 -6px 24px rgb(28 27 22 / 0.06);
+  -webkit-tap-highlight-color: transparent;
   transition: transform var(--duracion) var(--ease-pecera);
 }
 /* Teclado abierto: la barra baja (el espacio reservado no cambia, nada salta). */
 .nav-inferior[data-escondida] {
-  transform: translateY(100%);
+  transform: translateY(calc(100% + 1rem));
 }
 /* Las páginas scrollean en su <main> (el body no): un espaciador final del alto de
    la barra. El feed no lo lleva: el reel va a sangre y su bloque sube solo. */

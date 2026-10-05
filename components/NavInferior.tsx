@@ -62,7 +62,7 @@ function useEscribiendo(): boolean {
 }
 
 /**
- * Barra de navegación fija abajo, de vidrio (como el header), con las secciones
+ * Barra de navegación flotante abajo: una píldora de vidrio (como el logo), con las secciones
  * principales y el "+" naranja para subir el pitch. Su alto queda en `--alto-nav`
  * (globals.css): las páginas y lo fijo abajo lo suman para que nada quede tapado.
  * El feed sigue a sangre: solo sube el bloque de datos del reel.
@@ -81,13 +81,12 @@ export default function NavInferior() {
           href={i.href}
           aria-label={i.label}
           aria-current={actual ? "page" : undefined}
-          className={`boton relative flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.6875rem] leading-none text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
+          className={`boton flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[0.6875rem] leading-none text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
             actual ? "bg-tinta/[0.07] font-semibold" : "font-medium hover:bg-tinta/[0.04]"
           }`}
         >
           <Icono className="size-6" />
           <span aria-hidden>{i.label}</span>
-          {actual && <span aria-hidden className="absolute bottom-0.5 size-1 rounded-full bg-arcilla" />}
         </Link>
       </li>
     );
@@ -97,9 +96,10 @@ export default function NavInferior() {
     <nav
       aria-label="Navegación principal"
       data-escondida={escribiendo || undefined}
-      className="nav-inferior vidrio no-imprimir fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
+      className="nav-inferior no-imprimir pointer-events-none fixed inset-x-0 bottom-0 z-30 px-[max(0.75rem,env(safe-area-inset-left))] pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      <ul className="mx-auto grid h-14 max-w-md grid-cols-5 items-center px-1">
+      {/* Píldora flotante con el mismo vidrio que el logo de arriba. */}
+      <ul className="vidrio pointer-events-auto mx-auto grid h-16 max-w-md grid-cols-5 items-center rounded-full px-1.5">
         {IZQUIERDA.map(item)}
         <li className="flex justify-center">
           <Link
