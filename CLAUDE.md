@@ -264,6 +264,14 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     mensaje con `/?src=compartir#<pitch>` y `/sumate`.
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
+- `landing-liviano/` (rama `landing-liviano`): landing de scroll con video, **proyecto Vite aparte**
+  (JS + GSAP + Lenis, su propio `package.json`; no es Next ni parte de `/sumate`). Todos sus CTA
+  apuntan por URL absoluta a la app (`pecera-virid.vercel.app`). No lo despliega el proyecto de
+  Vercel de la app: va como otro proyecto con Root Directory `landing-liviano/website`. Detalle en
+  `landing-liviano/website/README.md`. ESLint lo ignora. `website/postcss.config.js` está vacío a
+  propósito: sin él Vite toma el `postcss.config.mjs` de Tailwind de la raíz y la build falla.
+  `public/bg.mp4` (17 MB) tiene todos los cuadros como keyframe para el scrub; no recomprimirlo
+  a mano (`npm run prepare-media` lo regenera).
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
