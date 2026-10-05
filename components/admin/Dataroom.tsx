@@ -60,12 +60,13 @@ const pct = (v: number | null | undefined) => (v === null || v === undefined ? "
 const parte = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : "—");
 const rolLabel = (r: string) => (r === "anonimo" ? "Sin cuenta" : (ROLES[r as Rol]?.label ?? r));
 
-export default function DataroomSecciones({ d, fuente }: { d: Dataroom; fuente: string | null }) {
+/** `sufijo`: lo que se suma a los links del filtro para no perder el alcance (`&a=plataforma`). */
+export default function DataroomSecciones({ d, fuente, sufijo = "" }: { d: Dataroom; fuente: string | null; sufijo?: string }) {
   const fuentes = Object.keys(d.atribucion.por_fuente).sort();
   return (
     <div className="flex flex-col gap-10">
       <NorthStar d={d} />
-      <Embudo d={d} fuente={fuente} fuentes={fuentes} />
+      <Embudo d={d} fuente={fuente} fuentes={fuentes} sufijo={sufijo} />
       <Liquidez d={d} />
       <Matriz d={d} />
       <Atribucion d={d} />
@@ -246,7 +247,7 @@ function Barras({ filas, etiqueta }: { filas: Array<{ label: string; valor: numb
   );
 }
 
-function Embudo({ d, fuente, fuentes }: { d: Dataroom; fuente: string | null; fuentes: string[] }) {
+function Embudo({ d, fuente, fuentes, sufijo }: { d: Dataroom; fuente: string | null; fuentes: string[]; sufijo: string }) {
   const e = d.embudo;
   const opciones = [null, ...fuentes];
   return (
@@ -259,7 +260,7 @@ function Embudo({ d, fuente, fuentes }: { d: Dataroom; fuente: string | null; fu
         {opciones.map((f) => (
           <Link
             key={f ?? "todas"}
-            href={f ? `/admin?v=medicion&f=${encodeURIComponent(f)}` : "/admin?v=medicion"}
+            href={f ? `/admin?v=medicion&f=${encodeURIComponent(f)}${sufijo}` : `/admin?v=medicion${sufijo}`}
             aria-current={fuente === f ? "page" : undefined}
             className={`inline-flex min-h-9 items-center rounded-full border px-3 text-sm ${
               fuente === f ? "border-tinta bg-tinta text-marfil" : "border-tinta/25 text-tinta"

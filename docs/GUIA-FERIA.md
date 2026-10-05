@@ -98,8 +98,14 @@ entra con Google (un voto por cuenta, lo puede cambiar mientras la votación est
 - **Envíos**: videos del Form que no se publicaron, con el email escrito y verificado, la regla
   y el comando `gh workflow run ingesta.yml -f asignar="…"` listo para copiar (cambiar `SLUG`).
 - **Empresas**: ocultar una empresa (spam, nombre ofensivo).
-- **Feria 21**: abrir/cerrar la votación, mostrar resultados, ranking en vivo, anotar o sacar
-  participantes.
+- **Feria 21**: abrir/cerrar la votación, mostrar resultados, ranking en vivo y **Quién
+  participa** (con buscador y filtro "Para revisar"): anotar o sacar perfiles, sumar o sacar
+  empresas (participan a través de una sola persona, quien la administra, para que los votos no
+  se repartan; se puede cambiar quién la representa y sus votos pasan con ella) y sumar o quitar
+  `#feria21` de los pitches (es lo que arma `/t/feria21`).
+- **`/admin/vivo`** (pantalla del stand): métricas a la izquierda y el top 10 de la votación a la
+  derecha, cada 15 s, sin los votos del equipo. La página del evento sigue mostrando resultados
+  solo cuando se tocan desde acá.
 
 ---
 

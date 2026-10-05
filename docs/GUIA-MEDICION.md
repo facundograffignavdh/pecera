@@ -14,9 +14,15 @@ qué mirar durante la feria. Rama `super-dataroom`, migración
   una reunión.
 - **CI calificada (CI-Q)**: el origen es una cuenta con rol inversor o aliado y el
   destino es un emprendedor.
-- **Proyecto (participante)**: perfil visible con al menos un pitch publicado. No cuentan
-  los `test-*`, el perfil `pecera` ni los de cuentas del equipo (`admins`,
-  `equipo_ingesta`).
+- **Proyecto (participante)**: depende del filtro **Feria 21 / Toda la plataforma**
+  (por defecto, Feria 21; migración `20261012120000_vivo_feria.sql`).
+  - *Feria 21*: perfil emprendedor visible anotado en la Feria 21 (por su cuenta, a mano o
+    como representante de su empresa), con o sin pitch.
+  - *Toda la plataforma*: perfil visible con al menos un pitch publicado.
+  En los dos casos no cuentan los `test-*`, el perfil `pecera` ni los de cuentas del equipo
+  (`admins`, `equipo_ingesta`). El filtro cambia solo el denominador (liquidez, % con al menos
+  una CI, CI por participante) y las industrias del ticker; las CI, las vistas y la curva por
+  hora son siempre de toda la plataforma. El snapshot del Demo Day congela las dos versiones.
 - **Liquidez** = proyectos con ≥ 1 CI / proyectos. **Liquidez calificada**: con CI-Q.
 - **Ceros**: proyectos con vistas y ninguna CI.
 - **Vistas fuera del horario de la feria**: mide el horario (las franjas de

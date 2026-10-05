@@ -221,6 +221,18 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   actividad de más de 90 días). `/admin/vivo` = pantalla del stand (k ≥ 5 en el ticker). Pestaña Medición de /admin
   (`app/admin/medicion.tsx`, `components/admin/Dataroom.tsx`): snapshot inmutable del Demo Day, CSV en
   `/admin/csv` y el dataroom. "¿Para qué?" tras un contacto: `lib/motivo.ts` + `PreguntaMotivo` (layout).
+- Feria en vivo (rama `vivo-feria`, migración `20261012120000_vivo_feria.sql`, después de
+  super_dataroom; pruebas `supabase/pruebas/vivo_feria.mjs`). `/admin/vivo` sobre fondo Pecera con
+  todo el texto en Tinta sólida (6,5:1) y `tema-fijo`; logo = `isotipo-blanco` + `wordmark-tinta`
+  (nunca el combinado: sus peces naranjas desaparecen). Ranking `admin_ranking_evento` (top 10 con
+  puesto de competición, tope 12 filas, sin votos de `metrica_cuentas_equipo()`; filas con
+  translateY y barras con translateX). `resultados_evento` no cambia. Empresas en la feria:
+  `evento_empresas` (una representante por empresa, que está en `evento_participantes`; triggers la
+  limpian si deja de participar o sale de la empresa); `admin_empresa_participante`,
+  `admin_representante` (mueve los votos), `admin_pitch_feria` (#feria21 en la descripción) y
+  `admin_feria` (`components/admin/GestionFeria.tsx`). Métricas con alcance (`?alcance=plataforma`
+  en vivo, `?a=plataforma` en Medición; por defecto la feria): `*_en(…, p_alcance)`; el Demo Day
+  congela dos filas (`demo_day_snapshots.alcance`). Sin la migración, todo cae a lo de antes.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
@@ -285,7 +297,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/sitemap.xml` y `/robots.txt` → `app/sitemap.ts` y `app/robots.ts` (no indexa cuenta,
   admin, auth ni subir)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
-- `/admin/vivo` → pantalla del stand: CI de hoy y ticker anónimo, refresco cada 15 s (`admin_vivo`)
+- `/admin/vivo` → pantalla del stand: CI de hoy, ticker anónimo y ranking de la votación, cada 15 s
+  (`admin_vivo_en` + `admin_ranking_evento`)
 - `/cuenta/empresa` → cuenta de la empresa: logo, datos, equipo con código, cargo propio, métricas y
   documentos con el concepto del glosario adentro (`?empresa=slug`; sin él, la principal)
 - `/cuenta/empresa/salir` → salir de una empresa (`?empresa=slug`); si es la última integrante,

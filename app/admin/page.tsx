@@ -4,6 +4,7 @@ import Link from "next/link";
 import BotonCopiar from "@/components/BotonCopiar";
 import Encabezado from "@/components/Encabezado";
 import BotonAccion from "@/components/admin/BotonAccion";
+import GestionFeria, { type DatosFeria } from "@/components/admin/GestionFeria";
 import Medicion from "@/app/admin/medicion";
 import {
   autopublicar,
@@ -52,7 +53,7 @@ const PILDORA = "rounded-full px-2 py-0.5 text-xs font-medium";
  * tabla `admins` (lo decide la base, no la app). Mobile-first: se usa en la feria.
  */
 export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
-  const { v, f } = await searchParams;
+  const { v, f, a } = await searchParams;
   const vista: Vista = VISTAS.some((x) => x.id === v) ? (v as Vista) : "resumen";
   const filtro = typeof f === "string" ? f : "todos";
 
@@ -66,7 +67,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       <Encabezado variante="cuenta" />
       <div className="mx-auto w-full max-w-2xl px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)]">
         <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">Panel del equipo</h1>
-        {!user ? <SinSesion /> : <ConSesion supabase={supabase} email={user.email ?? ""} vista={vista} filtro={filtro} />}
+        {!user ? <SinSesion /> : <ConSesion supabase={supabase} email={user.email ?? ""} vista={vista} filtro={filtro} alcance={a === "plataforma" ? "plataforma" : "evento"} />}
       </div>
     </main>
   );
@@ -94,11 +95,13 @@ async function ConSesion({
   email,
   vista,
   filtro,
+  alcance,
 }: {
   supabase: Supabase;
   email: string;
   vista: Vista;
   filtro: string;
+  alcance: "plataforma" | "evento";
 }) {
   const { data: esAdmin, error } = await supabase.rpc("es_admin");
   if (faltaMigracion(error)) {
@@ -154,7 +157,7 @@ async function ConSesion({
         {vista === "empresas" && <Empresas supabase={supabase} />}
         {vista === "evento" && <Evento supabase={supabase} />}
         {vista === "drive" && <Drive supabase={supabase} />}
-        {vista === "medicion" && <Medicion supabase={supabase} filtro={filtro} />}
+        {vista === "medicion" && <Medicion supabase={supabase} filtro={filtro} alcance={alcance} />}
       </div>
     </>
   );
@@ -718,16 +721,20 @@ async function Empresas({ supabase }: { supabase: Supabase }) {
 type ParticipanteAdmin = { perfil_id: string; slug: string; nombre: string; rol: Rol; empresa_nombre: string | null };
 
 async function Evento({ supabase }: { supabase: Supabase }) {
-  const [estado, participantes, resultados, perfiles] = await Promise.all([
+  const [estado, participantes, resultados, perfiles, feria] = await Promise.all([
     supabase.rpc("admin_evento", { p_evento: EVENTO_ACTUAL.slug }),
     supabase.rpc("participantes_evento", { p_evento: EVENTO_ACTUAL.slug }),
     supabase.rpc("resultados_evento", { p_evento: EVENTO_ACTUAL.slug }),
     supabase.rpc("admin_perfiles"),
+    supabase.rpc("admin_feria", { p_evento: EVENTO_ACTUAL.slug }),
   ]);
   fallo("admin_evento", estado.error);
   fallo("participantes_evento", participantes.error);
   fallo("resultados_evento", resultados.error);
   fallo("admin_perfiles", perfiles.error);
+  // Sin la migración vivo_feria queda "Anotar a mano", como antes.
+  if (feria.error && !faltaMigracion(feria.error)) fallo("admin_feria", feria.error);
+  const gestion = feria.error ? null : (feria.data as DatosFeria);
 
   const e = (estado.data as Array<{
     votacion_abierta: boolean;
@@ -827,7 +834,9 @@ async function Evento({ supabase }: { supabase: Supabase }) {
         </ol>
       </section>
 
-      {candidatos.length > 0 && (
+      {gestion && <GestionFeria datos={gestion} />}
+
+      {!gestion && candidatos.length > 0 && (
         <details className={CAJA}>
           <summary className="min-h-10 cursor-pointer font-medium text-tinta">
             Anotar a mano ({candidatos.length} perfiles publicados)
