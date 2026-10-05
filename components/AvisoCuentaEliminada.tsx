@@ -47,7 +47,7 @@ export default function AvisoCuentaEliminada() {
   return (
     <div
       role="status"
-      className="aparecer fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-sm items-start gap-3 rounded-2xl bg-tinta px-4 py-3 text-sm text-marfil shadow-lg"
+      className="aparecer fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom),calc(var(--alto-nav)_+_0.5rem))] z-50 mx-auto flex max-w-sm items-start gap-3 rounded-2xl bg-tinta px-4 py-3 text-sm text-marfil shadow-lg"
     >
       <p className="flex-1 leading-relaxed">
         Tu cuenta se eliminó. Tus videos y fotos se borran de nuestros servidores en la próxima hora.

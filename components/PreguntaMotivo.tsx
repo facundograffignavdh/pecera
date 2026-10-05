@@ -42,7 +42,7 @@ export default function PreguntaMotivo() {
   return (
     <section
       aria-label="¿Para qué es este contacto?"
-      className="tema-fijo aparecer fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-2xl bg-tinta px-4 py-3 text-marfil shadow-lg"
+      className="tema-fijo aparecer fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom),calc(var(--alto-nav)_+_0.5rem))] z-50 mx-auto max-w-md rounded-2xl bg-tinta px-4 py-3 text-marfil shadow-lg"
     >
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-semibold">¿Para qué es este contacto?</p>

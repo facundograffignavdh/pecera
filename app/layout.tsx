@@ -3,6 +3,7 @@ import { Fraunces, Familjen_Grotesk } from "next/font/google";
 import "./globals.css";
 import AvisoCuentaEliminada from "@/components/AvisoCuentaEliminada";
 import Medicion from "@/components/Medicion";
+import NavInferior from "@/components/NavInferior";
 import PreguntaMotivo from "@/components/PreguntaMotivo";
 import TecladoIOS from "@/components/TecladoIOS";
 
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="h-dvh overflow-hidden">
         {children}
+        <NavInferior />
         <AvisoCuentaEliminada />
         <Medicion />
         <PreguntaMotivo />

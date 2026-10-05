@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import InsigniaPitch from "@/components/InsigniaPitch";
-import type { PerfilPropio } from "@/components/FormPerfil";
 import type { MiPitch } from "@/components/MisPitches";
+import type { PerfilPropio } from "@/types/pecera";
 
 type Paso = {
   clave: string;
@@ -34,27 +34,27 @@ export default function CompletarPerfil({
   const pitchEnCamino = pitches.some((p) => p.estado === "procesando" || p.estado === "en_espera");
 
   const pasos: Paso[] = [
-    { clave: "datos", label: "Rol, nombre y descripción", hecho: true, href: "#paso-1" },
-    { clave: "foto", label: "Foto o logo", hecho: !!perfil.avatar_url, href: "#paso-2" },
-    { clave: "etiquetas", label: etiquetaPorRol(perfil.rol), hecho: tieneEtiquetas(perfil), href: "#paso-3" },
+    { clave: "datos", label: "Rol, nombre y descripción", hecho: true, href: "#editar-ficha" },
+    { clave: "foto", label: "Tu foto", hecho: !!perfil.avatar_url, href: "#editar-ficha" },
+    { clave: "etiquetas", label: etiquetaPorRol(perfil.rol), hecho: tieneEtiquetas(perfil), href: "#editar-etiquetas" },
     {
       clave: "contacto",
       label: "Un canal de contacto",
       hecho: [perfil.whatsapp, perfil.email, perfil.linkedin, perfil.instagram, perfil.web].some(Boolean),
-      href: "#paso-4",
+      href: "#editar-ficha",
     },
   ];
   if (perfil.rol === "emprendedor" && conEmpresa !== null) {
-    pasos.push({ clave: "empresa", label: "Tu empresa", hecho: conEmpresa, href: "#tarjeta-mis-empresas" });
+    pasos.push({ clave: "empresa", label: "Tu empresa", hecho: conEmpresa, href: "#seccion-empresas" });
   }
   if (portfolio && perfil.rol === "inversor") {
-    pasos.push({ clave: "tesis", label: "Tu tesis de inversión", hecho: portfolio.tesis, href: "#tarjeta-tu-tesis-de-inversi-n" });
+    pasos.push({ clave: "tesis", label: "Tu tesis de inversión", hecho: portfolio.tesis, href: "#editar-portfolio" });
   }
   if (portfolio && perfil.rol === "aliado") {
-    pasos.push({ clave: "servicios", label: "Tus servicios", hecho: portfolio.servicios > 0, href: "#tarjeta-tus-servicios" });
+    pasos.push({ clave: "servicios", label: "Tus servicios", hecho: portfolio.servicios > 0, href: "#editar-portfolio" });
   }
   if (portfolio) {
-    pasos.push({ clave: "portfolio", label: "Tu portfolio", hecho: portfolio.entradas > 0, href: "#tarjeta-tu-portfolio" });
+    pasos.push({ clave: "portfolio", label: "Tu portfolio", hecho: portfolio.entradas > 0, href: "#editar-portfolio" });
   }
   pasos.push({
     clave: "pitch",

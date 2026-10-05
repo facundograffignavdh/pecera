@@ -162,7 +162,7 @@ export default function EditorDocumento({ tipo, inicial }: { tipo: "escrito" | "
         />
       </div>
 
-      <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 flex items-center gap-3 rounded-full bg-marfil/95 p-1.5 pl-4 shadow-[0_8px_24px_rgb(28_27_22/0.18)]">
+      <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom),calc(var(--alto-nav)_+_0.5rem))] z-10 flex items-center gap-3 rounded-full bg-marfil/95 p-1.5 pl-4 shadow-[0_8px_24px_rgb(28_27_22/0.18)]">
         <span role="status" className="min-w-0 flex-1 truncate text-xs text-tinta/70">
           {estado === "guardando"
             ? "Guardando…"

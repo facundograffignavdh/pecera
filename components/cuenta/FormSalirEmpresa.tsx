@@ -35,7 +35,7 @@ export default function FormSalirEmpresa({ empresaId, seBorra }: { empresaId: st
         setError("No llegó al servidor. Revisá tu conexión y probá de nuevo.");
         return;
       }
-      router.push("/cuenta#tarjeta-mis-empresas");
+      router.push("/cuenta#seccion-empresas");
     });
   }
 

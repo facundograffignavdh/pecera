@@ -5,8 +5,9 @@ import { useCuentaLocal } from "@/lib/cuenta-local";
 import { TAG_FERIA } from "@/lib/hashtags";
 
 /**
- * Solo para el dueño de la tarjeta: subir pitch (destacado aunque sea opcional) y
- * editar. La página es estática; el navegador decide si mostrarla, así el caché
+ * Solo para el dueño de la tarjeta: subir pitch (destacado aunque sea opcional). El
+ * "Editar" va en la tarjeta (BotonEditarFicha). La página es estática; el navegador
+ * decide si mostrarla, así el caché
  * nunca se la muestra a otro. La seguridad real está en la RLS.
  */
 export default function BarraDueno({ slug, sinPitch }: { slug: string; sinPitch: boolean }) {
@@ -32,12 +33,6 @@ export default function BarraDueno({ slug, sinPitch }: { slug: string; sinPitch:
             <path d="M12 16V4M7 9l5-5 5 5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
           </svg>
           Subí tu pitch
-        </Link>
-        <Link
-          href="/cuenta"
-          className="boton inline-flex min-h-12 items-center justify-center rounded-full border border-tinta/30 bg-marfil px-5 font-medium text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
-        >
-          Editar
         </Link>
       </div>
       <p className="text-xs text-tinta/65">

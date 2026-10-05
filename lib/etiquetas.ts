@@ -127,6 +127,25 @@ export const CARGOS = [
 export type Cargo = (typeof CARGOS)[number]["valor"];
 
 // ---------------------------------------------------------------------------
+// Tipo de empresa o proyecto (persona_empresa: espejo de `empresas_tipo_valido`).
+// Ángel y coach no van: son personas (rol inversor o aliado), no entidades.
+// ---------------------------------------------------------------------------
+export const TIPOS_EMPRESA = [
+  { valor: "startup", label: "Startup" },
+  { valor: "emprendimiento", label: "Emprendimiento" },
+  { valor: "aceleradora", label: "Aceleradora" },
+  { valor: "incubadora", label: "Incubadora" },
+  { valor: "fondo", label: "Fondo de inversión" },
+  { valor: "empresa", label: "Empresa" },
+  { valor: "institucion", label: "Universidad o institución" },
+] as const satisfies ReadonlyArray<Opcion>;
+export type TipoEmpresa = (typeof TIPOS_EMPRESA)[number]["valor"];
+
+export function labelTipoEmpresa(v?: string | null): string | null {
+  return TIPOS_EMPRESA.find((t) => t.valor === v)?.label ?? null;
+}
+
+// ---------------------------------------------------------------------------
 // Especialidades (aliado: mentor, coach, aceleradora…). Hasta 5, con color por área.
 // ---------------------------------------------------------------------------
 export const ESPECIALIDADES = [

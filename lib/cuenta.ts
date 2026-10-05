@@ -76,10 +76,12 @@ export function urlPerfil(slug: string): string {
 }
 
 /** Opciones del select, con las etiquetas del Form ("Fondo de inversión"). */
-export const OPCIONES_TIPO = Object.entries({
-  ...TIPOS,
-  fondo: "Fondo de inversión",
-}) as Array<[TipoPerfil, string]>;
+export const OPCIONES_TIPO = (
+  Object.entries({
+    ...TIPOS,
+    fondo: "Fondo de inversión",
+  }) as Array<[TipoPerfil, string]>
+).filter(([t]) => t !== "persona");
 
 export const OPCIONES_ROL = Object.entries(ROLES).map(
   ([valor, { label }]) => [valor, label] as [Rol, string]
@@ -104,10 +106,11 @@ export const AYUDA_TIPO: Record<TipoPerfil, string> = {
   profesional: "Ofrecés un servicio: marketing, desarrollo, diseño, legal, finanzas…",
   empresa: "Empresa o corporación que busca innovación, proveedores o invertir.",
   institucion: "Universidad, gobierno, cámara u ONG que apoya al ecosistema.",
+  persona: "Tu cuenta es personal: tus empresas o proyectos se suman aparte.",
 };
 
 export const DESCRIPCION_ROL: Record<Rol, string> = {
-  emprendedor: "Tengo una startup o un proyecto y quiero mostrarlo.",
+  emprendedor: "Emprendo: tengo (o estoy armando) un proyecto y quiero mostrarlo.",
   inversor: "Busco proyectos para invertir y quiero escribirles directo.",
   aliado: "Sumo a los proyectos: mentoría, servicios profesionales, aceleración o apoyo institucional.",
 };
@@ -270,13 +273,20 @@ function limpiarLista(lista: string[] | undefined, vocabulario: readonly { valor
   return [...new Set(lista ?? [])].filter((v) => esValor(vocabulario, v));
 }
 
-/** Valida y normaliza lo que viene del formulario. */
-export function validarPerfil(entrada: EntradaPerfil): { datos: DatosEditables; errores: Errores } {
+/**
+ * Valida y normaliza lo que viene del formulario. Con `pedirEtiquetas: false` las
+ * etiquetas del rol (etapa, industrias, rondas, especialidades) son opcionales: el
+ * alta mínima y la edición por secciones no las exigen.
+ */
+export function validarPerfil(
+  entrada: EntradaPerfil,
+  { pedirEtiquetas = true }: { pedirEtiquetas?: boolean } = {}
+): { datos: DatosEditables; errores: Errores } {
   const errores: Errores = {};
   const v = (campo: CampoSimple) => entrada[campo] ?? "";
 
   const nombre = v("nombre").trim();
-  if (!nombre) errores.nombre = "Poné tu nombre o el de tu proyecto.";
+  if (!nombre) errores.nombre = "Poné tu nombre y apellido.";
   else if (nombre.length > NOMBRE_MAX) errores.nombre = `Hasta ${NOMBRE_MAX} caracteres.`;
 
   const rol = v("rol") as Rol;
@@ -284,7 +294,8 @@ export function validarPerfil(entrada: EntradaPerfil): { datos: DatosEditables; 
 
   const tipo = v("tipo") as TipoPerfil;
   if (!(tipo in TIPOS)) errores.tipo = "Elegí qué sos.";
-  else if (rol in ROLES && !TIPOS_POR_ROL[rol].includes(tipo)) {
+  // "persona" vale con cualquier rol; los tipos de entidad (perfiles de antes) solo con el suyo.
+  else if (tipo !== "persona" && rol in ROLES && !TIPOS_POR_ROL[rol].includes(tipo)) {
     errores.tipo = "Elegí una opción que vaya con tu rol.";
   }
 
@@ -320,7 +331,7 @@ export function validarPerfil(entrada: EntradaPerfil): { datos: DatosEditables; 
     errores.web = "Revisá la dirección (por ejemplo, tuweb.com.ar).";
   }
 
-  const rolDatos = validarRol(rol, entrada, errores);
+  const rolDatos = validarRol(rol, entrada, errores, pedirEtiquetas);
   const cofundador = validarCofundador(entrada, errores);
   const profesionales = validarProfesionales(entrada, errores);
 
@@ -411,7 +422,7 @@ function validarCofundador(entrada: EntradaPerfil, errores: Errores): DatosCofun
  * Lo que se pide según el rol. Lo que no corresponde se guarda vacío: si alguien
  * pasa de emprendedor a inversor, no le queda una etapa colgada.
  */
-function validarRol(rol: Rol, entrada: EntradaPerfil, errores: Errores): DatosRol {
+function validarRol(rol: Rol, entrada: EntradaPerfil, errores: Errores, pedir: boolean): DatosRol {
   const vacio: DatosRol = {
     etapa: null,
     ronda: null,
@@ -425,12 +436,12 @@ function validarRol(rol: Rol, entrada: EntradaPerfil, errores: Errores): DatosRo
 
   if (rol === "emprendedor") {
     const etapa = texto("etapa");
-    if (!esValor(ETAPAS, etapa)) errores.etapa = "Elegí en qué etapa está tu proyecto.";
+    if (pedir && !esValor(ETAPAS, etapa)) errores.etapa = "Elegí en qué etapa está tu proyecto.";
 
     const ronda = texto("ronda");
     const cargo = texto("cargo");
     const industrias = limpiarLista(entrada.industrias, INDUSTRIAS);
-    if (!industrias.length) errores.industrias = "Elegí al menos una industria.";
+    if (pedir && !industrias.length) errores.industrias = "Elegí al menos una industria.";
     else if (industrias.length > MAX_INDUSTRIAS_PROYECTO) {
       errores.industrias = `Hasta ${MAX_INDUSTRIAS_PROYECTO} industrias.`;
     }
@@ -447,9 +458,9 @@ function validarRol(rol: Rol, entrada: EntradaPerfil, errores: Errores): DatosRo
   if (rol === "inversor") {
     const ticket = texto("ticket");
     const rondas = limpiarLista(entrada.rondas_interes, RONDAS_INTERES);
-    if (!rondas.length) errores.rondas_interes = "Elegí al menos una ronda.";
+    if (pedir && !rondas.length) errores.rondas_interes = "Elegí al menos una ronda.";
     const industrias = limpiarLista(entrada.industrias, INDUSTRIAS);
-    if (!industrias.length) errores.industrias = "Elegí al menos una industria que mirás.";
+    if (pedir && !industrias.length) errores.industrias = "Elegí al menos una industria que mirás.";
     else if (industrias.length > MAX_INDUSTRIAS_INTERES) {
       errores.industrias = `Hasta ${MAX_INDUSTRIAS_INTERES} industrias.`;
     }
@@ -464,7 +475,7 @@ function validarRol(rol: Rol, entrada: EntradaPerfil, errores: Errores): DatosRo
 
   if (rol === "aliado") {
     const especialidades = limpiarLista(entrada.especialidades, ESPECIALIDADES);
-    if (!especialidades.length) errores.especialidades = "Elegí al menos una especialidad.";
+    if (pedir && !especialidades.length) errores.especialidades = "Elegí al menos una especialidad.";
     else if (especialidades.length > MAX_ESPECIALIDADES) {
       errores.especialidades = `Hasta ${MAX_ESPECIALIDADES} especialidades.`;
     }

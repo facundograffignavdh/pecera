@@ -141,7 +141,7 @@ export default function EditorFoto({
         )}
       </div>
       <div className="flex min-w-0 flex-col gap-1">
-        <p className="text-sm font-medium text-tinta">{foto ? "Tu foto" : "Sumá una foto o tu logo"}</p>
+        <p className="text-sm font-medium text-tinta">{foto ? "Tu foto" : "Sumá una foto tuya (el logo va en tu empresa)"}</p>
         <p
           role="status"
           className={`text-xs ${estado.tipo === "error" ? "font-medium text-t-arcilla" : estado.tipo === "ok" ? "text-t-verde" : "text-tinta/60"}`}

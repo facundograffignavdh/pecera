@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Avatar from "@/components/Avatar";
 import DescripcionConTags from "@/components/DescripcionConTags";
 import { EtiquetasReel, detalleEmpresas } from "@/components/Etiquetas";
@@ -28,6 +28,7 @@ export function ColumnaReel({
   onAlternarPique,
   onAlternarSubtitulos,
   onAlternarSonido,
+  compartir,
 }: {
   piques: number;
   piqueado: boolean;
@@ -39,6 +40,8 @@ export function ColumnaReel({
   onAlternarPique?: () => void;
   onAlternarSubtitulos?: () => void;
   onAlternarSonido?: () => void;
+  /** Botón de compartir (BotonCompartirReel): va entre el corazón y los subtítulos. */
+  compartir?: ReactNode;
 }) {
   return (
     <div className="pointer-events-auto flex w-12 shrink-0 flex-col items-center gap-2">
@@ -62,6 +65,8 @@ export function ColumnaReel({
           {formatoPiques(piques)}
         </span>
       </button>
+
+      {compartir}
 
       {mostrarCC && (
         <button

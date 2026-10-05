@@ -22,7 +22,7 @@ export function abrirElegirRol() {
 }
 
 const OPCIONES: { rol: Rol; titulo: string; texto: string }[] = [
-  { rol: "emprendedor", titulo: "Estoy construyendo", texto: "Tengo una startup o un proyecto y quiero mostrarlo." },
+  { rol: "emprendedor", titulo: "Estoy construyendo", texto: "Emprendo y quiero mostrar lo que estoy armando. Mi perfil es personal y el proyecto lo sumo después." },
   { rol: "inversor", titulo: "Invierto", texto: "Busco startups para invertir y quiero escribirles directo." },
   { rol: "aliado", titulo: "Acompaño startups", texto: "Mentoría, coaching, aceleración, incubación o servicios." },
 ];

@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: PageProps<"/e/[slug]">): Prom
     description: datos.empresa.descripcion,
     openGraph: {
       title,
-      description: datos.empresa.descripcion,
+      description: datos.empresa.descripcion ?? undefined,
       images: poster ? [poster] : undefined,
     },
   };
@@ -126,10 +126,12 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
           )}
         </header>
 
-        <DescripcionConTags
-          texto={empresa.descripcion}
-          className="mt-5 font-editorial text-[1.0625rem] leading-relaxed text-tinta/90"
-        />
+        {empresa.descripcion && (
+          <DescripcionConTags
+            texto={empresa.descripcion}
+            className="mt-5 font-editorial text-[1.0625rem] leading-relaxed text-tinta/90"
+          />
+        )}
 
         {canales.length > 0 && (
           <ul className="mt-5 flex flex-wrap gap-2">

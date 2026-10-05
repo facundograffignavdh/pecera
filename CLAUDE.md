@@ -104,14 +104,14 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   un dato chico y público del perfil en localStorage (`pecera:cuenta`: slug, nombre,
   rol, foto, visible) que escribe `RecordarCuenta` en /cuenta y borra `BotonSalir`.
   Con eso `AccesoCuenta` muestra "Entrar" o la foto (va a /p/slug si es visible) y
-  `EditarPerfil` aparece solo en el perfil propio. Es solo interfaz. Reglas del form en `lib/cuenta.ts` (cliente y servidor);
+  `BotonEditarFicha` ("Editar" sobre la franja, lleva a /cuenta) aparece solo en el perfil propio. Es solo interfaz. Reglas del form en `lib/cuenta.ts` (cliente y servidor);
   el trigger `perfiles_guardian` las repite en la base y bloquea slug, publicado,
   usuario_id, origen_id y consentimiento_at. Foto y logo se achican en el celular
   (`prepararImagen` en `lib/imagen.ts`): lado mayor ≤ 1024 px, con su proporción y sin
   recortar, ≤ 1 MB (`lib/limites-imagen.ts`, compartido con el servidor). La foto va en JPG
   sobre Marfil (el trigger solo acepta .jpg); el logo, en PNG si tiene transparencia. Las
-  fallas dicen el motivo (pesada, formato o "problema nuestro"). La foto viaja con el form:
-  `guardarPerfil` la sube con `lib/foto.ts` (`lib/r2.ts`, `<userId>-<hash8>.jpg`; `lib/r2.ts`
+  fallas dicen el motivo (pesada, formato o "problema nuestro"). En el alta la foto viaja con el form:
+  `crearPerfilPersonal` la sube con `lib/foto.ts` (`lib/r2.ts`, `<userId>-<hash8>.jpg`; `lib/r2.ts`
   nunca le pasa un Request al fetch: Next lo rearma como stream y R2 responde 411); si
   falla, el perfil se guarda igual y se avisa;
   la vieja la anota el trigger en `r2_borrar`. Esas fotos no cuentan para el tope
@@ -174,7 +174,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `docs/AUDITORIA-MASTER.md`). Nombres únicos: **Portfolio** = inversiones y clientes
   confirmados por la empresa (`portfolio`); **Links y documentos** = los links del perfil
   (tabla `portafolio`). Logo de empresa: se guarda en `empresa_logos` (`poner_logo_empresa`);
-  `empresas.logo_url` es solo respaldo de lectura. Formulario de perfil: el de 6 pasos.
+  `empresas.logo_url` es solo respaldo de lectura. Formulario de perfil: ya no hay (ver Perfil editable).
   El progreso del perfil en /cuenta lo muestra solo `CompletarPerfil`.
 - Eliminar la cuenta (rama `borrar-cuenta`, migración `20261008120000_borrar_cuenta.sql`,
   pruebas `supabase/pruebas/borrar_cuenta.mjs`): `/cuenta/eliminar` confirma escribiendo
@@ -237,6 +237,31 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `supabase/pruebas/feria_todos_los_roles.mjs`; vuelta atrás `supabase/rollback-feria-todos-los-roles.sql`,
   que NO es migración) compite cualquier rol: `votar`, ranking, representante y métricas sin filtro de
   rol. En la feria se dice "participantes" (no "proyectos") y el ranking es "Ranking del público".
+- Perfil editable y barra inferior (rama `perfil-inline`, migración `20261014120000_persona_empresa.sql`,
+  después de feria_todos_los_roles; pruebas `supabase/pruebas/persona_empresa.mjs`; vuelta atrás
+  `supabase/rollback-persona-empresa.sql`, que NO es migración). **Una cuenta = una persona** (como
+  LinkedIn): `perfiles.tipo = 'persona'` en las cuentas nuevas (no se muestra); el tipo de entidad va en
+  `empresas.tipo` (`TIPOS_EMPRESA` en `lib/etiquetas.ts`, espejo del CHECK) y el rol en cada una es
+  `empresa_miembros.cargo`. Una persona puede no tener empresas. Los perfiles viejos con tipo de
+  entidad ven `ConvertirEnEmpresa` (guiado, se puede posponer; `convertirEnEmpresa` crea la empresa,
+  la foto puede pasar a logo, el slug no cambia); `supabase/consultas/perfiles-como-empresa.sql` los lista.
+  - El cuerpo de /p/[slug] es `components/perfil/VistaPerfil.tsx`: /p lo usa sin slots (el visitante ve
+    lo de siempre) y /cuenta con slots de dueño. Cada sección: `SeccionEditable` ("+ Agregar" si está
+    vacía, lápiz si tiene datos; `#editar-<clave>` la abre) → `FormSeccion` en una `Hoja`
+    (`components/ui/Hoja.tsx`: bottom sheet en el celular, pregunta antes de descartar) →
+    `guardarSeccion` (`app/cuenta/seccion.ts`: escribe solo las columnas de esa sección; las etiquetas
+    del rol ya no son obligatorias, `validarPerfil(…, { pedirEtiquetas: false })`). Las que ya tenían
+    editor (links, newsletter, tesis, servicios, portfolio) van en `SeccionConTarjeta`.
+  - Alta mínima: `AltaPerfil` → `crearPerfilPersonal` (nombre y apellido, rol, una línea, dirección,
+    consentimiento; foto opcional). Empresas: `EmpresasDueno` ("Administrar", "Agregar otra empresa" con
+    `crear_empresa_basica`: nombre, tipo y cargo, sin logo ni descripción, o con código).
+  - `NavInferior` (en el layout, vidrio): Explorar · Eventos · "+" naranja (`/cuenta#subir-pitch`,
+    `lib/resaltar.ts`) · Cofundadores · Academy; no va en /admin/vivo, /sumate ni imprimibles. Su alto
+    está en `--alto-nav` (globals.css): lo suman lo fijo abajo, el bloque del reel y un `::after` de cada
+    `<main>` que scrollea. El menú hamburguesa ya no existe; el feed se abre con el logo, Mi perfil con
+    el avatar, Mi red desde el perfil propio y el selector de tema está al final de /cuenta.
+  - Compartir en el reel (`BotonCompartirReel`, entre el corazón y el CC): `navigator.share` o copia un
+    mensaje con `/?src=compartir#<pitch>` y `/sumate`.
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
@@ -281,11 +306,11 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 ## Rutas
 - `/` → feed de reels
 - `/p/[slug]` → perfil del participante
-- `/cuenta` → Mi perfil (login, crear/editar, Mis pitches). Al crear, la action
-  redirige a `/cuenta?creado=1` (`&foto=error` si la foto falló); si la cuenta ya
-  tenía perfil (doble envío), a `/cuenta`. `guardarPerfil` nunca tira: toda falla
-  vuelve como mensaje (22023 del trigger → campo). A los 20 s sin respuesta el form
-  ofrece recargar; `app/cuenta/error.tsx` atrapa el resto.
+- `/cuenta` → Mi perfil: login, alta mínima o el perfil propio editable (VistaPerfil con hojas por
+  sección). Al crear, la action redirige a `/cuenta?creado=1` (`&foto=error` si la foto falló); si la
+  cuenta ya tenía perfil (doble envío), a `/cuenta`. Las actions nunca tiran: toda falla vuelve como
+  mensaje (22023 del trigger → campo). A los 20 s sin respuesta se ofrece reintentar;
+  `app/cuenta/error.tsx` atrapa el resto.
 - `/cuenta/eliminar` → qué se borra (`antes_de_borrar`) y confirmación con ELIMINAR
 - `/subir` → al Form de pitches con el email de la sesión (sin sesión, a /cuenta)
 - `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
@@ -305,8 +330,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
 - `/admin/vivo` → pantalla del stand: CI de hoy, ticker anónimo y ranking de la votación, cada 15 s
   (`admin_vivo_en` + `admin_ranking_evento`)
-- `/cuenta/empresa` → cuenta de la empresa: logo, datos, equipo con código, cargo propio, métricas y
-  documentos con el concepto del glosario adentro (`?empresa=slug`; sin él, la principal)
+- `/cuenta/empresa` → Administrar empresa (`?empresa=slug`; sin él, la principal; `?pestana=`): pestañas
+  Información (con tipo y cargo propio), Logo y marca, Contacto, Equipo, Producto, Build in Public y
+  Métricas y documentos. "Guardar cambios" guarda la pestaña actual (`guardarEmpresaPestana`); avisa si
+  hay cambios sin guardar al cambiar de pestaña o salir.
 - `/cuenta/empresa/salir` → salir de una empresa (`?empresa=slug`); si es la última integrante,
   qué se borra, exportar el Dataroom y confirmación con ELIMINAR
 - `/explorar` (startups, inversores, aliados y hashtags), `/t/[tag]` y `/t/[tag]/feed`
@@ -356,7 +383,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - perfiles (feria_lista): etapa, ronda, industrias[], cargo, especialidades[], ticket,
   rondas_interes[], empresa_id. `empresa_id` solo cambia por RPC (trigger
   `perfiles_empresa_guardian` + flag `pecera.empresa_rpc`).
-- `empresas` (slug, nombre, descripcion, redes, industrias, etapa, ronda, dueno_id, oculta):
+- `empresas` (slug, nombre, tipo, descripcion — opcional desde persona_empresa —, redes, industrias, etapa,
+  ronda, dueno_id, oculta):
   visible si no está oculta y tiene al menos un integrante visible (por `empresa_miembros`).
 - `empresa_miembros` (multi_empresa: id, empresa_id, perfil_id, cargo, created_at; único por empresa
   y perfil; hasta 5 por perfil): anon ve las de perfiles y empresas visibles; nadie la escribe directo.

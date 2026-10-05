@@ -86,11 +86,72 @@ export function IconoCerrar({ className }: Props) {
   );
 }
 
-/** Menú: tres líneas, la del medio más corta. */
-export function IconoMenu({ className }: Props) {
+/** Compartir: flecha que sale de una caja abierta. */
+export function IconoCompartir({ className }: Props) {
   return (
     <Icono className={className}>
-      <path d="M4 7h16M4 12h11M4 17h16" />
+      <path d="M12 3.5v11M7.75 7.5 12 3.25l4.25 4.25" />
+      <path d="M8 11H6.5a2 2 0 0 0-2 2v5.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V13a2 2 0 0 0-2-2H16" />
+    </Icono>
+  );
+}
+
+/** Explorar: lupa. */
+export function IconoExplorar({ className }: Props) {
+  return (
+    <Icono className={className}>
+      <circle cx="10.75" cy="10.75" r="6.25" />
+      <path d="M15.5 15.5 20 20" />
+    </Icono>
+  );
+}
+
+/** Eventos: calendario. */
+export function IconoCalendario({ className }: Props) {
+  return (
+    <Icono className={className}>
+      <rect x="3.75" y="5" width="16.5" height="15" rx="3" />
+      <path d="M3.75 10h16.5M8.5 3v4M15.5 3v4" />
+    </Icono>
+  );
+}
+
+/** Más: subir un pitch. */
+export function IconoMas({ className }: Props) {
+  return (
+    <Icono className={className} grosor={2.75}>
+      <path d="M12 5v14M5 12h14" />
+    </Icono>
+  );
+}
+
+/** Cofundadores: dos personas. */
+export function IconoCofundadores({ className }: Props) {
+  return (
+    <Icono className={className}>
+      <circle cx="9" cy="8.5" r="3.25" />
+      <path d="M3 19.5a6 6 0 0 1 12 0" />
+      <path d="M15.5 5.5a3.25 3.25 0 0 1 0 6.25M17.5 14a6 6 0 0 1 3.5 5.5" />
+    </Icono>
+  );
+}
+
+/** Academy: libro abierto. */
+export function IconoAcademy({ className }: Props) {
+  return (
+    <Icono className={className}>
+      <path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z" />
+      <path d="M12 6.5v13" />
+    </Icono>
+  );
+}
+
+/** Lápiz: editar una sección del perfil propio. */
+export function IconoEditar({ className }: Props) {
+  return (
+    <Icono className={className}>
+      <path d="M4 20h4L19 9a2.83 2.83 0 0 0-4-4L4 16z" />
+      <path d="M13.5 6.5l4 4" />
     </Icono>
   );
 }
