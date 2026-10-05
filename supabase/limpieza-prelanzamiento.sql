@@ -75,6 +75,7 @@ begin
     'public.vistas',
     'public.medicion_frecuencia',
     'public.votos',
+    'public.evento_empresas',
     'public.evento_participantes',
     'public.empresa_miembros',
     'public.empresa_datos',
@@ -130,7 +131,7 @@ from unnest(array[
   'public.piques_frecuencia', 'public.envios', 'public.ingestas',
   'public.empresas', 'public.empresas_codigos', 'public.empresas_intentos',
   'public.empresa_datos', 'public.empresa_miembros', 'public.evento_participantes', 'public.votos',
-  'public.cofundador_intereses', 'public.actividad', 'public.actividad_descartes',
+  'public.evento_empresas', 'public.cofundador_intereses', 'public.actividad', 'public.actividad_descartes',
   'public.dispositivo_cuentas', 'public.dispositivos_equipo', 'public.metricas_hora',
   'public.demo_day_snapshots',
   -- conservadas

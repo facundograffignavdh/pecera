@@ -14,10 +14,12 @@ import type { Participante } from "@/lib/datos";
 import { getEventoDefinido } from "@/lib/eventos";
 import type { Resultado } from "@/lib/errores-base";
 import { cargo, labelIndustria } from "@/lib/etiquetas";
+import { ROLES } from "@/lib/rol";
 
 type Props = {
   evento: string;
-  proyectos: Participante[];
+  /** Todos los anotados: compite cualquier rol. */
+  participantes: Participante[];
   abierta: boolean;
   resultadosVisibles: boolean;
   resultados: Record<string, number>;
@@ -31,7 +33,7 @@ type Props = {
  */
 export default function Votacion({
   evento,
-  proyectos,
+  participantes,
   abierta,
   resultadosVisibles,
   resultados,
@@ -73,8 +75,8 @@ export default function Votacion({
   }
 
   const ordenados = resultadosVisibles
-    ? [...proyectos].sort((a, b) => (resultados[b.perfil_id] ?? 0) - (resultados[a.perfil_id] ?? 0))
-    : proyectos;
+    ? [...participantes].sort((a, b) => (resultados[b.perfil_id] ?? 0) - (resultados[a.perfil_id] ?? 0))
+    : participantes;
   const maximo = Math.max(1, ...Object.values(resultados));
 
   return (
@@ -142,6 +144,11 @@ export default function Votacion({
                   )}
                   <p className="mt-1 line-clamp-2 text-sm text-tinta/80">{p.descripcion}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {p.rol !== "emprendedor" && (
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium text-marfil ${ROLES[p.rol].bg}`}>
+                        {ROLES[p.rol].label}
+                      </span>
+                    )}
                     <BarraEtapa etapa={p.etapa} />
                     {(p.industrias ?? []).slice(0, 2).map((ind) => (
                       <span key={ind} className="rounded-full border border-tinta/20 px-2 py-0.5 text-xs text-tinta/80">
@@ -169,7 +176,7 @@ export default function Votacion({
               {abierta && estado?.conSesion && (
                 <div className="flex items-center justify-end gap-2">
                   {soyYo ? (
-                    <span className="text-sm text-tinta/60">Es tu proyecto</span>
+                    <span className="text-sm text-tinta/65">Sos vos</span>
                   ) : esMio ? (
                     <>
                       <span className="mr-auto text-sm font-semibold text-t-arcilla">✓ Tu voto</span>
@@ -254,7 +261,7 @@ function EstadoSesion({
     <p className="rounded-2xl bg-t-verde-suave px-4 py-3 text-sm text-t-verde">
       {estado.voto
         ? "Ya votaste. Podés cambiar tu voto mientras la votación siga abierta."
-        : "La votación está abierta: elegí tu proyecto favorito."}
+        : "La votación está abierta: elegí a tu favorito."}
     </p>
   );
 }

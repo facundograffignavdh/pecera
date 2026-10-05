@@ -49,7 +49,7 @@ const VOTACION = {
 const RECORRER = [
   "Stands de los proyectos en la Carpa Feria",
   "Mirá sus pitches en Pecera y escribiles desde su perfil",
-  "Votá tu proyecto favorito",
+  "Votá a tu favorito",
 ];
 
 export const EVENTO_ACTUAL: Evento = {
@@ -103,7 +103,7 @@ export const EVENTO_ACTUAL: Evento = {
       lugar: "Auditorio, Urquía",
       titulo: "Pitches ante el jurado",
       resumen:
-        "Cada proyecto tiene 3 minutos frente al jurado. Cerramos con el proyecto más votado por el público.",
+        "Cada proyecto tiene 3 minutos frente al jurado. Cerramos con el ranking del público.",
       momentos: [
         "Cierre de la votación al empezar el Demo Day",
         "Pitch de 3 minutos por proyecto",
@@ -115,12 +115,12 @@ export const EVENTO_ACTUAL: Evento = {
   votacion: VOTACION,
   comoVotar: [
     "Entrá con tu cuenta de Google (es para que haya un voto por persona).",
-    "Mirá los proyectos participantes y tocá «Votar» en tu favorito.",
+    "Mirá a los participantes (proyectos, inversores y aliados) y tocá «Votar» en tu favorito.",
     "Podés cambiar tu voto mientras la votación esté abierta.",
   ],
   reglas: [
     "Un voto por cuenta de Google.",
-    "No se puede votar al propio proyecto ni a la propia empresa.",
+    "No te podés votar a vos ni a tu propia empresa.",
     `La votación abre el ${VOTACION.abre} y cierra el ${VOTACION.cierra}.`,
     `Los resultados ${VOTACION.resultados}.`,
   ],

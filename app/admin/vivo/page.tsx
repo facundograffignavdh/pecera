@@ -9,10 +9,13 @@ export const metadata: Metadata = {
 };
 
 /**
- * Pantalla del stand: conexiones iniciadas de hoy y un ticker anónimo, leídos desde
- * el cliente cada 15 s (no ISR). Solo agregados. Entra quien esté en `admins`.
+ * Pantalla del stand: conexiones iniciadas de hoy, un ticker anónimo y el ranking de la
+ * votación, leídos desde el cliente cada 15 s (no ISR). Solo agregados. Entra quien esté
+ * en `admins`. `?alcance=plataforma` cuenta los proyectos de toda la plataforma; por
+ * defecto, los participantes del evento.
  */
-export default async function VivoPage() {
+export default async function VivoPage({ searchParams }: PageProps<"/admin/vivo">) {
+  const { alcance } = await searchParams;
   const supabase = await supabaseConSesion();
   const {
     data: { user },
@@ -29,5 +32,5 @@ export default async function VivoPage() {
       </main>
     );
   }
-  return <Vivo />;
+  return <Vivo alcance={alcance === "plataforma" ? "plataforma" : "evento"} />;
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { type Resultado, SIN_SESION, traducir } from "@/lib/errores-base";
+import { NO_DISPONIBLE, type Resultado, SIN_SESION, traducir } from "@/lib/errores-base";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 
@@ -59,12 +59,37 @@ export async function participante(perfil: string, participa: boolean) {
   });
 }
 
+/** Suma o saca una empresa: participa a través de quien la administra. */
+export async function participanteEmpresa(empresa: string, participa: boolean) {
+  return rpc("admin_empresa_participante", {
+    p_evento: EVENTO_ACTUAL.slug,
+    p_empresa: empresa,
+    p_participa: participa,
+  });
+}
+
+/** Cambia quién representa a una empresa participante (sus votos pasan a la nueva). */
+export async function representante(empresa: string, perfil: string) {
+  return rpc("admin_representante", { p_evento: EVENTO_ACTUAL.slug, p_empresa: empresa, p_perfil: perfil });
+}
+
+/** Agrega o quita #feria21 de la descripción de un pitch. */
+export async function pitchFeria(pitch: string, con: boolean) {
+  return rpc("admin_pitch_feria", { p_pitch: pitch, p_con: con });
+}
+
 /** Original de una cuenta eliminada que el equipo ya borró a mano en Drive. */
 export async function marcarOriginalBorrado(origen: string) {
   return rpc("admin_marcar_original_borrado", { p_origen: origen }, "/admin");
 }
 
-/** Demo Day: guarda una fila inmutable con los números de la feria hasta ahora. */
-export async function congelarDemoDay() {
+/**
+ * Demo Day: guarda filas inmutables con los números de la feria hasta ahora, una de
+ * toda la plataforma y otra de los participantes del evento. Sin la migración
+ * vivo_feria, una sola fila (la de la plataforma), como antes.
+ */
+export async function congelarDemoDay(): Promise<Resultado> {
+  const r = await rpc("admin_congelar_demo_day_en", { p_evento: EVENTO_ACTUAL.slug }, "/admin");
+  if (r.ok || r.mensaje !== NO_DISPONIBLE) return r;
   return rpc("admin_congelar_demo_day", {}, "/admin");
 }

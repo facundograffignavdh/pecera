@@ -10,6 +10,7 @@ import { supabaseConSesion } from "@/lib/supabase-servidor";
 
 const COLUMNAS = {
   "demo-day": [
+    "alcance",
     "creado_at",
     "desde",
     "hasta",

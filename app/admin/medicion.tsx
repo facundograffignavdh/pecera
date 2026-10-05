@@ -3,6 +3,7 @@ import { congelarDemoDay } from "@/app/admin/acciones";
 import BotonAccion from "@/components/admin/BotonAccion";
 import DataroomSecciones, { type Dataroom } from "@/components/admin/Dataroom";
 import { faltaMigracion } from "@/lib/datos";
+import { EVENTO_ACTUAL } from "@/lib/eventos";
 import type { supabaseConSesion } from "@/lib/supabase-servidor";
 
 type Supabase = Awaited<ReturnType<typeof supabaseConSesion>>;
@@ -19,6 +20,8 @@ export type SnapshotDemoDay = {
   liquidez: number | null;
   liquidez_q: number | null;
   pct_vistas_fuera_horario: number | null;
+  /** 'plataforma' o el slug del evento (migración vivo_feria; antes, siempre la plataforma). */
+  alcance?: string;
 };
 
 const CAJA = "rounded-2xl border border-tinta/10 bg-tinta/[0.02] px-4 py-3";
@@ -38,15 +41,33 @@ export function porcentaje(v: number | null | undefined) {
 
 /**
  * Pestaña "Medición" de /admin (super dataroom): el snapshot del Demo Day, los CSV y
- * el dataroom desde el comienzo de la feria. `filtro` (?f=) = fuente del embudo.
- * Solo agregados. Definiciones en docs/GUIA-MEDICION.md.
+ * el dataroom desde el comienzo de la feria. `filtro` (?f=) = fuente del embudo;
+ * `alcance` (?a=plataforma) = quiénes cuentan para la liquidez y la CI por participante:
+ * por defecto, los participantes del evento (todos los roles anotados); si no, los
+ * proyectos de la plataforma. Solo agregados.
+ * Definiciones en docs/GUIA-MEDICION.md.
  */
-export default async function Medicion({ supabase, filtro }: { supabase: Supabase; filtro: string }) {
+export default async function Medicion({
+  supabase,
+  filtro,
+  alcance,
+}: {
+  supabase: Supabase;
+  filtro: string;
+  alcance: "plataforma" | "evento";
+}) {
   const fuente = filtro === "todos" ? null : filtro;
-  const [{ data, error }, dataroom] = await Promise.all([
+  const [{ data, error }, conAlcance] = await Promise.all([
     supabase.rpc("admin_demo_day_snapshots"),
-    supabase.rpc("admin_dataroom", { p_fuente: fuente }),
+    supabase.rpc("admin_dataroom_en", {
+      p_fuente: fuente,
+      p_alcance: alcance === "evento" ? EVENTO_ACTUAL.slug : "plataforma",
+    }),
   ]);
+  // Sin la migración vivo_feria: el dataroom de siempre (toda la plataforma).
+  const sinAlcance = faltaMigracion(conAlcance.error);
+  const dataroom = sinAlcance ? await supabase.rpc("admin_dataroom", { p_fuente: fuente }) : conAlcance;
+  const sufijo = alcance === "plataforma" ? "&a=plataforma" : "";
   if (faltaMigracion(error)) {
     return (
       <p className={`${CAJA} text-sm text-tinta`}>
@@ -68,13 +89,37 @@ export default async function Medicion({ supabase, filtro }: { supabase: Supabas
         </Link>
       </p>
 
+      {!sinAlcance && (
+        <nav aria-label="Quiénes cuentan" className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-tinta/80">Quiénes cuentan:</span>
+          {(
+            [
+              ["evento", EVENTO_ACTUAL.nombre, `/admin?v=medicion${filtro === "todos" ? "" : `&f=${encodeURIComponent(filtro)}`}`],
+              ["plataforma", "Toda la plataforma", `/admin?v=medicion${filtro === "todos" ? "" : `&f=${encodeURIComponent(filtro)}`}&a=plataforma`],
+            ] as const
+          ).map(([id, label, href]) => (
+            <Link
+              key={id}
+              href={href}
+              aria-current={alcance === id ? "page" : undefined}
+              className={`inline-flex min-h-9 items-center rounded-full border px-3 ${
+                alcance === id ? "border-tinta bg-tinta text-marfil" : "border-tinta/25 text-tinta"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
+
       <section aria-labelledby="demo-day" className="flex flex-col gap-3">
         <h2 id="demo-day" className={SUBTITULO}>
           Demo Day
         </h2>
         <p className="text-sm leading-relaxed text-tinta/80">
-          Congela los números desde el comienzo de la feria hasta este momento. Queda guardado y no se puede cambiar:
-          congelá justo antes de subir al escenario.
+          Congela los números desde el comienzo de la feria hasta este momento, dos veces: con los participantes de{" "}
+          {EVENTO_ACTUAL.nombre} y con toda la plataforma. Queda guardado y no se puede cambiar: congelá justo antes de
+          subir al escenario.
         </p>
         <div>
           <BotonAccion
@@ -91,7 +136,10 @@ export default async function Medicion({ supabase, filtro }: { supabase: Supabas
             {snapshots.map((s) => (
               <li key={s.id} className={CAJA}>
                 <p className="text-xs text-tinta/70">
-                  Congelado el {fecha.format(new Date(s.creado_at))} · desde el {fecha.format(new Date(s.desde))}
+                  <span className="font-semibold text-tinta">
+                    {s.alcance && s.alcance !== "plataforma" ? EVENTO_ACTUAL.nombre : "Toda la plataforma"}
+                  </span>{" "}
+                  · Congelado el {fecha.format(new Date(s.creado_at))} · desde el {fecha.format(new Date(s.desde))}
                 </p>
                 <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
                   <Numero titulo="Conexiones iniciadas" valor={s.ci.toLocaleString("es-AR")} />
@@ -104,7 +152,9 @@ export default async function Medicion({ supabase, filtro }: { supabase: Supabas
                   <Numero titulo="Liquidez calificada" valor={porcentaje(s.liquidez_q)} />
                   <Numero titulo="Vistas fuera del horario de la feria" valor={porcentaje(s.pct_vistas_fuera_horario)} />
                 </dl>
-                <p className="mt-2 text-xs text-tinta/70">{s.proyectos} proyectos participantes.</p>
+                <p className="mt-2 text-xs text-tinta/70">
+                  {s.proyectos} {s.alcance && s.alcance !== "plataforma" ? `participantes de ${EVENTO_ACTUAL.nombre}` : "proyectos de la plataforma"}.
+                </p>
               </li>
             ))}
           </ul>
@@ -120,7 +170,12 @@ export default async function Medicion({ supabase, filtro }: { supabase: Supabas
         </p>
       </section>
 
-      <DataroomSecciones d={dataroom.data as Dataroom} fuente={fuente} />
+      <DataroomSecciones
+        d={dataroom.data as Dataroom}
+        fuente={fuente}
+        sufijo={sufijo}
+        unidad={!sinAlcance && alcance === "evento" ? "participantes" : "proyectos"}
+      />
     </div>
   );
 }
