@@ -237,6 +237,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `supabase/pruebas/feria_todos_los_roles.mjs`; vuelta atrás `supabase/rollback-feria-todos-los-roles.sql`,
   que NO es migración) compite cualquier rol: `votar`, ranking, representante y métricas sin filtro de
   rol. En la feria se dice "participantes" (no "proyectos") y el ranking es "Ranking del público".
+- `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
+  teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
