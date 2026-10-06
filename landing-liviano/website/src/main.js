@@ -63,6 +63,14 @@ function onFrame() {
   }
 }
 
+// El video (17 MB) solo baja en escritorio: en el celular se ve el póster fijo y no se pide.
+function cargarVideoFondo() {
+  if (bgVideo.getAttribute("src")) return;
+  bgVideo.preload = "auto";
+  bgVideo.src = `${import.meta.env.BASE_URL}bg.mp4`;
+  bgVideo.pause();
+}
+
 bgVideo.pause();
 bgVideo.addEventListener("loadedmetadata", onFrame);
 gsap.ticker.add(onFrame);
@@ -287,6 +295,7 @@ setupDemo({ reduceMotion });
 
 const mm = gsap.matchMedia();
 mm.add("(hover: hover) and (min-width: 769px)", () => {
+  cargarVideoFondo();
   if (!reduceMotion) setupHero();
   const cleanLema = setupLema();
   const cleanGaleria = setupGaleria();

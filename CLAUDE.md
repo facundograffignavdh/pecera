@@ -368,7 +368,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `landing-liviano/website/README.md`. ESLint lo ignora. `website/postcss.config.js` está vacío a
   propósito: sin él Vite toma el `postcss.config.mjs` de Tailwind de la raíz y la build falla.
   `public/bg.mp4` (17 MB) tiene todos los cuadros como keyframe para el scrub; no recomprimirlo
-  a mano (`npm run prepare-media` lo regenera).
+  a mano (`npm run prepare-media` lo regenera). Solo baja en escritorio: el `<video>` no trae `src` y `main.js`
+  (`cargarVideoFondo`, dentro del `matchMedia` de escritorio) se lo pone; en el celular queda el póster fijo.
   - Carrusel de pitches debajo del lema (`src/pitches.js`, fuera del pin): pide `${VITE_API_BASE}/api/landing/pitches`
     al acercarse, esqueletos sin saltos, se mueve solo y despacio (con Pausar; nunca con reducir movimiento) y cada
     tarjeta abre `${VITE_APP_URL}/#<pitch>`. Si falla o viene vacío, desaparece. `VITE_APP_URL` y `VITE_API_BASE` (por
