@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { hayCookieSesion } from "@/lib/cuenta-local";
 import { type EstadoPared, estaBloqueado, leerVistos, sumarVisto } from "@/lib/pared-reglas";
-import { configFunciones } from "@/lib/visitas";
+import { configFunciones, olvidarTraspaso } from "@/lib/visitas";
 
 /**
  * Pared de pitches: sin cuenta, después de N pitches distintos (3 s cada uno, el criterio de las
@@ -52,11 +52,14 @@ export function contarParaPared(pitchId: string): void {
   for (const o of oyentes) o();
 }
 
-type Config = { activa: boolean; libres: number; sesion: boolean };
-const APAGADA: Config = { activa: false, libres: 2, sesion: false };
+type Config = { activa: boolean; libres: number; sesion: boolean; traspaso: boolean };
+const APAGADA: Config = { activa: false, libres: 2, sesion: false, traspaso: false };
 
-/** `bloqueado(id)` para cada reel. Mientras no llega la config, nada bloqueado. */
-export function usePared(): { bloqueado: (pitchId: string) => boolean } {
+/**
+ * `bloqueado(id)` para cada reel y si el pop-up ofrece el traspaso de la sesión. Mientras no
+ * llega la config, nada bloqueado.
+ */
+export function usePared(): { bloqueado: (pitchId: string) => boolean; traspaso: boolean } {
   const vistos = useSyncExternalStore(suscribir, leer, () => SIN_VISTOS);
   const [config, setConfig] = useState<Config>(APAGADA);
 
@@ -69,7 +72,9 @@ export function usePared(): { bloqueado: (pitchId: string) => boolean } {
       } catch {}
       if (sesion) return; // con cuenta no hay pared
       const c = await configFunciones();
-      if (vivo && c.pared_activa) setConfig({ activa: true, libres: c.pared_libres, sesion: false });
+      if (vivo && c.pared_activa) {
+        setConfig({ activa: true, libres: c.pared_libres, sesion: false, traspaso: c.visitas_activas && c.traspaso_activo });
+      }
     })();
     return () => {
       vivo = false;
@@ -77,7 +82,7 @@ export function usePared(): { bloqueado: (pitchId: string) => boolean } {
   }, []);
 
   const estado: EstadoPared = { ...config, vistos };
-  return { bloqueado: (pitchId) => estaBloqueado(estado, pitchId) };
+  return { bloqueado: (pitchId) => estaBloqueado(estado, pitchId), traspaso: config.traspaso };
 }
 
 /** Marca de "entró desde la pared" para darle la bienvenida al volver de Google. */
@@ -94,7 +99,9 @@ export function tomarBienvenida(): boolean {
   try {
     if (sessionStorage.getItem(CLAVE_ENTRANDO) !== "1") return false;
     sessionStorage.removeItem(CLAVE_ENTRANDO);
-    return hayCookieSesion();
+    if (!hayCookieSesion()) return false;
+    olvidarTraspaso(); // ya viajó en la cookie del login
+    return true;
   } catch {
     return false;
   }

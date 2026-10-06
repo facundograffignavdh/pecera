@@ -325,6 +325,14 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     `src`, con velo y `PopupPared` (Entrar con Google con `next=<ruta>#<pitch>`, `AvisoNavegadorInterno`, links a
     perfil/Explorar/Eventos, se cierra). Sin config o sin storage, abierta. `BienvenidaPared` al volver ofrece el
     perfil sin bloquear. Es capa en el cliente: invita e identifica, NO protege videos (R2 público, URLs en el RSC).
+  - Traspaso de la sesión (apagado por defecto; requiere visitas prendidas): sin sesión, `registrarVisita` anota en
+    sessionStorage `pecera:traspaso-sesion` (solo con el traspaso prendido; nunca se cruza actividad, vistas, piques
+    ni `dispositivo_cuentas`). `PopupPared` muestra el aviso y la casilla "Mostrar que visité y di pique" (tildada)
+    ANTES del botón; la lista (6 h, 10 por tipo, `lib/traspaso.ts`, prueba `node scripts/pruebas/traspaso.ts`) viaja
+    en la cookie httpOnly `pecera-traspaso` de `entrar` y el callback llama `acreditarSinFallar` (2 s, en paralelo
+    con el vínculo, nunca traba el login). `acreditar_traspaso` guarda el aviso y recién ahí acredita
+    (`origen='traspaso'`), valida todo en la base y una vez por hora; destildada = modo privado sin acreditar. Se
+    confía en la lista del navegador a propósito: verificarla contra la medición sería el cruce que se prohíbe.
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.

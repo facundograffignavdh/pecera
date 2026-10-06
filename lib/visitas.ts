@@ -1,6 +1,7 @@
 import { hayCookieSesion } from "@/lib/cuenta-local";
 import { supabase } from "@/lib/supabase";
 import { supabaseNavegador } from "@/lib/supabase-navegador";
+import { type ListaTraspaso, type TipoTraspaso, anotar, armarLista, leerRegistro, quitar } from "@/lib/traspaso";
 import {
   type TipoVisita,
   AVISO_VISITAS,
@@ -76,13 +77,58 @@ function guardarDia(valor: ReturnType<typeof leerDia>) {
 }
 
 /**
+ * Registro de ESTA sesión sin cuenta para el traspaso (sessionStorage: se va al cerrar la pestaña).
+ * Solo existe con el traspaso prendido; nunca se arma con el historial del navegador.
+ */
+const CLAVE_SESION = "pecera:traspaso-sesion";
+const TIPO_TRASPASO: Record<TipoVisita, TipoTraspaso> = { perfil: "perfiles", pitch: "pitches", pique: "piques" };
+
+function cambiarSesion(cambio: (r: ReturnType<typeof leerRegistro>) => ReturnType<typeof leerRegistro>) {
+  try {
+    const actual = leerRegistro(JSON.parse(sessionStorage.getItem(CLAVE_SESION) ?? "null"));
+    sessionStorage.setItem(CLAVE_SESION, JSON.stringify(cambio(actual)));
+  } catch {}
+}
+
+function anotarSinCuenta(tipo: TipoVisita, id: string, dar: boolean) {
+  void (async () => {
+    const c = await configFunciones();
+    if (!c.visitas_activas || !c.traspaso_activo) return;
+    cambiarSesion((r) => (dar ? anotar(r, TIPO_TRASPASO[tipo], id, Date.now()) : quitar(r, TIPO_TRASPASO[tipo], id)));
+  })();
+}
+
+/** Lo que la pared manda al entrar: de esta sesión, 6 h y 10 por tipo como máximo. */
+export function listaTraspaso(mostrar: boolean): ListaTraspaso {
+  try {
+    return armarLista(leerRegistro(JSON.parse(sessionStorage.getItem(CLAVE_SESION) ?? "null")), mostrar, Date.now());
+  } catch {
+    return { mostrar, perfiles: [], pitches: [], piques: [] };
+  }
+}
+
+/** Ya se mandó (o se entró): no se vuelve a usar. */
+export function olvidarTraspaso(): void {
+  try {
+    sessionStorage.removeItem(CLAVE_SESION);
+  } catch {}
+}
+
+function conSesion(): boolean {
+  try {
+    return hayCookieSesion();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Registra que la cuenta vio un perfil, vio un pitch (3 s, el mismo criterio que las vistas) o le
- * dio pique. Sin sesión no hace nada.
+ * dio pique. Sin sesión no se manda nada: solo se anota en esta pestaña para un posible traspaso.
  */
 export function registrarVisita(tipo: TipoVisita, id: string): void {
-  try {
-    if (!hayCookieSesion()) return;
-  } catch {
+  if (!conSesion()) {
+    anotarSinCuenta(tipo, id, true);
     return;
   }
   void (async () => {
@@ -109,9 +155,8 @@ export function registrarVisita(tipo: TipoVisita, id: string): void {
 
 /** Sacar el pique el mismo día borra la visita "te dio pique" de hoy. */
 export function quitarVisitaPique(pitchId: string): void {
-  try {
-    if (!hayCookieSesion()) return;
-  } catch {
+  if (!conSesion()) {
+    anotarSinCuenta("pique", pitchId, false);
     return;
   }
   void (async () => {

@@ -126,7 +126,7 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
       ))}
 
       <PopupPique item={popup} onCerrado={() => setPopup(null)} />
-      <PopupPared item={itemPared} onCerrado={() => setParedCerrada(true)} />
+      <PopupPared item={itemPared} traspaso={pared.traspaso} onCerrado={() => setParedCerrada(true)} />
       <BienvenidaPared />
 
       <section
