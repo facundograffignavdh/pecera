@@ -57,6 +57,9 @@ const MENSAJES: Record<string, string> = {
   "tiene que ser una integrante visible": "Tiene que ser una integrante de la empresa con el perfil visible.",
   "pitch inexistente": "Ese pitch ya no existe. Recargá la página.",
   "el tag no entra en la descripción (máx. 150)": "#feria21 no entra: la descripción ya tiene casi 150 caracteres. Acortala primero.",
+  // quien_vio
+  "demasiadas acciones": "Fueron muchos cambios seguidos. Esperá un minuto y probá de nuevo.",
+  "pitches libres: entre 0 y 20": "Los pitches libres van de 0 a 20.",
 };
 
 /** Error de Supabase → Resultado con un mensaje que se entiende. Nunca tira. */

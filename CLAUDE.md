@@ -297,6 +297,42 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   equipo y, con nombre, SOLO quienes aceptaron (`evento_consentimientos.acepta`) con perfil visible; nunca
   mensajes ni quién con quién; `sin_completar` solo para admins. CSV de los consentidos en
   `/organizacion/csv` (celdas sin fórmulas, BOM). Helpers en `lib/organizacion.ts`.
+- Quién vio tu perfil y Mi CRM (rama `quien-vio-tu-perfil`, migración `20261017120000_quien_vio.sql`, después de
+  panel_organizacion; pruebas `supabase/pruebas/quien_vio.mjs` y `node scripts/pruebas/visitas.ts`; vuelta atrás
+  `supabase/rollback-quien-vio-perfil.sql`, que NO es migración y es con pérdida). Todo arranca APAGADO: interruptores en
+  `funciones_config` (visitas, pared y cuántos libres, traspaso), que lee `config_funciones()` (anon) y cambia /admin →
+  Resumen → Funciones (`admin_funciones`), sin deploy. Tablas propias (`visitas`, `visitas_anonimas`, `visitas_ajustes`,
+  `visitas_frecuencia`); NO toca actividad, vistas, piques ni las métricas (solo lee `metrica_cuentas_equipo()`).
+  - Solo con sesión (`hayCookieSesion` + `supabaseNavegador`, las páginas siguen ISR): `registrarVisita` (`lib/visitas.ts`)
+    en `MedirPerfil` (perfil), `Reel` a los 3 s (pitch, mismo criterio que vistas) y `Feed` al dar pique (sacarlo el mismo
+    día borra la fila, `quitar_visita_pique`). Una fila por visitante → visitado → tipo → día de Buenos Aires
+    (`lib/visitas-dia.ts`, espejo de `visitas_hoy()`); dedupe también en localStorage `pecera:visitas-dia`. Nunca tira.
+  - Como visitante se cuenta recién desde el aviso (`AVISO_VISITAS` con versión; `AvisoVisitas` en el layout, sin
+    bloquear). Se guarda la CUENTA (auth.users), nunca el dispositivo: sin perfil visible figura "sin perfil" y aparece
+    con nombre al LEER si después lo arma. Modo privado = solo contador (`visitas_anonimas`); pasar a privado vuelve
+    contador lo ya guardado; recíproco (en privado no ves quién te visitó). Nada de autovisitas ni del equipo. 30 días:
+    las lecturas filtran y `podar_visitas` (service_role) corre en `.github/workflows/metricas.yml` (tolera 404).
+  - `visitas` tiene una sola FK a `perfiles` (visitado) y el visitante va a `auth.users`: no hay muchos-a-muchos nuevo
+    para PostgREST (PGRST201). Mantenerlo así.
+  - Mi CRM: `/cuenta/crm` (dinámica, noindex), pestañas `PestanasCuenta` ("Mi perfil | Mi CRM") arriba de /cuenta y
+    /cuenta/crm. Interruptor (`InterruptorVisitas`), resumen identificado + total anónimo (`metricas_perfil`, desde
+    siempre), lista con filtros y páginas (`mis_visitas`), "Lo que otros ven de mí" (`mis_visitas_hechas`) y
+    `BorrarHistorial`. Fuera de la v1: "Escribirle", notas, CSV, notificaciones; `contactos` sigue anónima.
+  - Pared de pitches (apagada por defecto; /admin → Funciones, con cuántos libres, default 2): solo `Reel`/`Feed`
+    reproducen pitches (perfil, empresa y "Ver el pitch" son posters que llevan a `/#<pitch>`), así que la pared vive en
+    `Feed` (`usePared` en `lib/pared.ts`, reglas puras en `lib/pared-reglas.ts`, prueba `node scripts/pruebas/pared.ts`).
+    Contador por navegador (`pecera:pared`: pitches distintos a los 3 s, sin sesión); el siguiente distinto queda sin
+    `src`, con velo y `PopupPared` (Entrar con Google con `next=<ruta>#<pitch>`, `AvisoNavegadorInterno`, links a
+    perfil/Explorar/Eventos, se cierra). Sin config o sin storage, abierta. `BienvenidaPared` al volver ofrece el
+    perfil sin bloquear. Es capa en el cliente: invita e identifica, NO protege videos (R2 público, URLs en el RSC).
+  - Traspaso de la sesión (apagado por defecto; requiere visitas prendidas): sin sesión, `registrarVisita` anota en
+    sessionStorage `pecera:traspaso-sesion` (solo con el traspaso prendido; nunca se cruza actividad, vistas, piques
+    ni `dispositivo_cuentas`). `PopupPared` muestra el aviso y la casilla "Mostrar que visité y di pique" (tildada)
+    ANTES del botón; la lista (6 h, 10 por tipo, `lib/traspaso.ts`, prueba `node scripts/pruebas/traspaso.ts`) viaja
+    en la cookie httpOnly `pecera-traspaso` de `entrar` y el callback llama `acreditarSinFallar` (2 s, en paralelo
+    con el vínculo, nunca traba el login). `acreditar_traspaso` guarda el aviso y recién ahí acredita
+    (`origen='traspaso'`), valida todo en la base y una vez por hora; destildada = modo privado sin acreditar. Se
+    confía en la lista del navegador a propósito: verificarla contra la medición sería el cruce que se prohíbe.
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.

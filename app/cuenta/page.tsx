@@ -15,6 +15,7 @@ import AltaPerfil from "@/components/cuenta/AltaPerfil";
 import AvisoCuentaPersonal from "@/components/cuenta/AvisoCuentaPersonal";
 import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
 import EmpresasDueno from "@/components/cuenta/EmpresasDueno";
+import PestanasCuenta from "@/components/cuenta/PestanasCuenta";
 import ResaltarAncla from "@/components/cuenta/ResaltarAncla";
 import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
 import EnVivo from "@/components/EnVivo";
@@ -148,6 +149,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
       <Encabezado variante="cuenta" />
       <RecordarCuenta cuenta={cuentaLocal} />
       <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl lg:max-w-6xl lg:px-8">
+        {user && <PestanasCuenta actual="perfil" />}
         {!user ? (
           <section className="mx-auto mt-8 flex max-w-md flex-col gap-4">
             <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">Tu perfil en Pecera</h1>

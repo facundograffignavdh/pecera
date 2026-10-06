@@ -102,3 +102,8 @@ export async function organizador(email: string, habilitar: boolean) {
     "/admin"
   );
 }
+
+/** Interruptores de emergencia (quien_vio): visitas, pared de pitches (y cuántos libres) y traspaso. */
+export async function funciones(visitas: boolean, pared: boolean, libres: number, traspaso: boolean) {
+  return rpc("admin_funciones", { p_visitas: visitas, p_pared: pared, p_libres: libres, p_traspaso: traspaso }, "/admin");
+}

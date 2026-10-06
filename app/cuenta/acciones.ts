@@ -10,6 +10,7 @@ import { guardarFoto } from "@/lib/foto";
 import { urlMedia } from "@/lib/media";
 import { revalidarPerfil } from "@/lib/perfil-servidor";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
+import { COOKIE_TRASPASO, leerTraspaso } from "@/lib/traspaso";
 import { COOKIE_VINCULO, dispositivoValido, vincularSinFallar } from "@/lib/vinculo";
 
 /** Origen de la request: anda igual en localhost, en las vistas previas y en producción. */
@@ -25,7 +26,8 @@ async function origen(): Promise<string> {
  * "Entrar con Google" (PKCE: el verifier queda en una cookie). Vuelve a `next`
  * (campo del form, solo rutas internas) o a /cuenta. El uuid del dispositivo (campo
  * `dispositivo`, ver AvisoEntrar) viaja en una cookie httpOnly hasta el callback,
- * que lo vincula con la cuenta; si algo de eso falla, el login sigue igual.
+ * que lo vincula con la cuenta; si algo de eso falla, el login sigue igual. Desde la pared de
+ * pitches puede venir `traspaso` (lo de esa visita y la casilla): viaja igual, en otra cookie.
  */
 export async function entrar(formData?: FormData): Promise<void> {
   const next = destinoSeguro(String(formData?.get("next") ?? ""));
@@ -41,6 +43,20 @@ export async function entrar(formData?: FormData): Promise<void> {
       });
     } catch {
       // Sin cookie no hay vínculo; el login sigue.
+    }
+  }
+  const traspaso = leerTraspaso(formData?.get("traspaso"));
+  if (traspaso) {
+    try {
+      (await cookies()).set(COOKIE_TRASPASO, JSON.stringify(traspaso), {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/auth",
+        maxAge: 600,
+      });
+    } catch {
+      // Sin cookie no hay traspaso; el login sigue.
     }
   }
   const supabase = await supabaseConSesion();

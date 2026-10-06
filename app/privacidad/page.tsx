@@ -15,6 +15,7 @@ const INDICE = [
   { id: "datos", titulo: "Qué datos guardamos" },
   { id: "para-que", titulo: "Para qué los usamos" },
   { id: "publico", titulo: "Qué es público y qué no" },
+  { id: "visitas", titulo: "Quién vio tu perfil" },
   { id: "universidad", titulo: "Feria 21: compartir con la organización" },
   { id: "proveedores", titulo: "Proveedores y dónde se guardan" },
   { id: "conservacion", titulo: "Cuánto tiempo los guardamos" },
@@ -154,7 +155,10 @@ export default function PrivacidadPage() {
             <strong className="font-semibold text-tinta">Los piques.</strong> Para contar los
             &quot;me picó&quot;, tu celular crea un identificador al azar. En nuestra base
             guardamos ese identificador, el pitch y la fecha, más un contador para frenar abusos.
-            No está atado a tu nombre ni a tu cuenta.
+            El pique en sí no está atado a tu nombre. Si entraste con tu cuenta y no estás en
+            modo privado, además el dueño del pitch ve que le diste pique (ver{" "}
+            <a href="#visitas" className={CLASE_ENLACE}>Quién vio tu perfil</a>). Los piques
+            anteriores a esa función siguen anónimos.
           </li>
           <li>
             <strong className="font-semibold text-tinta">Las vistas y los contactos.</strong> Con
@@ -246,8 +250,9 @@ export default function PrivacidadPage() {
         </p>
         <p>
           <strong className="font-semibold text-tinta">Nunca publicamos</strong> el email de tu
-          cuenta ni los emails del formulario. Tampoco mostramos quién dio cada pique ni a quién
-          votó cada persona: solo los totales. En cada pitch mostramos cuántas vistas y
+          cuenta ni los emails del formulario. Fuera de lo que explica{" "}
+          <a href="#visitas" className={CLASE_ENLACE}>Quién vio tu perfil</a>, no mostramos quién
+          dio cada pique ni quién vio cada perfil o pitch, y nunca a quién votó cada persona: solo los totales. En cada pitch mostramos cuántas vistas y
           cuántos piques tiene; los contactos no se muestran: los ve solo el equipo de Pecera,
           contados por perfil. La actividad y la unión de tu navegador con tu cuenta tampoco se
           publican: el equipo ve solo números agregados. Los datos de transparencia y los documentos del Dataroom que no
@@ -266,6 +271,55 @@ export default function PrivacidadPage() {
           vos y por qué. Los intereses de Networking y sus mensajes, igual que los de
           cofundador/a, los ven solo quien lo manda y quien lo recibe.
         </p>
+      </Seccion>
+
+      <Seccion id="visitas" titulo="Quién vio tu perfil">
+        <p>
+          Si tenés perfil, en <Link href="/cuenta/crm" className={CLASE_ENLACE}>Mi CRM</Link> ves
+          quién visitó tu perfil en los últimos 30 días. Funciona solo hacia adelante: no usamos
+          nada de lo que pasó antes de que existiera esta función.
+        </p>
+        <ul>
+          <li>
+            <strong className="font-semibold text-tinta">Qué registramos.</strong> Solo si entraste
+            con tu cuenta y ya viste el aviso: cuando abrís un perfil, cuando ves un pitch al menos
+            3 segundos y cuando le das pique. Una vez por día por perfil y tipo. Guardamos tu cuenta
+            (no tu celular), el perfil visitado, el tipo de visita y el día, en hora de Buenos
+            Aires. Si sacás el pique el mismo día, se borra. No registramos las visitas a tu propio
+            perfil ni las del equipo de Pecera.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Qué ve el dueño del perfil.</strong> Tu
+            nombre, rol, empresa y el día (nunca la hora), con el link a tu perfil público, y si
+            viste su perfil, su pitch o le diste pique. Nada más que lo que ya muestra tu perfil.
+            Si no tenés perfil (o lo ocultaste) figurás como &quot;sin perfil&quot;; si después
+            armás un perfil visible, aparecés con tu nombre en las visitas de los últimos 30 días.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Modo privado.</strong> Lo elegís en el
+            aviso o en Mi CRM, apagando &quot;Mostrar mis visitas&quot;. En modo privado no
+            guardamos quién sos: solo sumamos uno a un contador del día (&quot;N personas en modo
+            privado&quot;). Al pasar a modo privado, las visitas tuyas que ya estaban guardadas
+            pasan a ese contador, sin tu nombre. Es recíproco: mientras estés en modo privado,
+            vos tampoco ves quién te visitó.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Sin cuenta, nada.</strong> Si no entrás
+            con tu cuenta, tu visita queda solo en la medición anónima de siempre. Nunca le ponemos
+            nombre a lo que hiciste antes de entrar, con una sola excepción que elegís vos: si
+            entrás con Google desde el aviso que aparece después de ver algunos pitches y dejás
+            tildada la casilla &quot;Mostrar que visité y di pique&quot;, sumamos lo que viste en esa
+            misma visita (hasta 10 perfiles, 10 pitches y 10 piques de las últimas 6 horas), con
+            el día en que entraste. Si la destildás, no sumamos nada y quedás en modo privado.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Cuánto dura y cómo borrarlo.</strong> Las
+            visitas se borran solas a los 30 días. En Mi CRM, &quot;Lo que otros ven de mí&quot;
+            muestra tus visitas que otros ven con tu nombre, y &quot;Borrar mi historial de
+            visitas&quot; las borra en el momento. Si eliminás tu cuenta, se borran todas: las que
+            hiciste y las que recibiste.
+          </li>
+        </ul>
       </Seccion>
 
       <Seccion id="universidad" titulo="Feria 21: compartir con la organización">
@@ -335,7 +389,8 @@ export default function PrivacidadPage() {
           nuestros servidores en la hora siguiente; antes de confirmar te ofrecemos exportar el
           Dataroom. La actividad (visitas, perfiles abiertos, pitches vistos, tarjetas y lo demás
           de la medición) se borra a los 90 días; después quedan solo totales por hora, sin
-          identificadores. Los piques, las vistas y los contactos se guardan mientras
+          identificadores. Las visitas de &quot;Quién vio tu perfil&quot; se borran a los 30 días.
+          Los piques, las vistas y los contactos se guardan mientras
           exista el pitch o el perfil al que corresponden. El identificador al azar se queda en
           tu navegador hasta que borres los datos del sitio.
         </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { IconoCorazon } from "@/components/Iconos";
 import BotonCompartirReel from "@/components/BotonCompartirReel";
@@ -7,6 +8,8 @@ import { ColumnaReel, DEGRADADO_REEL, DatosReel } from "@/components/ReelPartes"
 import Subtitulos from "@/components/Subtitulos";
 import { registrarActividad } from "@/lib/actividad";
 import { registrarVista } from "@/lib/medicion";
+import { contarParaPared } from "@/lib/pared";
+import { registrarVisita } from "@/lib/visitas";
 import { marcarPistaVista, usePistaPendiente } from "@/lib/pista-pique";
 import type { ItemFeed } from "@/types/pecera";
 
@@ -44,6 +47,10 @@ type Props = {
   /** Para que el feed sepa qué índice está en pantalla. */
   indice: number;
   registrarRef: (indice: number, el: HTMLElement | null) => void;
+  /** Detrás de la pared de pitches (sin cuenta): sin video, poster con velo. */
+  bloqueado?: boolean;
+  /** Abre el pop-up de la pared. */
+  onPared?: () => void;
 };
 
 export default function Reel({
@@ -63,6 +70,8 @@ export default function Reel({
   onDarPique,
   indice,
   registrarRef,
+  bloqueado = false,
+  onPared,
 }: Props) {
   const { pitch, perfil } = item;
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -110,7 +119,7 @@ export default function Reel({
       return;
     }
 
-    if (retenido) {
+    if (retenido || bloqueado) {
       video.pause();
       return;
     }
@@ -131,7 +140,7 @@ export default function Reel({
     return () => {
       cancelado = true;
     };
-  }, [activo, silenciado, pausadoAMano, retenido, onForzarSilencio]);
+  }, [activo, silenciado, pausadoAMano, retenido, bloqueado, onForzarSilencio]);
 
   // Sacar el `src` no suelta el buffer: hace falta load() para que el browser
   // libere el video y vuelva a mostrar el poster.
@@ -196,6 +205,8 @@ export default function Reel({
     if (!vistaContada.current && video.currentTime >= SEGUNDOS_VISTA) {
       vistaContada.current = true;
       registrarVista(pitch.id);
+      registrarVisita("pitch", pitch.id);
+      contarParaPared(pitch.id);
     }
     if (!completoContado.current && video.duration > 0 && video.currentTime / video.duration >= FRACCION_COMPLETO) {
       completoContado.current = true;
@@ -272,6 +283,24 @@ export default function Reel({
           <IconoCorazon lleno className="size-4 text-arcilla" />
           Tocá dos veces para dar pique
         </span>
+      )}
+
+      {bloqueado && (
+        <div className="absolute inset-0 flex items-center justify-center bg-tinta/55 px-6 backdrop-blur-md">
+          <div className="flex max-w-xs flex-col items-center gap-3 text-center text-marfil">
+            <p className="font-display text-xl font-semibold leading-tight">Entrá para seguir viendo pitches</p>
+            <button
+              type="button"
+              onClick={onPared}
+              className="min-h-12 rounded-full bg-naranja px-6 font-semibold text-tinta transition-colors duration-[var(--duracion-rapida)] ease-pecera hover:bg-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marfil"
+            >
+              Entrar con Google
+            </button>
+            <Link href={href} className="text-sm underline underline-offset-2">
+              O mirá el perfil de {perfil.nombre}
+            </Link>
+          </div>
+        </div>
       )}
 
       {/* Gradiente para que el texto se lea sobre cualquier frame. */}
