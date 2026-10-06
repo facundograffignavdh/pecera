@@ -47,7 +47,7 @@ import { faltaMigracion } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
 import type { NewsletterLink } from "@/lib/newsletter";
-import { COLUMNAS_PROPIO, COLUMNAS_PROPIO_BASE, COLUMNAS_PROPIO_LISTA } from "@/lib/perfil-servidor";
+import { COLUMNAS_PROPIO, COLUMNAS_PROPIO_BASE, COLUMNAS_PROPIO_LISTA, COLUMNAS_PROPIO_NETWORKING } from "@/lib/perfil-servidor";
 import { COLUMNAS_PORTFOLIO, type EntradaPortfolio, type Servicio, type Tesis } from "@/lib/portfolio";
 import { calcularRacha } from "@/lib/racha";
 import { ROLES } from "@/lib/rol";
@@ -86,7 +86,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         .maybeSingle()
         .overrideTypes<PerfilPropio | null, { merge: false }>();
     // En cascada: feria_pro → feria_lista → lo de siempre.
-    let { data, error: errorLectura } = await leer(COLUMNAS_PROPIO);
+    let { data, error: errorLectura } = await leer(COLUMNAS_PROPIO_NETWORKING);
+    if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO));
     if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO_LISTA));
     if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO_BASE));
     if (errorLectura) throw new Error(`Supabase (cuenta): ${errorLectura.message}`);

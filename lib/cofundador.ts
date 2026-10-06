@@ -26,7 +26,7 @@ export type Encaje = {
 const sinAcentos = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
 /** "Córdoba, Argentina" → ["cordoba", "argentina"]: ciudad y país, sin tildes. */
-function lugar(t?: string | null): { ciudad: string; pais: string } | null {
+export function lugar(t?: string | null): { ciudad: string; pais: string } | null {
   if (!t) return null;
   const partes = sinAcentos(t).split(/[,/·-]/).map((x) => x.trim()).filter(Boolean);
   if (partes.length === 0) return null;

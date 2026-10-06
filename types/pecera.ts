@@ -52,6 +52,11 @@ export type Perfil = {
   skills?: string[];
   busca?: string[];
   ofrece?: string[];
+  // Networking (networking_feria): detalle libre y "cómo" de cada lado.
+  busca_detalle?: string[];
+  ofrece_detalle?: string[];
+  busca_como?: string[];
+  ofrece_como?: string[];
   /** Solo en las consultas que lo piden (perfil público, feed). La principal. */
   empresa?: EmpresaResumen | null;
   /**

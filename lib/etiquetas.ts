@@ -193,22 +193,111 @@ export const DEDICACIONES = [
 export const NOTA_COFUNDADOR_MAX = 200;
 
 // ---------------------------------------------------------------------------
-// Qué busca y qué ofrece cada persona (todos los roles). Espejo de
-// perfiles_busca_valido / perfiles_ofrece_valido. Hasta 6 de cada uno.
+// Qué busca y qué ofrece cada persona (todos los roles): categoría y opción. Espejo de
+// public.necesidades_validas() (perfiles_busca_valido / perfiles_ofrece_valido, migración
+// 20261015120000_networking_feria.sql). Hasta 10 de cada lado.
+// Los 10 valores de antes siguen valiendo: 8 son opciones con el mismo id y `inversion` y
+// `talento` quedan como "toda la categoría (en general)": se muestran si ya estaban elegidos,
+// pero no se ofrecen para elegir de nuevo.
 // ---------------------------------------------------------------------------
-export const NECESIDADES = [
-  { valor: "inversion", label: "Inversión", tono: "verde" },
-  { valor: "cofundador", label: "Cofundador/a", tono: "arcilla" },
-  { valor: "clientes", label: "Clientes", tono: "arcilla" },
-  { valor: "mentoria", label: "Mentoría", tono: "petroleo" },
-  { valor: "talento", label: "Talento y equipo", tono: "petroleo" },
-  { valor: "empleo", label: "Trabajo", tono: "petroleo" },
-  { valor: "alianzas", label: "Alianzas", tono: "ocre" },
-  { valor: "proveedores", label: "Proveedores", tono: "ocre" },
-  { valor: "networking", label: "Networking", tono: "ciruela" },
-  { valor: "prensa", label: "Prensa y difusión", tono: "ciruela" },
+export const CATEGORIAS_NECESIDAD = [
+  { valor: "capital", label: "Capital y financiamiento", tono: "verde" },
+  { valor: "equipo", label: "Equipo y talento", tono: "arcilla" },
+  { valor: "conocimiento", label: "Conocimiento y acompañamiento", tono: "petroleo" },
+  { valor: "mercado", label: "Mercado y ventas", tono: "arcilla" },
+  { valor: "producto", label: "Producto y tecnología", tono: "azul" },
+  { valor: "herramientas", label: "Herramientas y plataformas", tono: "azul" },
+  { valor: "infraestructura", label: "Infraestructura y recursos", tono: "ocre" },
+  { valor: "investigacion", label: "Investigación y alianzas", tono: "tierra" },
+  { valor: "difusion", label: "Difusión y comunidad", tono: "ciruela" },
+  { valor: "trabajo", label: "Trabajo y oportunidades", tono: "petroleo" },
 ] as const satisfies ReadonlyArray<Opcion & { tono: Tono }>;
-export const MAX_NECESIDADES = 6;
+export type CategoriaNecesidad = (typeof CATEGORIAS_NECESIDAD)[number]["valor"];
+
+type OpcionNecesidad = Opcion & { categoria: CategoriaNecesidad; general?: true };
+
+export const NECESIDADES = [
+  // De antes: toda la categoría.
+  { valor: "inversion", label: "Capital y financiamiento (en general)", categoria: "capital", general: true },
+  { valor: "talento", label: "Equipo y talento (en general)", categoria: "equipo", general: true },
+  // Capital y financiamiento
+  { valor: "inversion_angel", label: "Inversión ángel", categoria: "capital" },
+  { valor: "capital_riesgo", label: "Capital de riesgo", categoria: "capital" },
+  { valor: "fondos_publicos", label: "Fondos y subsidios públicos", categoria: "capital" },
+  { valor: "premios", label: "Premios y concursos", categoria: "capital" },
+  { valor: "credito", label: "Crédito o financiamiento", categoria: "capital" },
+  { valor: "aceleracion_inversion", label: "Aceleración con inversión", categoria: "capital" },
+  // Equipo y talento
+  { valor: "cofundador", label: "Cofundador/a", categoria: "equipo" },
+  { valor: "desarrollo", label: "Desarrollo y tecnología", categoria: "equipo" },
+  { valor: "diseno", label: "Diseño", categoria: "equipo" },
+  { valor: "ventas", label: "Ventas y comercial", categoria: "equipo" },
+  { valor: "pasantias", label: "Pasantías y prácticas", categoria: "equipo" },
+  { valor: "freelancers", label: "Freelancers", categoria: "equipo" },
+  { valor: "asesores", label: "Asesores (advisory)", categoria: "equipo" },
+  // Conocimiento y acompañamiento
+  { valor: "mentoria", label: "Mentoría", categoria: "conocimiento" },
+  { valor: "aceleracion", label: "Aceleración e incubación", categoria: "conocimiento" },
+  { valor: "capacitacion", label: "Capacitación", categoria: "conocimiento" },
+  { valor: "legal", label: "Asesoría legal", categoria: "conocimiento" },
+  { valor: "contable", label: "Contable e impositiva", categoria: "conocimiento" },
+  { valor: "propiedad_intelectual", label: "Propiedad intelectual", categoria: "conocimiento" },
+  // Mercado y ventas
+  { valor: "clientes", label: "Primeros clientes", categoria: "mercado" },
+  { valor: "pilotos", label: "Pilotos y pruebas de concepto", categoria: "mercado" },
+  { valor: "distribucion", label: "Canales de distribución", categoria: "mercado" },
+  { valor: "exportacion", label: "Exportación", categoria: "mercado" },
+  { valor: "compras_publicas", label: "Compras públicas y licitaciones", categoria: "mercado" },
+  // Producto y tecnología
+  { valor: "mvp", label: "Desarrollo de MVP", categoria: "producto" },
+  { valor: "prototipado", label: "Prototipado", categoria: "producto" },
+  { valor: "ia", label: "IA y automatización", categoria: "producto" },
+  { valor: "hardware_iot", label: "Hardware e IoT", categoria: "producto" },
+  { valor: "datos", label: "Datos y analítica", categoria: "producto" },
+  { valor: "pruebas_usuarios", label: "Pruebas con usuarios", categoria: "producto" },
+  // Herramientas y plataformas
+  { valor: "software", label: "Software y licencias", categoria: "herramientas" },
+  { valor: "creditos_nube", label: "Créditos de nube", categoria: "herramientas" },
+  { valor: "no_code", label: "Plataformas no-code", categoria: "herramientas" },
+  { valor: "ecommerce", label: "E-commerce y marketplaces", categoria: "herramientas" },
+  { valor: "apis", label: "APIs e integraciones", categoria: "herramientas" },
+  // Infraestructura y recursos
+  { valor: "espacio", label: "Espacio de trabajo", categoria: "infraestructura" },
+  { valor: "laboratorio", label: "Laboratorio o taller", categoria: "infraestructura" },
+  { valor: "equipamiento", label: "Equipamiento", categoria: "infraestructura" },
+  { valor: "fabricacion", label: "Fabricación", categoria: "infraestructura" },
+  { valor: "logistica", label: "Logística", categoria: "infraestructura" },
+  { valor: "proveedores", label: "Proveedores e insumos", categoria: "infraestructura" },
+  // Investigación y alianzas
+  { valor: "alianzas", label: "Alianzas estratégicas", categoria: "investigacion" },
+  { valor: "universidad_empresa", label: "Vinculación universidad-empresa", categoria: "investigacion" },
+  { valor: "investigacion", label: "Investigación y desarrollo", categoria: "investigacion" },
+  { valor: "innovacion_abierta", label: "Innovación abierta (corporativos)", categoria: "investigacion" },
+  // Difusión y comunidad
+  { valor: "prensa", label: "Prensa", categoria: "difusion" },
+  { valor: "marketing", label: "Contenido y marketing", categoria: "difusion" },
+  { valor: "exponer", label: "Espacios para exponer", categoria: "difusion" },
+  { valor: "networking", label: "Comunidad y networking", categoria: "difusion" },
+  // Trabajo y oportunidades
+  { valor: "empleo", label: "Empleo", categoria: "trabajo" },
+  { valor: "proyectos_freelance", label: "Proyectos freelance", categoria: "trabajo" },
+  { valor: "colaboracion", label: "Colaboración en proyectos", categoria: "trabajo" },
+] as const satisfies ReadonlyArray<OpcionNecesidad>;
+export type Necesidad = (typeof NECESIDADES)[number]["valor"];
+export const MAX_NECESIDADES = 10;
+
+/** "Cómo": pago, canje, sin costo o a conversar (por lado). Espejo de perfiles_*_como_valido. */
+export const COMOS = [
+  { valor: "pago", label: "Pago" },
+  { valor: "canje", label: "Canje" },
+  { valor: "sin_costo", label: "Sin costo" },
+  { valor: "a_conversar", label: "A conversar" },
+] as const satisfies ReadonlyArray<Opcion>;
+export type Como = (typeof COMOS)[number]["valor"];
+
+/** Detalle libre de busca/ofrece ("Figma", "créditos de AWS"): hasta 8 de hasta 30 caracteres. */
+export const MAX_DETALLE = 8;
+export const DETALLE_MAX = 30;
 
 /** Skills: texto libre corto, como en LinkedIn. */
 export const MAX_SKILLS = 10;
@@ -247,7 +336,9 @@ const M_ESPECIALIDADES = mapa(ESPECIALIDADES);
 const M_APORTES = mapa(APORTES);
 const M_DEDICACIONES = mapa(DEDICACIONES);
 const M_PORTAFOLIO = mapa(TIPOS_PORTAFOLIO);
-const M_NECESIDADES = mapa(NECESIDADES);
+const M_NECESIDADES = mapa<OpcionNecesidad>(NECESIDADES);
+const M_CATEGORIAS = mapa(CATEGORIAS_NECESIDAD);
+const M_COMOS = mapa(COMOS);
 
 export const labelEtapa = (v?: string | null) => (v && M_ETAPAS[v]?.label) || null;
 export const labelRonda = (v?: string | null) => (v && M_RONDAS[v]?.label) || null;
@@ -278,8 +369,24 @@ export const labelDedicacion = (v?: string | null) => (v && M_DEDICACIONES[v]?.l
 
 export function necesidad(v: string) {
   const n = M_NECESIDADES[v];
-  return n ? { label: n.label, clase: TONO[n.tono] } : { label: v, clase: TONO.tierra };
+  if (!n) return { label: v, clase: TONO.tierra };
+  return { label: n.label, clase: TONO[M_CATEGORIAS[n.categoria]?.tono ?? "tierra"] };
 }
+
+/** Categoría de una opción de busca/ofrece (null si el valor no existe). */
+export function categoriaDe(v: string): CategoriaNecesidad | null {
+  return (M_NECESIDADES[v]?.categoria as CategoriaNecesidad | undefined) ?? null;
+}
+
+export function categoriaNecesidad(c: string) {
+  const x = M_CATEGORIAS[c];
+  return x ? { label: x.label, clase: TONO[x.tono] } : { label: c, clase: TONO.tierra };
+}
+
+/** Las "en general" (inversion, talento) valen, pero no se ofrecen para elegir de nuevo. */
+export const esNecesidadGeneral = (v: string) => !!M_NECESIDADES[v]?.general;
+
+export const labelComo = (v: string) => M_COMOS[v]?.label ?? v;
 
 export function tipoPortafolio(v: string) {
   const t = M_PORTAFOLIO[v];
