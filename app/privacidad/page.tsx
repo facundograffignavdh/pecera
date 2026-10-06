@@ -139,7 +139,8 @@ export default function PrivacidadPage() {
             <strong className="font-semibold text-tinta">Compartir con la organización de la
             Feria 21 (opcional).</strong> Si tildás la casilla para compartir tu perfil con la
             Universidad Siglo 21, guardamos tu elección, la fecha y la versión del texto que
-            aceptaste. Si la destildás, guardamos que la retiraste y la fecha. Ver{" "}
+            aceptaste, y la Universidad puede ver tu perfil público y lo que buscás y ofrecés. Si
+            la destildás, dejás de aparecer y guardamos que la retiraste y la fecha. Ver{" "}
             <a href="#universidad" className={CLASE_ENLACE}>Feria 21: compartir con la organización</a>.
           </li>
           <li>
@@ -224,7 +225,9 @@ export default function PrivacidadPage() {
           <li>Mantener tu sesión abierta y cuidar el servicio de abusos.</li>
         </ul>
         <p>No vendemos tus datos, no los usamos para publicidad y no los compartimos con nadie
-          más que los proveedores de la sección de abajo.</p>
+          más que los proveedores de la sección de abajo y, solo si lo aceptaste, con la
+          organización de la Feria 21 (ver{" "}
+          <a href="#universidad" className={CLASE_ENLACE}>Feria 21: compartir con la organización</a>).</p>
       </Seccion>
 
       <Seccion id="publico" titulo="Qué es público y qué no">
@@ -275,16 +278,27 @@ export default function PrivacidadPage() {
         <ul>
           <li>No la necesitás para usar Pecera, anotarte en la feria ni hacer networking.</li>
           <li>
-            <strong className="font-semibold text-tinta">Hoy solo guardamos tu elección</strong>{" "}
-            (con la fecha y la versión del texto): no le mandamos nada a la Universidad. Si más
-            adelante se habilita, se compartiría tu perfil público y lo que buscás y ofrecés,
-            solo de quienes tildaron la casilla, solo para facilitar conexiones durante el evento,
-            y lo vamos a contar acá antes.
+            <strong className="font-semibold text-tinta">Qué ve la Universidad, si la tildaste.</strong>{" "}
+            Las autoridades de la Universidad que el equipo de Pecera habilita (entran con su
+            cuenta a un panel propio) ven tu perfil público (nombre, rol, empresas, zona y
+            descripción, con el link a tu perfil), lo que buscás y ofrecés (con los detalles y el
+            cómo), si estás anotado en la feria y la fecha en que aceptaste. Pueden descargarlo
+            en una planilla. Lo usan solo para facilitar conexiones durante el evento, según el
+            convenio entre Pecera y la Universidad.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Qué no ve nunca:</strong> el email de tu
+            cuenta, tus mensajes, a quién le mostraste interés ni quién te lo mostró a vos. De
+            quienes no tildaron la casilla ve solo números totales (cuántas personas, cuántos
+            intereses y matches, qué es lo más buscado y ofrecido), sin nombres.
           </li>
           <li>
             <strong className="font-semibold text-tinta">La podés retirar cuando quieras</strong>:
             en <Link href="/cuenta" className={CLASE_ENLACE}>Mi perfil</Link>, en la tarjeta de la
-            Feria 21, destildando la casilla. Guardamos que la retiraste y la fecha.
+            Feria 21, destildando la casilla. Desde ese momento dejás de aparecer en el panel de la
+            Universidad, y guardamos que la retiraste y la fecha. Lo que la Universidad ya haya
+            descargado antes queda de su lado: para que lo borre, escribinos a <Email /> y se lo
+            pedimos.
           </li>
         </ul>
       </Seccion>

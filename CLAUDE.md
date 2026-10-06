@@ -286,9 +286,17 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     anotó /admin; "Ahora no" lo cierra hasta el día siguiente (`pecera:aviso-networking`); con busca y ofrece
     completos no aparece más. Casilla OPCIONAL para la Universidad (`CasillaUniversidad`,
     `CONSENTIMIENTO_U21` con versión): `evento_consentimientos` por `guardar_consentimiento_evento` /
-    `mi_consentimiento_evento`; retirar = `acepta false` con fecha. Hoy solo se guarda (el panel de la
-    organización va con el convenio). `/privacidad#universidad` lo explica.
+    `mi_consentimiento_evento`; retirar = `acepta false` con fecha. Con el convenio firmado, lo ve la
+    Universidad en `/organizacion` (abajo). `/privacidad#universidad` lo explica.
   - `borrar_mi_cuenta` no cambió: las dos tablas nuevas caen en cascada con el perfil (probado).
+- Panel de la Universidad (migración `20261016120000_panel_organizacion.sql`, después de networking_feria;
+  pruebas `supabase/pruebas/panel_organizacion.mjs`; guía `docs/GUIA-FERIA.md` §8). `/organizacion`
+  (dinámica, con sesión; en el matcher de `proxy.ts`, fuera de robots): entran los emails de
+  `evento_organizadores` (privada; las carga /admin → Universidad con `admin_organizador`/`admin_organizadores`)
+  y los admins (`puede_ver_organizacion`). `organizacion_networking(p_evento)`: números de la feria sin el
+  equipo y, con nombre, SOLO quienes aceptaron (`evento_consentimientos.acepta`) con perfil visible; nunca
+  mensajes ni quién con quién; `sin_completar` solo para admins. CSV de los consentidos en
+  `/organizacion/csv` (celdas sin fórmulas, BOM). Helpers en `lib/organizacion.ts`.
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
@@ -355,6 +363,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/sitemap.xml` y `/robots.txt` → `app/sitemap.ts` y `app/robots.ts` (no indexa cuenta,
   admin, auth ni subir)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
+- `/organizacion` (+ `/csv`) → panel de la Universidad para la Feria 21 (emails habilitados en /admin → Universidad, y admins)
 - `/admin/vivo` → pantalla del stand: CI de hoy, ticker anónimo y ranking de la votación, cada 15 s
   (`admin_vivo_en` + `admin_ranking_evento`)
 - `/cuenta/empresa` → Administrar empresa (`?empresa=slug`; sin él, la principal; `?pestana=`): pestañas
@@ -437,7 +446,8 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `.tema-fijo` para lo que va sobre video.
 - networking_feria: `networking_intereses` (de, a, mensaje ≤ 280, estado, evento_id; sin políticas, solo por
   RPC) y `evento_consentimientos` (evento_id, perfil_id, acepta, version, decidido_at; privada, solo por RPC).
-  Las dos caen en cascada al borrar el perfil.
+  Las dos caen en cascada al borrar el perfil. `evento_organizadores` (evento_id, email en minúsculas;
+  privada, solo por RPC de admin): quién de la Universidad entra a /organizacion.
 - cofundador_conexiones (`20261009120000_cofundador_conexiones.sql`, después de borrar_cuenta;
   pruebas en `supabase/pruebas/cofundador.mjs`): `cofundador_intereses` (de, a, mensaje ≤ 280, estado
   pendiente/aceptado/rechazado/retirado; sin políticas: solo por RPC `cofundador_interesar`,

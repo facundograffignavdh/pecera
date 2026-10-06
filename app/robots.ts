@@ -5,7 +5,7 @@ const SITIO = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").repl
 /** Lo público se indexa; la cuenta, el panel y el login no. */
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/cuenta", "/admin", "/auth", "/subir"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/cuenta", "/admin", "/auth", "/subir", "/organizacion"] },
     sitemap: `${SITIO}/sitemap.xml`,
   };
 }

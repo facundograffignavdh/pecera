@@ -3,6 +3,7 @@ import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
 import Link from "next/link";
 import BotonCopiar from "@/components/BotonCopiar";
 import Encabezado from "@/components/Encabezado";
+import AgregarOrganizador from "@/components/admin/AgregarOrganizador";
 import BotonAccion from "@/components/admin/BotonAccion";
 import GestionFeria, { type DatosFeria } from "@/components/admin/GestionFeria";
 import Medicion from "@/app/admin/medicion";
@@ -11,6 +12,7 @@ import {
   configurarEvento,
   marcarOriginalBorrado,
   ocultarEmpresa,
+  organizador,
   participante,
   publicarPerfil,
   publicarPitch,
@@ -39,6 +41,7 @@ const VISTAS = [
   { id: "envios", label: "Envíos" },
   { id: "empresas", label: "Empresas" },
   { id: "evento", label: EVENTO_ACTUAL.nombre },
+  { id: "universidad", label: "Universidad" },
   { id: "drive", label: "Drive" },
   { id: "medicion", label: "Medición" },
 ] as const;
@@ -156,6 +159,7 @@ async function ConSesion({
         {vista === "envios" && <Envios supabase={supabase} />}
         {vista === "empresas" && <Empresas supabase={supabase} />}
         {vista === "evento" && <Evento supabase={supabase} />}
+        {vista === "universidad" && <Universidad supabase={supabase} />}
         {vista === "drive" && <Drive supabase={supabase} />}
         {vista === "medicion" && <Medicion supabase={supabase} filtro={filtro} alcance={alcance} />}
       </div>
@@ -719,6 +723,64 @@ async function Empresas({ supabase }: { supabase: Supabase }) {
 // ---------------------------------------------------------------------------
 
 type ParticipanteAdmin = { perfil_id: string; slug: string; nombre: string; rol: Rol; empresa_nombre: string | null };
+
+// ---------------------------------------------------------------------------
+// Universidad: quién entra al panel de la organización (/organizacion)
+// ---------------------------------------------------------------------------
+
+async function Universidad({ supabase }: { supabase: Supabase }) {
+  const { data, error } = await supabase.rpc("admin_organizadores", { p_evento: EVENTO_ACTUAL.slug });
+  if (faltaMigracion(error)) {
+    return (
+      <p className={`${CAJA} text-sm text-tinta`}>
+        Falta correr la migración <code>20261016120000_panel_organizacion.sql</code>. Ver docs/GUIA-FERIA.md §8.
+      </p>
+    );
+  }
+  fallo("admin_organizadores", error);
+  const emails = (data ?? []) as Array<{ email: string; created_at: string }>;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-sm leading-relaxed text-tinta">
+        Las autoridades de la Universidad entran a{" "}
+        <Link href="/organizacion" className="font-semibold underline underline-offset-4">
+          /organizacion
+        </Link>{" "}
+        con su cuenta de Google. Ven los números del networking de la feria y, con nombre, solo a quienes aceptaron
+        compartir su perfil. No ven nada más de este panel. Vos también podés abrirlo para revisar.
+      </p>
+
+      <div className={CAJA}>
+        <AgregarOrganizador />
+      </div>
+
+      <section aria-labelledby="habilitados" className="flex flex-col gap-2">
+        <h2 id="habilitados" className="font-display text-xl font-semibold text-tinta">
+          Habilitados ({emails.length})
+        </h2>
+        {emails.length === 0 ? (
+          <p className="text-sm text-tinta/70">Todavía nadie.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {emails.map((o) => (
+              <li key={o.email} className={`${CAJA} flex items-center justify-between gap-3`}>
+                <span className="min-w-0 break-all text-sm text-tinta">{o.email}</span>
+                <BotonAccion
+                  accion={organizador.bind(null, o.email, false)}
+                  estilo="peligro"
+                  confirmar={`¿Sacarle el acceso a ${o.email}?`}
+                >
+                  Sacar
+                </BotonAccion>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
 
 async function Evento({ supabase }: { supabase: Supabase }) {
   const [estado, participantes, resultados, perfiles, feria] = await Promise.all([

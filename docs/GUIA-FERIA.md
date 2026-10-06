@@ -202,8 +202,8 @@ migración, con pérdida: lee su encabezado). Pruebas sin tocar ninguna base:
   «Acepto compartir mi perfil y lo que busco y ofrezco con la Universidad Siglo 21, organizadora
   de la Feria 21, para facilitar conexiones durante el evento.» Nunca es condición para nada.
 - Se guarda la elección, la fecha y la versión del texto (`evento_consentimientos`); destildarla
-  la retira (queda `acepta = false` con la fecha nueva). **Hoy solo se guarda**: no hay panel para
-  la organización ni se le manda nada. Eso va en otra fase, con el convenio firmado.
+  la retira (queda `acepta = false` con la fecha nueva). Con el convenio firmado, lo ven las
+  autoridades de la Universidad en su panel (ver la sección 8).
 - Explicado en `/privacidad#universidad`.
 
 ### Puesta en marcha
@@ -222,4 +222,38 @@ migración, con pérdida: lee su encabezado). Pruebas sin tocar ninguna base:
 | «Primero contá qué buscás y qué ofrecés» | El perfil no tiene nada en busca ni ofrece, o está oculto | Completar en la hoja; mostrar el perfil |
 | No aparece la casilla de la Universidad | La migración no corrió | Paso 1 |
 | «Revisá este dato» al guardar busca/ofrece | La base todavía tiene la regla vieja | Paso 1 |
+
+---
+
+## 8. Panel de la Universidad (`/organizacion`)
+
+Migración aditiva `supabase/migrations/20261016120000_panel_organizacion.sql` (después de
+`networking_feria`; el encabezado trae cómo volver atrás). Pruebas sin tocar ninguna base:
+`supabase/pruebas/panel_organizacion.mjs` (PGlite).
+
+### Quién entra
+- Las autoridades de la Universidad, con su cuenta de Google, en **`/organizacion`**. Solo los
+  emails que el equipo habilita en **`/admin` → Universidad** («Habilitar» / «Sacar»). No necesitan
+  perfil en Pecera y no ven nada del resto de `/admin`.
+- Los admins de Pecera también lo abren, para revisar lo mismo que ve la Universidad.
+- Quien entra con otra cuenta ve «no está habilitada» y nada más.
+
+### Qué ve
+- **Números** de la feria (participantes visibles, sin el equipo ni perfiles de prueba): personas,
+  cuántos completaron busca y ofrece, cuántos mostraron interés, intereses, matches (por par),
+  aceptados, por día, entre roles, lo más buscado y ofrecido, lo que se busca mucho y se ofrece
+  poco, por categoría, el cómo y cuántos aceptaron compartir.
+- **Con nombre, solo quienes tildaron la casilla** y tienen el perfil visible: perfil público,
+  empresas, zona, lo que buscan y ofrecen (con detalle y cómo), si están anotados y cuándo
+  aceptaron. Botón **Descargar CSV** (`/organizacion/csv`, con link al perfil; abre bien en Excel).
+- **Nunca**: mensajes, quién le mostró interés a quién, emails de cuenta, ni nombres de quien no
+  aceptó. Si alguien destilda la casilla, oculta su perfil o borra la cuenta, desaparece al instante.
+- **Solo el equipo** (al final del panel): quién de la feria todavía no completó qué busca y qué
+  ofrece, para empujarlo en el stand.
+
+### Puesta en marcha
+1. Correr `20261016120000_panel_organizacion.sql` en el SQL editor (archivo completo, sin nada
+   seleccionado).
+2. En `/admin` → Universidad, habilitar los emails de Google de las autoridades.
+3. Pasarles el link `https://<dominio>/organizacion`.
 

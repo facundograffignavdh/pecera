@@ -28,6 +28,8 @@ const MENSAJES: Record<string, string> = {
   "evento inexistente": "Ese evento no está activo.",
   // networking_feria
   "evento inválido": "Ese evento no está activo.",
+  // panel_organizacion
+  "email inválido": "Revisá el email.",
   "sin sesión": SIN_SESION,
   "no autorizado": "Esta acción es solo para el equipo de Pecera.",
   "ese pitch no es tuyo": "Ese pitch no es de tu perfil.",

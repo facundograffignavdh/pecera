@@ -93,3 +93,12 @@ export async function congelarDemoDay(): Promise<Resultado> {
   if (r.ok || r.mensaje !== NO_DISPONIBLE) return r;
   return rpc("admin_congelar_demo_day", {}, "/admin");
 }
+
+/** Habilita (o saca) un email de la Universidad para el panel /organizacion de la feria. */
+export async function organizador(email: string, habilitar: boolean) {
+  return rpc(
+    "admin_organizador",
+    { p_evento: EVENTO_ACTUAL.slug, p_email: email, p_habilitar: habilitar },
+    "/admin"
+  );
+}
