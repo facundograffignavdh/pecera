@@ -243,3 +243,44 @@ export const EJEMPLOS_BUSCA_OFRECE: EjemploBuscaOfrece[] = [
     ofrece_como: ["sin_costo"],
   },
 ];
+
+/**
+ * Consentimiento OPCIONAL para compartir el perfil con la organización de la Feria 21 (Ley
+ * 25.326). Nunca es condición para usar Pecera ni el networking. Si cambia el texto, cambia la
+ * versión (la base guarda cuál se aceptó).
+ */
+export const CONSENTIMIENTO_U21 = {
+  version: "u21-v1",
+  texto:
+    "Acepto compartir mi perfil y lo que busco y ofrezco con la Universidad Siglo 21, organizadora de la Feria 21, para facilitar conexiones durante el evento.",
+} as const;
+
+/** El aviso de networking de la feria se cerró hoy en este dispositivo (localStorage). */
+const CLAVE_AVISO = "pecera:aviso-networking";
+
+const hoy = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+
+export function avisoCerradoHoy(): boolean {
+  try {
+    return window.localStorage.getItem(CLAVE_AVISO) === hoy();
+  } catch {
+    return false;
+  }
+}
+
+const oyentesAviso = new Set<() => void>();
+
+/** Para useSyncExternalStore: avisa cuando se cierra el aviso. */
+export function suscribirAviso(oyente: () => void): () => void {
+  oyentesAviso.add(oyente);
+  return () => oyentesAviso.delete(oyente);
+}
+
+export function cerrarAvisoHoy(): void {
+  try {
+    window.localStorage.setItem(CLAVE_AVISO, hoy());
+  } catch {
+    // Sin almacenamiento: vuelve a aparecer la próxima vez, nada más.
+  }
+  for (const oyente of oyentesAviso) oyente();
+}
