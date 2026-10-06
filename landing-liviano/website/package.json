@@ -1,0 +1,22 @@
+{
+  "name": "pecera-landing",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "prebuild": "node scripts/sync-demo.mjs --check",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare-media": "node scripts/prepare-media.mjs",
+    "sync-demo": "node scripts/sync-demo.mjs"
+  },
+  "dependencies": {
+    "gsap": "^3.13.0",
+    "lenis": "^1.3.0"
+  },
+  "devDependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "vite": "^7.0.0"
+  }
+}
