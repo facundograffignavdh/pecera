@@ -8,6 +8,9 @@ Rama `v2-feria-lista` (sale de `v2-cuentas`, al día con `main` después del PR 
 ponerlo en marcha y cómo operar la feria. La auditoría con los pendientes está en
 [`AUDITORIA.md`](./AUDITORIA.md).
 
+> **Networking de la Feria 21** (rama `networking-feria`, migración
+> `20261015120000_networking_feria.sql`): ver la [sección 7](#7-networking-de-la-feria-21).
+
 ---
 
 ## 1. Qué cambió, en una pantalla
@@ -152,3 +155,71 @@ resultados ocultos (lo normal) y mostrarlos recién en el anuncio.
 | "Probaste muchos códigos" | Más de 10 intentos en una hora | Esperar una hora (protección contra adivinar códigos) |
 | La página de empresa da 404 | Ningún perfil del equipo está publicado, o la ocultó el equipo | Publicar un perfil del equipo en `/admin` |
 | Un voto "no se puede" | Votación cerrada, votarse a sí mismo o a la propia empresa | Es la regla; lo explica el mensaje |
+
+---
+
+## 7. Networking de la Feria 21
+
+Rama `networking-feria`. Migración aditiva `supabase/migrations/20261015120000_networking_feria.sql`
+(después de `persona_empresa`); vuelta atrás `supabase/rollback-networking-feria.sql` (NO es
+migración, con pérdida: lee su encabezado). Pruebas sin tocar ninguna base:
+`supabase/pruebas/networking_feria.mjs` (PGlite) y `node scripts/pruebas/networking.ts` (encaje).
+
+### Qué es
+- **Qué buscás y qué ofrecés**, para todos los roles: 10 categorías (capital, equipo,
+  conocimiento, mercado, producto, herramientas, infraestructura, investigación, difusión y
+  trabajo) con sus opciones, hasta **10 por lado**. Además, hasta 8 **detalles libres** por lado
+  («Figma», «créditos de AWS») y el **cómo** (pago, canje, sin costo o a conversar). Se elige por
+  categorías, con buscador y con **ejemplos por rol** (startup en MVP, inversora ángel, estudio
+  contable, laboratorio universitario, empresa grande, desarrolladora freelance, estudiante) que
+  suman opciones sin borrar las que ya había. El mismo selector está en el perfil y en Networking.
+- Las 10 opciones de antes siguen valiendo. Ocho son opciones nuevas con el mismo id (cofundador,
+  mentoría, primeros clientes, empleo, alianzas estratégicas, proveedores e insumos, comunidad y
+  networking, prensa); **inversión** y **talento** quedan como «Capital y financiamiento (en
+  general)» y «Equipo y talento (en general)»: se ven si ya estaban y valen por toda la categoría
+  en el encaje, pero no se ofrecen para elegir de nuevo.
+- **`/cofundadores` tiene dos pestañas**: «Cofundadores» (el cofounder match de siempre, igual) y
+  «Networking». Link directo: `/cofundadores?ver=networking&alcance=feria`.
+- Networking tiene el filtro **Feria 21 / Toda la plataforma**. Por defecto, Feria 21 para quien
+  está anotado en la feria (se ve el sello verde FERIA 21). La lista se ordena por **encaje**: lo
+  que buscás y el otro ofrece y al revés (opción exacta pesa más que la misma categoría), el cómo,
+  la zona, las industrias y la etapa, con hasta tres razones en cada tarjeta.
+- **Conexión**: el mismo flujo del cofounder match (interés con mensaje, aceptar o pasar, match,
+  retirar con confirmación), con su propia tabla `networking_intereses` y su propio tope de 20
+  por día (no le come el cupo al de cofundador). Con match aparecen WhatsApp y email; tocarlos
+  cuenta como conexión iniciada (CI), igual que siempre.
+
+### El aviso al anotarse
+- Al tocar «Anotar…» en la tarjeta **Feria 21** de `/cuenta`, aparece: «Para hacer networking en
+  la Feria 21, contanos qué buscás y qué ofrecés», con el botón a Networking (abre la hoja para
+  completar).
+- Si **el equipo la anotó desde `/admin`**, le aparece la próxima vez que entra a `/cuenta`.
+- Se cierra con «Ahora no» (vuelve al día siguiente en ese celular) y no aparece más cuando ya
+  completó busca **y** ofrece. Es solo interfaz: nunca traba el alta ni el login.
+
+### Consentimiento para la Universidad (opcional)
+- Adentro del aviso y en la tarjeta Feria 21 de `/cuenta`, una casilla **opcional y separada**:
+  «Acepto compartir mi perfil y lo que busco y ofrezco con la Universidad Siglo 21, organizadora
+  de la Feria 21, para facilitar conexiones durante el evento.» Nunca es condición para nada.
+- Se guarda la elección, la fecha y la versión del texto (`evento_consentimientos`); destildarla
+  la retira (queda `acepta = false` con la fecha nueva). **Hoy solo se guarda**: no hay panel para
+  la organización ni se le manda nada. Eso va en otra fase, con el convenio firmado.
+- Explicado en `/privacidad#universidad`.
+
+### Puesta en marcha
+1. Correr `20261015120000_networking_feria.sql` en el SQL editor (una sola vez, con todo el
+   archivo). Antes del merge: en esa ventana `main` muestra el id crudo de las opciones nuevas, así
+   que probar solo con perfiles no publicados.
+2. Probar en el celular (preview de Vercel): las dos pestañas, el filtro y el sello, editar en la
+   hoja (y el teclado de iOS en el buscador), interés → match → retirar, el aviso anotándose desde
+   `/cuenta` y desde `/admin`, y la casilla (tildar y destildar).
+3. Merge a `main`.
+
+### Si algo falla
+| Síntoma | Causa probable | Qué hacer |
+| --- | --- | --- |
+| Networking muestra la lista pero sin «Me interesa» | La migración no corrió | Paso 1 |
+| «Primero contá qué buscás y qué ofrecés» | El perfil no tiene nada en busca ni ofrece, o está oculto | Completar en la hoja; mostrar el perfil |
+| No aparece la casilla de la Universidad | La migración no corrió | Paso 1 |
+| «Revisá este dato» al guardar busca/ofrece | La base todavía tiene la regla vieja | Paso 1 |
+

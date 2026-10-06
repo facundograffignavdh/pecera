@@ -2,8 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Refresca la sesión de Supabase. Corre en /cuenta, /auth, /subir, /admin y
- * /eventos (por las actions de votación). El feed, los perfiles y las empresas no
+ * Refresca la sesión de Supabase. Corre en /cuenta, /auth, /subir, /admin,
+ * /eventos (por las actions de votación) y /cofundadores (por la action que guarda
+ * busca/ofrece desde Networking). El feed, los perfiles y las empresas no
  * pasan por acá y siguen estáticos. El proxy no hace dinámica a una página: solo
  * renueva la cookie si vence.
  */
