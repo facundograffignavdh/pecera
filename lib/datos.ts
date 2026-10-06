@@ -45,14 +45,22 @@ const COLUMNAS_PERFIL_LISTA = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS
 const COLUMNAS_PERFIL = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, ${COLUMNAS_COFUNDADOR}, empresa:empresas(slug, nombre, logo_url, ubicacion)`;
 // multi_empresa: todas sus empresas (la RLS deja solo las visibles), con el cargo en cada una.
 const COLUMNAS_PERFIL_MULTI = `${COLUMNAS_PERFIL}, membresias:empresa_miembros(empresa_id, cargo, created_at, empresa:empresas(slug, nombre, logo_url))`;
+// networking_feria: detalle libre y "cómo" de busca/ofrece.
+const COLUMNAS_PERFIL_NETWORKING = `${COLUMNAS_PERFIL_MULTI}, busca_detalle, ofrece_detalle, busca_como, ofrece_como`;
 
 /**
- * Columnas por migración, de la más nueva a la más vieja: multi_empresa → feria_pro →
- * feria_lista → lo de siempre. Cada consulta prueba en ese orden y se queda con la
+ * Columnas por migración, de la más nueva a la más vieja: networking_feria → multi_empresa →
+ * feria_pro → feria_lista → lo de siempre. Cada consulta prueba en ese orden y se queda con la
  * primera que la base entiende; así el deploy nunca depende de que la migración ya
  * haya corrido.
  */
-const NIVELES_PERFIL = [COLUMNAS_PERFIL_MULTI, COLUMNAS_PERFIL, COLUMNAS_PERFIL_LISTA, COLUMNAS_PERFIL_BASE];
+const NIVELES_PERFIL = [
+  COLUMNAS_PERFIL_NETWORKING,
+  COLUMNAS_PERFIL_MULTI,
+  COLUMNAS_PERFIL,
+  COLUMNAS_PERFIL_LISTA,
+  COLUMNAS_PERFIL_BASE,
+];
 
 type Membresia = {
   empresa_id: string;
@@ -303,6 +311,38 @@ export async function getPerfilesVisibles(): Promise<Perfil[]> {
   );
   if (error) fallo("getPerfilesVisibles", error);
   return data.map(conUrlsPerfil);
+}
+
+/**
+ * Perfiles visibles con algo en busca u ofrece (pestaña Networking de /cofundadores), todos
+ * los roles. Sin feria_pro (no hay busca/ofrece), vacío.
+ */
+export async function getNetworking(): Promise<Perfil[]> {
+  const { data, error } = await enCascada(NIVELES_PERFIL.slice(0, 3), (columnas) =>
+    supabase
+      .from("perfiles")
+      .select(columnas)
+      .eq("publicado", true)
+      .eq("oculto", false)
+      .or("busca.neq.{},ofrece.neq.{}")
+      .order("created_at", { ascending: false })
+      .overrideTypes<Perfil[], { merge: false }>()
+  );
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getNetworking): ${error.message}`);
+    return [];
+  }
+  return data.map(conUrlsPerfil);
+}
+
+/** Ids de los perfiles anotados en un evento (filtro "Feria 21"). No lanza: si falla, vacío. */
+export async function getIdsParticipantes(evento: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc("participantes_evento", { p_evento: evento });
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getIdsParticipantes): ${error.message}`);
+    return [];
+  }
+  return ((data ?? []) as Array<{ perfil_id: string }>).map((p) => p.perfil_id);
 }
 
 /** Perfiles visibles que buscan cofundador/a (/cofundadores). Sin migración, vacío. */

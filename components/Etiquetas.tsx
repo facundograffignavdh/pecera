@@ -9,6 +9,7 @@ import {
   labelTicket,
   pasoEtapa,
 } from "@/lib/etiquetas";
+import FilaRecortada from "@/components/FilaRecortada";
 import type { EmpresaDePerfil, Perfil } from "@/types/pecera";
 
 /**
@@ -150,15 +151,19 @@ export function EtiquetasPerfil({
 }
 
 /**
- * Versión del reel: una línea corta sobre el video (empresa, etapa y hasta dos
- * etiquetas). Chips de vidrio oscuro con texto marfil: se leen sobre el gradiente.
- * Con varias empresas no entran sin tapar el video: va la principal y un chip "+N";
- * la lista completa está en el perfil, a un toque.
+ * Versión del reel: cargo en la empresa, etapa (con su barrita) y etiquetas en una sola
+ * línea sobre el video; lo que no entra se resume en un "+N" que despliega la fila (`FilaRecortada`).
+ * Chips de vidrio oscuro con texto marfil: se leen sobre el gradiente. Con varias
+ * empresas va la principal y un chip "+N" propio; la lista completa está en el perfil.
  */
 export function EtiquetasReel({
   perfil,
+  id,
+  activo,
 }: {
   perfil: ConEtiquetas & Pick<Perfil, "empresa" | "empresas" | "empresa_id">;
+  id: string;
+  activo: boolean;
 }) {
   const chips: Array<{ clave: string; texto: string }> = [];
   if (perfil.rol === "inversor") {
@@ -166,11 +171,11 @@ export function EtiquetasReel({
     if (ticket) chips.push({ clave: "ticket", texto: `Ticket ${ticket}` });
   }
   if (perfil.rol === "aliado") {
-    for (const e of (perfil.especialidades ?? []).slice(0, 2)) {
+    for (const e of perfil.especialidades ?? []) {
       chips.push({ clave: `es-${e}`, texto: especialidad(e).label });
     }
   }
-  for (const i of (perfil.industrias ?? []).slice(0, 2 - Math.min(chips.length, 1))) {
+  for (const i of perfil.industrias ?? []) {
     chips.push({ clave: `in-${i}`, texto: labelIndustria(i) });
   }
   const [primera, ...resto] = empresasDe(perfil);
@@ -178,36 +183,44 @@ export function EtiquetasReel({
   const etapa = perfil.rol === "emprendedor" ? perfil.etapa : null;
   if (!primera && !etapa && !chips.length) return null;
 
+  const piezas: React.ReactNode[] = [];
+  if (primera) {
+    piezas.push(
+      <span key="empresa" className="flex min-w-0 max-w-full items-center gap-1.5">
+        <span className="texto-sombra truncate font-medium text-marfil">
+          {c ? `${c.label} en ` : "En "}
+          <span className="font-semibold">{primera.nombre}</span>
+        </span>
+        {resto.length > 0 && (
+          <>
+            <span aria-hidden className={`shrink-0 px-1.5 font-semibold ${CHIP_REEL}`}>
+              +{resto.length}
+            </span>
+            <span className="sr-only">, y también en {listaNombres(resto.map((e) => e.nombre))}</span>
+          </>
+        )}
+      </span>
+    );
+  }
+  if (etapa) piezas.push(<BarraEtapa key="etapa" etapa={etapa} claro />);
+  for (const chip of chips) {
+    piezas.push(
+      <span key={chip.clave} className={`px-2 font-medium ${CHIP_REEL}`}>
+        {chip.texto}
+      </span>
+    );
+  }
+
   return (
-    <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
-      {primera && (
-        <span className="flex min-w-0 max-w-full items-center gap-1.5">
-          <span className="texto-sombra truncate font-medium text-marfil">
-            {c ? `${c.label} en ` : "En "}
-            <span className="font-semibold">{primera.nombre}</span>
-          </span>
-          {resto.length > 0 && (
-            <>
-              <span
-                aria-hidden
-                className="shrink-0 rounded-full bg-tinta/55 px-1.5 py-0.5 font-semibold text-marfil ring-1 ring-marfil/20"
-              >
-                +{resto.length}
-              </span>
-              <span className="sr-only">, y también en {listaNombres(resto.map((e) => e.nombre))}</span>
-            </>
-          )}
-        </span>
-      )}
-      {etapa && <BarraEtapa etapa={etapa} claro />}
-      {chips.map((chip) => (
-        <span
-          key={chip.clave}
-          className="rounded-full bg-tinta/55 px-2 py-0.5 font-medium text-marfil ring-1 ring-marfil/20"
-        >
-          {chip.texto}
-        </span>
-      ))}
-    </div>
+    <FilaRecortada
+      piezas={piezas}
+      id={id}
+      activo={activo}
+      className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs"
+      claseMas={`px-2 font-semibold ${CHIP_REEL}`}
+    />
   );
 }
+
+/** Pastilla de vidrio oscuro del reel: texto marfil sobre el gradiente. */
+const CHIP_REEL = "rounded-full bg-tinta/55 py-0.5 text-marfil ring-1 ring-marfil/20";

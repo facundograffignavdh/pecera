@@ -15,6 +15,8 @@ const INDICE = [
   { id: "datos", titulo: "Qué datos guardamos" },
   { id: "para-que", titulo: "Para qué los usamos" },
   { id: "publico", titulo: "Qué es público y qué no" },
+  { id: "visitas", titulo: "Quién vio tu perfil" },
+  { id: "universidad", titulo: "Feria 21: compartir con la organización" },
   { id: "proveedores", titulo: "Proveedores y dónde se guardan" },
   { id: "conservacion", titulo: "Cuánto tiempo los guardamos" },
   { id: "derechos", titulo: "Tus derechos" },
@@ -33,8 +35,8 @@ export default function PrivacidadPage() {
   return (
     <PaginaLegal
       titulo="Política de privacidad"
-      actualizado="4 de octubre de 2026"
-      actualizadoIso="2026-10-04"
+      actualizado="6 de octubre de 2026"
+      actualizadoIso="2026-10-06"
       intro={
         <p>
           Pecera muestra pitches en video y perfiles de emprendedores, empresas, inversores y
@@ -125,6 +127,23 @@ export default function PrivacidadPage() {
             Cuando le mostrás interés a alguien, guardamos a quién, el mensaje que le escribís (hasta
             280 caracteres), en qué quedó (pendiente, match, pasó o lo retiraste) y las fechas.
           </li>
+          <li id="networking">
+            <strong className="font-semibold text-tinta">Networking.</strong> Qué buscás y qué
+            ofrecés (hasta 10 opciones de cada lado, de una lista por categorías: capital, equipo,
+            mercado, herramientas y otras), los detalles cortos que escribas (por ejemplo,
+            «Figma» o «créditos de AWS») y cómo (pago, canje, sin costo o a conversar). Cuando le
+            mostrás interés a alguien desde Networking, guardamos lo mismo que en la búsqueda de
+            cofundador/a (a quién, el mensaje, en qué quedó y las fechas) y, si lo hiciste con el
+            filtro de la Feria 21, que fue en la feria.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Compartir con la organización de la
+            Feria 21 (opcional).</strong> Si tildás la casilla para compartir tu perfil con la
+            Universidad Siglo 21, guardamos tu elección, la fecha y la versión del texto que
+            aceptaste, y la Universidad puede ver tu perfil público y lo que buscás y ofrecés. Si
+            la destildás, dejás de aparecer y guardamos que la retiraste y la fecha. Ver{" "}
+            <a href="#universidad" className={CLASE_ENLACE}>Feria 21: compartir con la organización</a>.
+          </li>
           <li>
             <strong className="font-semibold text-tinta">El formulario de carga.</strong> Los
             pitches se suben con un formulario de Google Forms. De cada envío guardamos el email
@@ -136,7 +155,10 @@ export default function PrivacidadPage() {
             <strong className="font-semibold text-tinta">Los piques.</strong> Para contar los
             &quot;me picó&quot;, tu celular crea un identificador al azar. En nuestra base
             guardamos ese identificador, el pitch y la fecha, más un contador para frenar abusos.
-            No está atado a tu nombre ni a tu cuenta.
+            El pique en sí no está atado a tu nombre. Si entraste con tu cuenta y no estás en
+            modo privado, además el dueño del pitch ve que le diste pique (ver{" "}
+            <a href="#visitas" className={CLASE_ENLACE}>Quién vio tu perfil</a>). Los piques
+            anteriores a esa función siguen anónimos.
           </li>
           <li>
             <strong className="font-semibold text-tinta">Las vistas y los contactos.</strong> Con
@@ -201,11 +223,15 @@ export default function PrivacidadPage() {
             cada empresa que confirme las relaciones que la nombran.</li>
           <li>Que encuentres perfiles y empresas en Explorar.</li>
           <li>Conectar a quienes buscan cofundador/a cuando el interés es mutuo.</li>
+          <li>Ordenar el Networking por lo que buscás y lo que ofrecen los demás (y al revés), y
+            conectar a las personas cuando el interés es mutuo.</li>
           <li>Organizar los eventos y contar los votos del público.</li>
           <li>Mantener tu sesión abierta y cuidar el servicio de abusos.</li>
         </ul>
         <p>No vendemos tus datos, no los usamos para publicidad y no los compartimos con nadie
-          más que los proveedores de la sección de abajo.</p>
+          más que los proveedores de la sección de abajo y, solo si lo aceptaste, con la
+          organización de la Feria 21 (ver{" "}
+          <a href="#universidad" className={CLASE_ENLACE}>Feria 21: compartir con la organización</a>).</p>
       </Seccion>
 
       <Seccion id="publico" titulo="Qué es público y qué no">
@@ -224,8 +250,9 @@ export default function PrivacidadPage() {
         </p>
         <p>
           <strong className="font-semibold text-tinta">Nunca publicamos</strong> el email de tu
-          cuenta ni los emails del formulario. Tampoco mostramos quién dio cada pique ni a quién
-          votó cada persona: solo los totales. En cada pitch mostramos cuántas vistas y
+          cuenta ni los emails del formulario. Fuera de lo que explica{" "}
+          <a href="#visitas" className={CLASE_ENLACE}>Quién vio tu perfil</a>, no mostramos quién
+          dio cada pique ni quién vio cada perfil o pitch, y nunca a quién votó cada persona: solo los totales. En cada pitch mostramos cuántas vistas y
           cuántos piques tiene; los contactos no se muestran: los ve solo el equipo de Pecera,
           contados por perfil. La actividad y la unión de tu navegador con tu cuenta tampoco se
           publican: el equipo ve solo números agregados. Los datos de transparencia y los documentos del Dataroom que no
@@ -238,6 +265,96 @@ export default function PrivacidadPage() {
           se publican</strong>: los ven solo quien lo manda y quien lo recibe. Si la otra persona
           pasa, no se lo avisamos a quien lo mandó.
         </p>
+        <p>
+          Lo que buscás y ofrecés (con los detalles y el cómo) es parte de tu perfil público: se
+          muestra en tu perfil y en Networking, y quien entra con su cuenta ve cuánto encaja con
+          vos y por qué. Los intereses de Networking y sus mensajes, igual que los de
+          cofundador/a, los ven solo quien lo manda y quien lo recibe.
+        </p>
+      </Seccion>
+
+      <Seccion id="visitas" titulo="Quién vio tu perfil">
+        <p>
+          Si tenés perfil, en <Link href="/cuenta/crm" className={CLASE_ENLACE}>Mi CRM</Link> ves
+          quién visitó tu perfil en los últimos 30 días. Funciona solo hacia adelante: no usamos
+          nada de lo que pasó antes de que existiera esta función.
+        </p>
+        <ul>
+          <li>
+            <strong className="font-semibold text-tinta">Qué registramos.</strong> Solo si entraste
+            con tu cuenta y ya viste el aviso: cuando abrís un perfil, cuando ves un pitch al menos
+            3 segundos y cuando le das pique. Una vez por día por perfil y tipo. Guardamos tu cuenta
+            (no tu celular), el perfil visitado, el tipo de visita y el día, en hora de Buenos
+            Aires. Si sacás el pique el mismo día, se borra. No registramos las visitas a tu propio
+            perfil ni las del equipo de Pecera.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Qué ve el dueño del perfil.</strong> Tu
+            nombre, rol, empresa y el día (nunca la hora), con el link a tu perfil público, y si
+            viste su perfil, su pitch o le diste pique. Nada más que lo que ya muestra tu perfil.
+            Si no tenés perfil (o lo ocultaste) figurás como &quot;sin perfil&quot;; si después
+            armás un perfil visible, aparecés con tu nombre en las visitas de los últimos 30 días.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Modo privado.</strong> Lo elegís en el
+            aviso o en Mi CRM, apagando &quot;Mostrar mis visitas&quot;. En modo privado no
+            guardamos quién sos: solo sumamos uno a un contador del día (&quot;N personas en modo
+            privado&quot;). Al pasar a modo privado, las visitas tuyas que ya estaban guardadas
+            pasan a ese contador, sin tu nombre. Es recíproco: mientras estés en modo privado,
+            vos tampoco ves quién te visitó.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Sin cuenta, nada.</strong> Si no entrás
+            con tu cuenta, tu visita queda solo en la medición anónima de siempre. Nunca le ponemos
+            nombre a lo que hiciste antes de entrar, con una sola excepción que elegís vos: si
+            entrás con Google desde el aviso que aparece después de ver algunos pitches y dejás
+            tildada la casilla &quot;Mostrar que visité y di pique&quot;, sumamos lo que viste en esa
+            misma visita (hasta 10 perfiles, 10 pitches y 10 piques de las últimas 6 horas), con
+            el día en que entraste. Si la destildás, no sumamos nada y quedás en modo privado.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Cuánto dura y cómo borrarlo.</strong> Las
+            visitas se borran solas a los 30 días. En Mi CRM, &quot;Lo que otros ven de mí&quot;
+            muestra tus visitas que otros ven con tu nombre, y &quot;Borrar mi historial de
+            visitas&quot; las borra en el momento. Si eliminás tu cuenta, se borran todas: las que
+            hiciste y las que recibiste.
+          </li>
+        </ul>
+      </Seccion>
+
+      <Seccion id="universidad" titulo="Feria 21: compartir con la organización">
+        <p>
+          La Feria 21 la organiza la Universidad Siglo 21. En Mi perfil (y al anotarte en la feria)
+          hay una casilla <strong className="font-semibold text-tinta">opcional</strong> que dice:
+          «Acepto compartir mi perfil y lo que busco y ofrezco con la Universidad Siglo 21,
+          organizadora de la Feria 21, para facilitar conexiones durante el evento.»
+        </p>
+        <ul>
+          <li>No la necesitás para usar Pecera, anotarte en la feria ni hacer networking.</li>
+          <li>
+            <strong className="font-semibold text-tinta">Qué ve la Universidad, si la tildaste.</strong>{" "}
+            Las autoridades de la Universidad que el equipo de Pecera habilita (entran con su
+            cuenta a un panel propio) ven tu perfil público (nombre, rol, empresas, zona y
+            descripción, con el link a tu perfil), lo que buscás y ofrecés (con los detalles y el
+            cómo), si estás anotado en la feria y la fecha en que aceptaste. Pueden descargarlo
+            en una planilla. Lo usan solo para facilitar conexiones durante el evento, según el
+            convenio entre Pecera y la Universidad.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Qué no ve nunca:</strong> el email de tu
+            cuenta, tus mensajes, a quién le mostraste interés ni quién te lo mostró a vos. De
+            quienes no tildaron la casilla ve solo números totales (cuántas personas, cuántos
+            intereses y matches, qué es lo más buscado y ofrecido), sin nombres.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">La podés retirar cuando quieras</strong>:
+            en <Link href="/cuenta" className={CLASE_ENLACE}>Mi perfil</Link>, en la tarjeta de la
+            Feria 21, destildando la casilla. Desde ese momento dejás de aparecer en el panel de la
+            Universidad, y guardamos que la retiraste y la fecha. Lo que la Universidad ya haya
+            descargado antes queda de su lado: para que lo borre, escribinos a <Email /> y se lo
+            pedimos.
+          </li>
+        </ul>
       </Seccion>
 
       <Seccion id="proveedores" titulo="Proveedores y dónde se guardan">
@@ -272,15 +389,17 @@ export default function PrivacidadPage() {
           nuestros servidores en la hora siguiente; antes de confirmar te ofrecemos exportar el
           Dataroom. La actividad (visitas, perfiles abiertos, pitches vistos, tarjetas y lo demás
           de la medición) se borra a los 90 días; después quedan solo totales por hora, sin
-          identificadores. Los piques, las vistas y los contactos se guardan mientras
+          identificadores. Las visitas de &quot;Quién vio tu perfil&quot; se borran a los 30 días.
+          Los piques, las vistas y los contactos se guardan mientras
           exista el pitch o el perfil al que corresponden. El identificador al azar se queda en
           tu navegador hasta que borres los datos del sitio.
         </p>
         <p>
-          El mensaje de un interés de cofundador/a se guarda mientras esté pendiente o haya match.
+          El mensaje de un interés de cofundador/a o de Networking se guarda mientras esté pendiente o haya match.
           Si la otra persona pasa o lo retirás, borramos el mensaje y queda solo el registro (quién,
           a quién, en qué quedó y la fecha) para que no se vuelva a mandar. Todo eso se borra
-          cuando cualquiera de los dos elimina su cuenta.
+          cuando cualquiera de los dos elimina su cuenta. Tu elección sobre compartir con la
+          organización de la Feria 21 se guarda mientras tu cuenta exista.
         </p>
         <p>
           Cuando eliminás tu cuenta, los videos, fotos, logos e imágenes se borran de nuestros
@@ -313,7 +432,8 @@ export default function PrivacidadPage() {
             pitches (con sus videos, subtítulos, piques y vistas, y los que mandaste por el
             formulario y todavía no se publicaron), tu newsletter, links y documentos, portfolio,
             servicios, tesis, votos, participación en eventos y seguidores, tus intereses de
-            cofundador/a con sus mensajes (los que mandaste y los que recibiste), y los emails de tus
+            cofundador/a y de Networking con sus mensajes (los que mandaste y los que recibiste), tu
+            elección sobre compartir con la organización de la Feria 21, y los emails de tus
             envíos del formulario. También lo que hiciste desde ese navegador y desde los otros
             navegadores unidos a tu cuenta (piques, vistas, contactos, actividad y a quién
             seguís; si otra cuenta también usa ese navegador, lo anónimo queda), esa unión, y lo

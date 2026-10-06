@@ -1,5 +1,6 @@
 # Métricas: cada hora guarda los agregados en metricas_hora (snapshot_metricas_hora,
 # recalcula las últimas 26 horas) y poda la actividad cruda de más de 90 días.
+# Después poda las visitas de "Quién vio tu perfil" de más de 30 días (podar_visitas).
 # Así la curva de la feria queda aunque después cambien las fórmulas. La service key
 # vive solo acá (secrets), nunca en Vercel. El repo es público: el log muestra solo
 # el código HTTP y dos números (horas calculadas y filas podadas).
@@ -43,5 +44,28 @@ jobs:
           else
             # Los errores de PostgREST traen código y mensaje, nunca filas.
             jq -c '{code, message}' respuesta.json || true
+            exit 1
+          fi
+      - name: Podar visitas (más de 30 días)
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set -euo pipefail
+          codigo=$(curl -sS -o poda.json -w '%{http_code}' --max-time 60 \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/podar_visitas" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "HTTP $codigo"
+          if [ "$codigo" -ge 200 ] && [ "$codigo" -lt 300 ]; then
+            # Solo un número: las filas podadas.
+            echo "podadas: $(cat poda.json)"
+          elif [ "$codigo" = "404" ]; then
+            # Todavía no corrió la migración quien_vio (o se volvió atrás): no es un error.
+            echo "sin podar_visitas en la base"
+          else
+            jq -c '{code, message}' poda.json || true
             exit 1
           fi

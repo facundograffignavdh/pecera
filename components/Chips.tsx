@@ -21,7 +21,10 @@ const APAGADO = "border-tinta/25 bg-marfil text-tinta hover:border-tinta/60";
 const PRENDIDO_NEUTRO = "border-tinta bg-tinta text-marfil";
 const BLOQUEADO = "cursor-not-allowed opacity-40 hover:border-tinta/25";
 
-function Tilde() {
+/** Las mismas píldoras, para chips que no son un input (p. ej. el selector de busca/ofrece). */
+export const CLASES_CHIP = { base: BASE, apagado: APAGADO, prendidoNeutro: PRENDIDO_NEUTRO, bloqueado: BLOQUEADO } as const;
+
+export function Tilde() {
   return (
     <svg viewBox="0 0 16 16" aria-hidden className="size-3.5 shrink-0">
       <path

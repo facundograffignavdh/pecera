@@ -3,14 +3,18 @@ import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
 import Link from "next/link";
 import BotonCopiar from "@/components/BotonCopiar";
 import Encabezado from "@/components/Encabezado";
+import AgregarOrganizador from "@/components/admin/AgregarOrganizador";
 import BotonAccion from "@/components/admin/BotonAccion";
 import GestionFeria, { type DatosFeria } from "@/components/admin/GestionFeria";
+import LibresPared from "@/components/admin/LibresPared";
 import Medicion from "@/app/admin/medicion";
 import {
   autopublicar,
+  funciones,
   configurarEvento,
   marcarOriginalBorrado,
   ocultarEmpresa,
+  organizador,
   participante,
   publicarPerfil,
   publicarPitch,
@@ -39,6 +43,7 @@ const VISTAS = [
   { id: "envios", label: "Envíos" },
   { id: "empresas", label: "Empresas" },
   { id: "evento", label: EVENTO_ACTUAL.nombre },
+  { id: "universidad", label: "Universidad" },
   { id: "drive", label: "Drive" },
   { id: "medicion", label: "Medición" },
 ] as const;
@@ -156,6 +161,7 @@ async function ConSesion({
         {vista === "envios" && <Envios supabase={supabase} />}
         {vista === "empresas" && <Empresas supabase={supabase} />}
         {vista === "evento" && <Evento supabase={supabase} />}
+        {vista === "universidad" && <Universidad supabase={supabase} />}
         {vista === "drive" && <Drive supabase={supabase} />}
         {vista === "medicion" && <Medicion supabase={supabase} filtro={filtro} alcance={alcance} />}
       </div>
@@ -225,10 +231,14 @@ const CANALES: [Canal["clave"], string][] = [
 ];
 
 async function Resumen({ supabase }: { supabase: Supabase }) {
-  const [resumen, medicion] = await Promise.all([
+  const [resumen, medicion, config] = await Promise.all([
     supabase.rpc("admin_resumen"),
     supabase.rpc("admin_metricas"),
+    supabase.rpc("config_funciones"),
   ]);
+  // Sin la migración quien_vio, los interruptores no aparecen.
+  if (config.error && !faltaMigracion(config.error)) fallo("config_funciones", config.error);
+  const cfg = config.error ? null : (config.data as ConfigFunciones | null);
   fallo("admin_resumen", resumen.error);
   const r = resumen.data as ResumenDatos;
   // Sin la migración de medición, la parte de vistas y contactos no aparece.
@@ -357,7 +367,73 @@ async function Resumen({ supabase }: { supabase: Supabase }) {
           {r.autopublicar ? "Apagar" : "Prender"}
         </BotonAccion>
       </div>
+
+      {cfg && <Funciones cfg={cfg} />}
     </div>
+  );
+}
+
+type ConfigFunciones = {
+  visitas_activas: boolean;
+  visitas_desde: string | null;
+  pared_activa: boolean;
+  pared_libres: number;
+  traspaso_activo: boolean;
+};
+
+/** Interruptores de emergencia (quien_vio): se leen en cada carga, sin deploy. */
+function Funciones({ cfg }: { cfg: ConfigFunciones }) {
+  const filas = [
+    {
+      titulo: "Quién vio tu perfil (Mi CRM)",
+      texto: cfg.visitas_activas
+        ? "Prendido: con sesión y aviso visto, se registran las visitas."
+        : "Apagado: no se registra ninguna visita y Mi CRM dice que todavía no está activo.",
+      prendido: cfg.visitas_activas,
+      accion: funciones.bind(null, !cfg.visitas_activas, cfg.pared_activa, cfg.pared_libres, cfg.traspaso_activo),
+      confirmar: "¿Prender “Quién vio tu perfil”? Las cuentas que acepten el aviso van a figurar en las visitas.",
+    },
+    {
+      titulo: "Pared de pitches",
+      texto: cfg.pared_activa
+        ? `Prendida: sin cuenta se ven ${cfg.pared_libres} pitches; después hay que entrar con Google.`
+        : "Apagada: los pitches se ven sin cuenta.",
+      prendido: cfg.pared_activa,
+      accion: funciones.bind(null, cfg.visitas_activas, !cfg.pared_activa, cfg.pared_libres, cfg.traspaso_activo),
+      confirmar: "¿Prender la pared? Sin cuenta, después de los pitches libres hay que entrar con Google.",
+    },
+    {
+      titulo: "Traspaso de la sesión",
+      texto: cfg.traspaso_activo
+        ? "Prendido: al entrar desde la pared, con la casilla tildada, se acredita lo que vio en esa visita."
+        : "Apagado: el pop-up no ofrece la casilla y no se acredita nada.",
+      prendido: cfg.traspaso_activo,
+      accion: funciones.bind(null, cfg.visitas_activas, cfg.pared_activa, cfg.pared_libres, !cfg.traspaso_activo),
+      confirmar: "¿Prender el traspaso? Requiere también “Quién vio tu perfil” prendido.",
+    },
+  ];
+  return (
+    <section aria-labelledby="funciones-titulo" className={`${CAJA} flex flex-col gap-3`}>
+      <h2 id="funciones-titulo" className="font-medium text-tinta">
+        Funciones (interruptores de emergencia)
+      </h2>
+      {filas.map((f) => (
+        <div key={f.titulo} className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-tinta">{f.titulo}</p>
+            <p className="text-sm text-tinta/70">{f.texto}</p>
+          </div>
+          <BotonAccion
+            accion={f.accion}
+            estilo={f.prendido ? "secundario" : "primario"}
+            confirmar={f.prendido ? undefined : f.confirmar}
+          >
+            {f.prendido ? "Apagar" : "Prender"}
+          </BotonAccion>
+        </div>
+      ))}
+      <LibresPared config={cfg} />
+    </section>
   );
 }
 
@@ -719,6 +795,64 @@ async function Empresas({ supabase }: { supabase: Supabase }) {
 // ---------------------------------------------------------------------------
 
 type ParticipanteAdmin = { perfil_id: string; slug: string; nombre: string; rol: Rol; empresa_nombre: string | null };
+
+// ---------------------------------------------------------------------------
+// Universidad: quién entra al panel de la organización (/organizacion)
+// ---------------------------------------------------------------------------
+
+async function Universidad({ supabase }: { supabase: Supabase }) {
+  const { data, error } = await supabase.rpc("admin_organizadores", { p_evento: EVENTO_ACTUAL.slug });
+  if (faltaMigracion(error)) {
+    return (
+      <p className={`${CAJA} text-sm text-tinta`}>
+        Falta correr la migración <code>20261016120000_panel_organizacion.sql</code>. Ver docs/GUIA-FERIA.md §8.
+      </p>
+    );
+  }
+  fallo("admin_organizadores", error);
+  const emails = (data ?? []) as Array<{ email: string; created_at: string }>;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-sm leading-relaxed text-tinta">
+        Las autoridades de la Universidad entran a{" "}
+        <Link href="/organizacion" className="font-semibold underline underline-offset-4">
+          /organizacion
+        </Link>{" "}
+        con su cuenta de Google. Ven los números del networking de la feria y, con nombre, solo a quienes aceptaron
+        compartir su perfil. No ven nada más de este panel. Vos también podés abrirlo para revisar.
+      </p>
+
+      <div className={CAJA}>
+        <AgregarOrganizador />
+      </div>
+
+      <section aria-labelledby="habilitados" className="flex flex-col gap-2">
+        <h2 id="habilitados" className="font-display text-xl font-semibold text-tinta">
+          Habilitados ({emails.length})
+        </h2>
+        {emails.length === 0 ? (
+          <p className="text-sm text-tinta/70">Todavía nadie.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {emails.map((o) => (
+              <li key={o.email} className={`${CAJA} flex items-center justify-between gap-3`}>
+                <span className="min-w-0 break-all text-sm text-tinta">{o.email}</span>
+                <BotonAccion
+                  accion={organizador.bind(null, o.email, false)}
+                  estilo="peligro"
+                  confirmar={`¿Sacarle el acceso a ${o.email}?`}
+                >
+                  Sacar
+                </BotonAccion>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
 
 async function Evento({ supabase }: { supabase: Supabase }) {
   const [estado, participantes, resultados, perfiles, feria] = await Promise.all([

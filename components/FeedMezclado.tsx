@@ -38,7 +38,7 @@ export default function FeedMezclado({ items }: { items: ItemFeed[] }) {
   return (
     <div className="tema-fijo relative h-dvh bg-[#0e0d0b]">
       <div className="pointer-events-none fixed inset-x-0 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] z-20 flex justify-center">
-        <div role="tablist" aria-label="Feed" className="pointer-events-auto flex gap-1 rounded-full bg-tinta/45 p-1 backdrop-blur-md ring-1 ring-marfil/15">
+        <div role="tablist" aria-label="Feed" className="pointer-events-auto flex gap-0.5 rounded-full bg-tinta/45 p-0.5 backdrop-blur-md ring-1 ring-marfil/15">
           {(
             [
               ["para-vos", "Para vos"],
@@ -51,7 +51,8 @@ export default function FeedMezclado({ items }: { items: ItemFeed[] }) {
               role="tab"
               aria-selected={pestana === valor}
               onClick={() => setPestana(valor)}
-              className={`boton min-h-9 rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marfil ${
+              // Chata a la vista (28 px); el ::after lleva la zona táctil a 44 px.
+              className={`boton relative min-h-7 rounded-full px-3 text-[0.8125rem] font-semibold after:absolute after:inset-x-0 after:-inset-y-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marfil ${
                 pestana === valor ? "bg-marfil text-tinta" : "text-marfil/85 hover:text-marfil"
               }`}
             >

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ChipsMultiple, ChipsUnico, SelectorEtapa } from "@/components/Chips";
 import EntradaTags from "@/components/EntradaTags";
 import Info from "@/components/Info";
+import SelectorBuscaOfrece from "@/components/networking/SelectorBuscaOfrece";
 import SeccionEditable from "@/components/perfil/SeccionEditable";
 import FormSeccion from "@/components/perfil/editores/FormSeccion";
 import { Campo, claseInput } from "@/components/perfil/editores/campos";
@@ -20,9 +21,7 @@ import {
   MAX_ESPECIALIDADES,
   MAX_INDUSTRIAS_INTERES,
   MAX_INDUSTRIAS_PROYECTO,
-  MAX_NECESIDADES,
   MAX_SKILLS,
-  NECESIDADES,
   NOTA_COFUNDADOR_MAX,
   RONDAS,
   RONDAS_INTERES,
@@ -41,7 +40,6 @@ import type { Perfil } from "@/types/pecera";
 const OPCIONES_INDUSTRIAS = conTono(INDUSTRIAS);
 const OPCIONES_ESPECIALIDADES = conTono(ESPECIALIDADES);
 const OPCIONES_APORTES = conTono(APORTES);
-const OPCIONES_NECESIDADES = conTono(NECESIDADES);
 const SUGERENCIAS_SKILLS = ["Ventas B2B", "Producto", "Marketing digital", "Finanzas", "Desarrollo web", "IA", "Diseño UX", "Liderazgo"];
 
 type Props = { perfil: Perfil; children?: ReactNode };
@@ -277,7 +275,14 @@ export function EditorBuscaOfrece({ perfil, children }: Props) {
       agregar="Agregar qué buscás y qué ofrecés"
       bajadaVacia="Sirve para conectarte con quien te sirve"
       editor={({ abierta, cerrar, vez }) => (
-        <FormSeccion key={vez} seccion="buscaOfrece" titulo="Qué buscás y qué ofrecés" abierta={abierta} onCerrar={cerrar}>
+        <FormSeccion
+          key={vez}
+          seccion="buscaOfrece"
+          titulo="Qué buscás y qué ofrecés"
+          bajada="Con esto te encuentran en el Networking. Hasta 10 de cada lado."
+          abierta={abierta}
+          onCerrar={cerrar}
+        >
           {(p) => <CamposBuscaOfrece perfil={perfil} {...p} />}
         </FormSeccion>
       )}
@@ -288,38 +293,7 @@ export function EditorBuscaOfrece({ perfil, children }: Props) {
 }
 
 function CamposBuscaOfrece({ perfil, errores, marcar }: CamposProps) {
-  const [busca, setBusca] = useState(perfil.busca ?? []);
-  const [ofrece, setOfrece] = useState(perfil.ofrece ?? []);
-  return (
-    <>
-      <ChipsMultiple
-        id="busca"
-        nombre="busca"
-        legend="¿Qué buscás?"
-        opciones={OPCIONES_NECESIDADES}
-        valores={busca}
-        onCambiar={(v) => {
-          setBusca(v);
-          marcar();
-        }}
-        max={MAX_NECESIDADES}
-        error={errores.busca}
-      />
-      <ChipsMultiple
-        id="ofrece"
-        nombre="ofrece"
-        legend="¿Qué ofrecés?"
-        opciones={OPCIONES_NECESIDADES}
-        valores={ofrece}
-        onCambiar={(v) => {
-          setOfrece(v);
-          marcar();
-        }}
-        max={MAX_NECESIDADES}
-        error={errores.ofrece}
-      />
-    </>
-  );
+  return <SelectorBuscaOfrece inicial={perfil} errores={errores} marcar={marcar} />;
 }
 
 // ---------------------------------------------------------------------------

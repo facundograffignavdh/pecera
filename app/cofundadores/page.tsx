@@ -1,60 +1,40 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Suspense } from "react";
 import Encabezado from "@/components/Encabezado";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
-import ListaCofundadores from "@/components/explorar/ListaCofundadores";
-import { getCofundadores } from "@/lib/datos";
+import PestanasCofundadores from "@/components/cofundadores/PestanasCofundadores";
+import { getCofundadores, getIdsParticipantes, getNetworking } from "@/lib/datos";
+import { EVENTO_ACTUAL } from "@/lib/eventos";
 
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Cofundadores — Pecera",
-  description: "Encontrá socio/a para tu proyecto: técnicos, negocio, producto, diseño y ciencia.",
+  title: "Cofundadores y networking — Pecera",
+  description:
+    "Encontrá socio/a para tu proyecto y hacé networking en la Feria 21: qué buscás, qué ofrecés y con quién encajás.",
 };
 
+/**
+ * Cofundadores y Networking. Estática (ISR, 1 minuto): las listas vienen con la página y lo
+ * personal (tu perfil, tus conexiones, si participás de la feria) se pide en el navegador.
+ */
 export default async function CofundadoresPage() {
-  const perfiles = await getCofundadores();
+  const [cofundadores, networking, idsFeria] = await Promise.all([
+    getCofundadores(),
+    getNetworking(),
+    getIdsParticipantes(EVENTO_ACTUAL.slug),
+  ]);
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
       <Encabezado variante="perfil" />
       <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-3xl lg:max-w-6xl lg:px-8">
         <EnlaceVolver href="/" />
-        <header className="aparecer mt-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-arcilla">Cofounder match</p>
-            <h1 className="mt-1 font-display text-4xl font-semibold leading-tight text-tinta sm:text-5xl">
-              Encontrá a tu socio/a
-            </h1>
-            <p className="mt-3 leading-relaxed text-tinta/75">
-              Como el Co-Founder Matching de YC, pero para el ecosistema de acá. Cada uno cuenta qué aporta, qué perfil le
-              falta y cuánto tiempo le dedica. La lista se ordena por quién te complementa; si hay interés de los dos,
-              hay match y se habilita el contacto.
-            </p>
-          </div>
-          <Link
-            href="/cuenta"
-            className="boton inline-flex min-h-12 shrink-0 items-center justify-center rounded-full bg-tinta px-6 font-medium text-marfil"
-          >
-            Quiero aparecer acá
-          </Link>
-        </header>
-
-        <div className="mt-8">
-          {perfiles.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-tinta/20 px-6 py-12 text-center">
-              <p className="font-display text-2xl font-semibold text-tinta">Todavía nadie se sumó al match</p>
-              <p className="max-w-sm text-sm text-tinta/70">
-                Sé el primero: en tu perfil, tocá «Editar perfil», prendé «Busco cofundador/a» y contá qué aportás y qué
-                buscás.
-              </p>
-            </div>
-          ) : (
-            <ListaCofundadores perfiles={perfiles} />
-          )}
-        </div>
-
+        {/* Lee ?ver=, ?alcance= y ?editar= en el navegador: la página sigue estática. */}
+        <Suspense fallback={<p className="mt-6 text-sm text-tinta/70">Cargando…</p>}>
+          <PestanasCofundadores cofundadores={cofundadores} networking={networking} idsFeria={idsFeria} />
+        </Suspense>
         <PieLegal tono="claro" className="mt-12 pb-8" />
       </div>
     </main>

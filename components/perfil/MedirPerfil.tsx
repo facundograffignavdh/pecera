@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { type DesdePerfil, registrarActividad } from "@/lib/actividad";
 import { tomarLlegada } from "@/lib/atribucion";
+import { registrarVisita } from "@/lib/visitas";
 
 /** ¿Esta página es la primera que se cargó (no se llegó navegando dentro de la app)? */
 function esPrimeraPagina(): boolean {
@@ -16,7 +17,8 @@ function esPrimeraPagina(): boolean {
 
 /**
  * Sin interfaz: registra `perfil_abierto` (una vez por sesión) y, si se llegó con
- * una tarjeta NFC (`?src=nfc&t=s16`), antes `tarjeta_escaneada`.
+ * una tarjeta NFC (`?src=nfc&t=s16`), antes `tarjeta_escaneada`. Con sesión, además, la
+ * visita "vio tu perfil" (lib/visitas.ts).
  */
 export default function MedirPerfil({ perfilId }: { perfilId: string }) {
   useEffect(() => {
@@ -32,6 +34,7 @@ export default function MedirPerfil({ perfilId }: { perfilId: string }) {
           ? "directo"
           : "otro";
     registrarActividad({ nombre: "perfil_abierto", perfilId, desde });
+    registrarVisita("perfil", perfilId);
   }, [perfilId]);
 
   return null;
