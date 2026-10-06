@@ -9,6 +9,7 @@ import InsigniaBuild from "@/components/build/InsigniaBuild";
 import ProductoPublico from "@/components/empresa/ProductoPublico";
 import Ronda from "@/components/empresa/Ronda";
 import TransparenciaPublica from "@/components/empresa/TransparenciaPublica";
+import { PanelScore } from "@/components/ScoreEmpresa";
 import PitchDestacado, { PosterPitch } from "@/components/PitchDestacado";
 import Revelar from "@/components/Revelar";
 import Encabezado from "@/components/Encabezado";
@@ -17,10 +18,11 @@ import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { conProtocolo, hrefInstagram } from "@/lib/contacto";
 import LogoEntidad from "@/components/LogoEntidad";
-import { getApoyos, getDocumentosPublicos, getEmpresa, getLogos } from "@/lib/datos";
+import { getApoyos, getDocumentosPublicos, getEmpresa, getLogos, scoreActivo } from "@/lib/datos";
 import { defTipo } from "@/lib/portfolio";
 import { ROLES } from "@/lib/rol";
 import { cargo, labelIndustria, labelRonda } from "@/lib/etiquetas";
+import { scoreDeEmpresa } from "@/lib/score-empresa";
 import { defDato } from "@/lib/transparencia";
 
 export const revalidate = 60;
@@ -66,11 +68,15 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
   const [principal, ...otros] = [...pitches].sort((a, b) => b.orden - a.orden);
   const hayBuild = hitos.length > 0 || avances.length > 0;
   const hayRonda = !!ronda || datos.datos.some((d) => defDato(d.clave)?.categoria === "Ronda");
-  const [documentos, apoyos, logos] = await Promise.all([
+  const [documentos, apoyos, logos, conScore] = await Promise.all([
     getDocumentosPublicos(empresa.id),
     getApoyos(empresa.id),
     getLogos([empresa.id]),
+    scoreActivo(),
   ]);
+  // Score crediticio: solo de lo transparente (documentos y datos visibles), sin consultas de más.
+  // Con el interruptor apagado, nada.
+  const score = conScore ? scoreDeEmpresa({ documentos, datos: datos.datos }) : null;
   const hayTransparencia = documentos.length > 0 || datos.datos.some((d) => defDato(d.clave)?.categoria !== "Ronda");
 
   const canales = [
@@ -125,6 +131,8 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
             </div>
           )}
         </header>
+
+        {score && <PanelScore score={score} nombre={empresa.nombre} className="mt-5" />}
 
         {empresa.descripcion && (
           <DescripcionConTags

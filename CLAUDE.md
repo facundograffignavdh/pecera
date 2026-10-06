@@ -262,8 +262,105 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     el avatar, Mi red desde el perfil propio y el selector de tema está al final de /cuenta.
   - Compartir en el reel (`BotonCompartirReel`, entre el corazón y el CC): `navigator.share` o copia un
     mensaje con `/?src=compartir#<pitch>` y `/sumate`.
+- Networking de la Feria 21 (rama `networking-feria`, migración `20261015120000_networking_feria.sql`,
+  después de persona_empresa; pruebas `supabase/pruebas/networking_feria.mjs` y
+  `node scripts/pruebas/networking.ts`; vuelta atrás `supabase/rollback-networking-feria.sql`, que NO es
+  migración y es con pérdida; guía en `docs/GUIA-FERIA.md` §7).
+  - Busca/ofrece en dos niveles: `CATEGORIAS_NECESIDAD` (10) y `NECESIDADES` (opción + categoría) en
+    `lib/etiquetas.ts`, espejo de `necesidades_validas()` (la usan `perfiles_busca_valido`/`_ofrece_valido`,
+    redefinidos: tope 10). Los 10 valores de antes siguen: 8 son opciones con el mismo id e `inversion` y
+    `talento` son "en general" (valen por su categoría, no se ofrecen para elegir). Detalle libre
+    (`busca_detalle`/`ofrece_detalle`, 8 de ≤ 30) y "cómo" por lado (`busca_como`/`ofrece_como`: `COMOS`).
+    Un solo selector, `components/networking/SelectorBuscaOfrece.tsx` (categorías plegables, buscador,
+    ejemplos por rol que suman), en la hoja del perfil y en Networking; guarda `guardarSeccion("buscaOfrece")`.
+  - `/cofundadores` = pestañas `PestanasCofundadores` (`?ver=networking`, `?alcance=feria|plataforma`,
+    `?editar=1`): Cofundadores sin cambios y `ListaNetworking` (todos los roles, filtro Feria 21 por defecto
+    para quien participa, con `SelloFeria21` y `s21-*`). Encaje en `lib/networking.ts`
+    (`encajeNetworking`: exacta 12, categoría 4, tope 30 por dirección; cómo +4; zona, industrias, etapa;
+    razones con el nombre, nunca un pronombre). `lib/cofundador.ts` no cambia (solo exporta `lugar`).
+  - Conexión: `networking_intereses` (tabla aparte: la PK de `cofundador_intereses` no admite un tipo sin
+    redefinir todo) con `networking_interesar(p_a, p_mensaje, p_evento)`, `_responder`, `_retirar` y
+    `mis_networking_conexiones`; tope propio de 20/día; `evento_id` = Feria 21 o null. El flujo de pantalla
+    es compartido: `components/explorar/conexiones.tsx` y `useMatch`/`useNetworking` en `useMatch.ts`.
+  - Aviso al anotarse (`AvisoNetworkingFeria`, en `TarjetaEvento`): al anotarse o al entrar a /cuenta si la
+    anotó /admin; "Ahora no" lo cierra hasta el día siguiente (`pecera:aviso-networking`); con busca y ofrece
+    completos no aparece más. Casilla OPCIONAL para la Universidad (`CasillaUniversidad`,
+    `CONSENTIMIENTO_U21` con versión): `evento_consentimientos` por `guardar_consentimiento_evento` /
+    `mi_consentimiento_evento`; retirar = `acepta false` con fecha. Con el convenio firmado, lo ve la
+    Universidad en `/organizacion` (abajo). `/privacidad#universidad` lo explica.
+  - `borrar_mi_cuenta` no cambió: las dos tablas nuevas caen en cascada con el perfil (probado).
+- Panel de la Universidad (migración `20261016120000_panel_organizacion.sql`, después de networking_feria;
+  pruebas `supabase/pruebas/panel_organizacion.mjs`; guía `docs/GUIA-FERIA.md` §8). `/organizacion`
+  (dinámica, con sesión; en el matcher de `proxy.ts`, fuera de robots): entran los emails de
+  `evento_organizadores` (privada; las carga /admin → Universidad con `admin_organizador`/`admin_organizadores`)
+  y los admins (`puede_ver_organizacion`). `organizacion_networking(p_evento)`: números de la feria sin el
+  equipo y, con nombre, SOLO quienes aceptaron (`evento_consentimientos.acepta`) con perfil visible; nunca
+  mensajes ni quién con quién; `sin_completar` solo para admins. CSV de los consentidos en
+  `/organizacion/csv` (celdas sin fórmulas, BOM). Helpers en `lib/organizacion.ts`.
+- Quién vio tu perfil y Mi CRM (rama `quien-vio-tu-perfil`, migración `20261017120000_quien_vio.sql`, después de
+  panel_organizacion; pruebas `supabase/pruebas/quien_vio.mjs` y `node scripts/pruebas/visitas.ts`; vuelta atrás
+  `supabase/rollback-quien-vio-perfil.sql`, que NO es migración y es con pérdida). Todo arranca APAGADO: interruptores en
+  `funciones_config` (visitas, pared y cuántos libres, traspaso), que lee `config_funciones()` (anon) y cambia /admin →
+  Resumen → Funciones (`admin_funciones`), sin deploy. Tablas propias (`visitas`, `visitas_anonimas`, `visitas_ajustes`,
+  `visitas_frecuencia`); NO toca actividad, vistas, piques ni las métricas (solo lee `metrica_cuentas_equipo()`).
+  - Solo con sesión (`hayCookieSesion` + `supabaseNavegador`, las páginas siguen ISR): `registrarVisita` (`lib/visitas.ts`)
+    en `MedirPerfil` (perfil), `Reel` a los 3 s (pitch, mismo criterio que vistas) y `Feed` al dar pique (sacarlo el mismo
+    día borra la fila, `quitar_visita_pique`). Una fila por visitante → visitado → tipo → día de Buenos Aires
+    (`lib/visitas-dia.ts`, espejo de `visitas_hoy()`); dedupe también en localStorage `pecera:visitas-dia`. Nunca tira.
+  - Como visitante se cuenta recién desde el aviso (`AVISO_VISITAS` con versión; `AvisoVisitas` en el layout, sin
+    bloquear). Se guarda la CUENTA (auth.users), nunca el dispositivo: sin perfil visible figura "sin perfil" y aparece
+    con nombre al LEER si después lo arma. Modo privado = solo contador (`visitas_anonimas`); pasar a privado vuelve
+    contador lo ya guardado; recíproco (en privado no ves quién te visitó). Nada de autovisitas ni del equipo. 30 días:
+    las lecturas filtran y `podar_visitas` (service_role) corre en `.github/workflows/metricas.yml` (tolera 404).
+  - `visitas` tiene una sola FK a `perfiles` (visitado) y el visitante va a `auth.users`: no hay muchos-a-muchos nuevo
+    para PostgREST (PGRST201). Mantenerlo así.
+  - Mi CRM: `/cuenta/crm` (dinámica, noindex), pestañas `PestanasCuenta` ("Mi perfil | Mi CRM") arriba de /cuenta y
+    /cuenta/crm. Interruptor (`InterruptorVisitas`), resumen identificado + total anónimo (`metricas_perfil`, desde
+    siempre), lista con filtros y páginas (`mis_visitas`), "Lo que otros ven de mí" (`mis_visitas_hechas`) y
+    `BorrarHistorial`. Fuera de la v1: "Escribirle", notas, CSV, notificaciones; `contactos` sigue anónima.
+  - Pared de pitches (apagada por defecto; /admin → Funciones, con cuántos libres, default 2): solo `Reel`/`Feed`
+    reproducen pitches (perfil, empresa y "Ver el pitch" son posters que llevan a `/#<pitch>`), así que la pared vive en
+    `Feed` (`usePared` en `lib/pared.ts`, reglas puras en `lib/pared-reglas.ts`, prueba `node scripts/pruebas/pared.ts`).
+    Contador por navegador (`pecera:pared`: pitches distintos a los 3 s, sin sesión); el siguiente distinto queda sin
+    `src`, con velo y `PopupPared` (Entrar con Google con `next=<ruta>#<pitch>`, `AvisoNavegadorInterno`, links a
+    perfil/Explorar/Eventos, se cierra). Sin config o sin storage, abierta. `BienvenidaPared` al volver ofrece el
+    perfil sin bloquear. Es capa en el cliente: invita e identifica, NO protege videos (R2 público, URLs en el RSC).
+  - Traspaso de la sesión (apagado por defecto; requiere visitas prendidas): sin sesión, `registrarVisita` anota en
+    sessionStorage `pecera:traspaso-sesion` (solo con el traspaso prendido; nunca se cruza actividad, vistas, piques
+    ni `dispositivo_cuentas`). `PopupPared` muestra el aviso y la casilla "Mostrar que visité y di pique" (tildada)
+    ANTES del botón; la lista (6 h, 10 por tipo, `lib/traspaso.ts`, prueba `node scripts/pruebas/traspaso.ts`) viaja
+    en la cookie httpOnly `pecera-traspaso` de `entrar` y el callback llama `acreditarSinFallar` (2 s, en paralelo
+    con el vínculo, nunca traba el login). `acreditar_traspaso` guarda el aviso y recién ahí acredita
+    (`origen='traspaso'`), valida todo en la base y una vez por hora; destildada = modo privado sin acreditar. Se
+    confía en la lista del navegador a propósito: verificarla contra la medición sería el cruce que se prohíbe.
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
+- Score crediticio A-D (rama `score-crediticio`; se calcula en la app, la única migración es el interruptor). Categoriza el
+  riesgo de inversión según cuánta información de la empresa es **transparente** en su Dataroom
+  (documentos y datos con el switch en "Transparente"; lo privado no cuenta). TODA empresa tiene score y
+  arranca en D; A es el menor riesgo. La fórmula vive solo en `lib/score.ts` (sin imports en runtime, para
+  probarla con `node scripts/pruebas/score.ts`, que tiene que terminar en "0 fallas"): 9 áreas del
+  Dataroom (sin "Otros") con pesos que suman 100 (finanzas 20, tracción 20, legal 15, fundraising 10,
+  fundadores 10, producto 8, mercado 7, modelo 5, empresa 5); un área suma entera si tiene UNA pieza que
+  cuenta (plantilla completa, link https o escrito de ≥ 200 caracteres; un dato de Transparencia con
+  valor). Umbrales: C ≥ 30, B ≥ 60 y con finanzas y tracción, A ≥ 85 y con finanzas, tracción y legal.
+  Cambiar pesos o umbrales cambia el score de todas: va con la prueba. `lib/score-empresa.ts` lo conecta
+  con los catálogos (`CATEGORIA_DE_DATO`, `DATOS`, `PLANTILLAS`), y de ahí sale "qué métricas, documentos
+  y templates suben el score" (`METRICAS_SCORE`): un dato o template nuevo aparece solo. Lectura:
+  `getScoresEmpresas` (`lib/datos.ts`, por lotes, anon; si falla, sin insignia, nunca un D falso).
+  Se muestra en `/e/[slug]` (`PanelScore`), en la tarjeta de empresa de /p y /cuenta, en el Dataroom del
+  dueño (público vs. potencial con lo privado) y en /explorar (insignia + filtro en Startups). La "i"
+  (`Info`) explica cómo mejorarlo. `InsigniaScore.tsx` es aparte y liviano: Explorar la carga en el cliente.
+  **Interruptor de emergencia, APAGADO por defecto** (migración `20261018120000_score_switch.sql`, después de
+  quien_vio; columna `funciones_config.score_activo`, `config_score()` para anon y `admin_score(p_activo)` solo
+  admins; pruebas `supabase/pruebas/score_switch.mjs`; vuelta atrás `supabase/rollback-score-switch.sql`, que NO
+  es migración). Se prende en /admin → Resumen → Funciones ("Score crediticio"). La ÚNICA lectura es
+  `scoreActivo()` (`lib/datos.ts`): si falla o falta la migración, apagado. Apagado no se ve NADA (insignias,
+  filtro de Startups, `PanelScore`, la "i", el bloque del Dataroom) y `getScoresEmpresas` devuelve un Map vacío
+  sin consultar. La acción revalida todo; si se cambia por SQL, /p, /e y /explorar (ISR) tardan hasta 60 s.
+  **Pendiente legal** (sigue vigente; por eso el score está apagado): el texto de la "i" aclara que mide cuánta información hay, no si es verdadera, y que
+  no es una calificación de riesgo regulada ni asesoramiento; antes del lanzamiento, que el abogado revise
+  el nombre "crediticio" y los rótulos "Riesgo bajo/alto" (calificadoras de riesgo, CNV).
 - `landing-liviano/` (rama `landing-liviano`): landing de scroll con video, **proyecto Vite aparte**
   (JS + GSAP + Lenis, su propio `package.json`; no es Next ni parte de `/sumate`). Todos sus CTA
   apuntan por URL absoluta a la app (`pecera-virid.vercel.app`). No lo despliega el proyecto de
@@ -336,6 +433,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/sitemap.xml` y `/robots.txt` → `app/sitemap.ts` y `app/robots.ts` (no indexa cuenta,
   admin, auth ni subir)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
+- `/organizacion` (+ `/csv`) → panel de la Universidad para la Feria 21 (emails habilitados en /admin → Universidad, y admins)
 - `/admin/vivo` → pantalla del stand: CI de hoy, ticker anónimo y ranking de la votación, cada 15 s
   (`admin_vivo_en` + `admin_ranking_evento`)
 - `/cuenta/empresa` → Administrar empresa (`?empresa=slug`; sin él, la principal; `?pestana=`): pestañas
@@ -345,7 +443,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/cuenta/empresa/salir` → salir de una empresa (`?empresa=slug`); si es la última integrante,
   qué se borra, exportar el Dataroom y confirmación con ELIMINAR
 - `/explorar` (startups, inversores, aliados y hashtags), `/t/[tag]` y `/t/[tag]/feed`
-  (sección por hashtag; `#feria21` = la feria), `/cofundadores` (cofounder match),
+  (sección por hashtag; `#feria21` = la feria), `/cofundadores` (pestañas Cofundadores y Networking),
   `/red` (Mi red: los perfiles que seguís, en el celular)
 - `/sumate` → landing de adquisición (ISR 60 s), armada en `components/landing/`: Hero
   (con `EcosistemaVivo`: tarjetas de ejemplo unidas por corrientes y el isotipo quieto en
@@ -416,6 +514,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   (`lib/hashtags.ts`) se calculan sin migración. Colores con sentido: `AREAS` en
   `lib/etiquetas.ts` (un color = un área). Modo noche: variables CSS en `globals.css`;
   `.tema-fijo` para lo que va sobre video.
+- networking_feria: `networking_intereses` (de, a, mensaje ≤ 280, estado, evento_id; sin políticas, solo por
+  RPC) y `evento_consentimientos` (evento_id, perfil_id, acepta, version, decidido_at; privada, solo por RPC).
+  Las dos caen en cascada al borrar el perfil. `evento_organizadores` (evento_id, email en minúsculas;
+  privada, solo por RPC de admin): quién de la Universidad entra a /organizacion.
 - cofundador_conexiones (`20261009120000_cofundador_conexiones.sql`, después de borrar_cuenta;
   pruebas en `supabase/pruebas/cofundador.mjs`): `cofundador_intereses` (de, a, mensaje ≤ 280, estado
   pendiente/aceptado/rechazado/retirado; sin políticas: solo por RPC `cofundador_interesar`,

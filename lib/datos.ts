@@ -8,6 +8,8 @@ import type { Producto } from "@/lib/producto";
 import { supabase } from "@/lib/supabase";
 import { hashtagsDe, normalizarTag } from "@/lib/hashtags";
 import { calcularRacha, type Racha } from "@/lib/racha";
+import type { DatoScore, DocumentoScore, Score } from "@/lib/score";
+import { scoreDeEmpresa } from "@/lib/score-empresa";
 import type {
   DatoEmpresa,
   Empresa,
@@ -43,14 +45,22 @@ const COLUMNAS_PERFIL_LISTA = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS
 const COLUMNAS_PERFIL = `${COLUMNAS_PERFIL_BASE}, ${COLUMNAS_PERFIL_NUEVAS}, ${COLUMNAS_COFUNDADOR}, empresa:empresas(slug, nombre, logo_url, ubicacion)`;
 // multi_empresa: todas sus empresas (la RLS deja solo las visibles), con el cargo en cada una.
 const COLUMNAS_PERFIL_MULTI = `${COLUMNAS_PERFIL}, membresias:empresa_miembros(empresa_id, cargo, created_at, empresa:empresas(slug, nombre, logo_url))`;
+// networking_feria: detalle libre y "cómo" de busca/ofrece.
+const COLUMNAS_PERFIL_NETWORKING = `${COLUMNAS_PERFIL_MULTI}, busca_detalle, ofrece_detalle, busca_como, ofrece_como`;
 
 /**
- * Columnas por migración, de la más nueva a la más vieja: multi_empresa → feria_pro →
- * feria_lista → lo de siempre. Cada consulta prueba en ese orden y se queda con la
+ * Columnas por migración, de la más nueva a la más vieja: networking_feria → multi_empresa →
+ * feria_pro → feria_lista → lo de siempre. Cada consulta prueba en ese orden y se queda con la
  * primera que la base entiende; así el deploy nunca depende de que la migración ya
  * haya corrido.
  */
-const NIVELES_PERFIL = [COLUMNAS_PERFIL_MULTI, COLUMNAS_PERFIL, COLUMNAS_PERFIL_LISTA, COLUMNAS_PERFIL_BASE];
+const NIVELES_PERFIL = [
+  COLUMNAS_PERFIL_NETWORKING,
+  COLUMNAS_PERFIL_MULTI,
+  COLUMNAS_PERFIL,
+  COLUMNAS_PERFIL_LISTA,
+  COLUMNAS_PERFIL_BASE,
+];
 
 type Membresia = {
   empresa_id: string;
@@ -303,6 +313,38 @@ export async function getPerfilesVisibles(): Promise<Perfil[]> {
   return data.map(conUrlsPerfil);
 }
 
+/**
+ * Perfiles visibles con algo en busca u ofrece (pestaña Networking de /cofundadores), todos
+ * los roles. Sin feria_pro (no hay busca/ofrece), vacío.
+ */
+export async function getNetworking(): Promise<Perfil[]> {
+  const { data, error } = await enCascada(NIVELES_PERFIL.slice(0, 3), (columnas) =>
+    supabase
+      .from("perfiles")
+      .select(columnas)
+      .eq("publicado", true)
+      .eq("oculto", false)
+      .or("busca.neq.{},ofrece.neq.{}")
+      .order("created_at", { ascending: false })
+      .overrideTypes<Perfil[], { merge: false }>()
+  );
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getNetworking): ${error.message}`);
+    return [];
+  }
+  return data.map(conUrlsPerfil);
+}
+
+/** Ids de los perfiles anotados en un evento (filtro "Feria 21"). No lanza: si falla, vacío. */
+export async function getIdsParticipantes(evento: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc("participantes_evento", { p_evento: evento });
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getIdsParticipantes): ${error.message}`);
+    return [];
+  }
+  return ((data ?? []) as Array<{ perfil_id: string }>).map((p) => p.perfil_id);
+}
+
 /** Perfiles visibles que buscan cofundador/a (/cofundadores). Sin migración, vacío. */
 export async function getCofundadores(): Promise<Perfil[]> {
   const { data, error } = await supabase
@@ -450,6 +492,68 @@ export async function getLogos(empresaIds: string[]): Promise<Map<string, string
     return new Map();
   }
   return new Map((data ?? []).map((l) => [l.empresa_id, urlMedia(l.clave)]));
+}
+
+/**
+ * Interruptor de emergencia del score crediticio (/admin → Funciones, `config_score`). Es la
+ * ÚNICA lectura: todo lo del score pasa por acá. Apagado por defecto y ante cualquier duda
+ * (falla la consulta, falta la migración, respuesta rara): nunca se muestra el score por error.
+ * Las páginas ISR (/p, /e, /explorar) lo reflejan en hasta 60 s.
+ */
+export const scoreActivo = cache(async (): Promise<boolean> => {
+  const { data, error } = await supabase.rpc("config_score");
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (scoreActivo): ${error.message}`);
+    return false;
+  }
+  return data === true;
+});
+
+/**
+ * Score crediticio (A-D) de cada empresa, por id, según lo TRANSPARENTE de su Dataroom
+ * (documentos y datos con el switch en "Transparente"; la RLS ya deja solo eso y
+ * lo de empresas visibles). Se calcula acá, sin tabla. Con el interruptor apagado, mapa vacío. No lanza: si la
+ * consulta falla, el mapa queda sin esa empresa y la página no dibuja la insignia
+ * (nunca un "Sin score" que no es verdad). Sin las migraciones del Dataroom o de
+ * Transparencia, esa parte cuenta como vacía.
+ */
+export async function getScoresEmpresas(empresaIds: string[]): Promise<Map<string, Score>> {
+  const ids = [...new Set(empresaIds)].filter(Boolean);
+  if (ids.length === 0) return new Map();
+  // Interruptor apagado: ni una consulta, y ninguna página dibuja el score.
+  if (!(await scoreActivo())) return new Map();
+  const [docs, datos] = await Promise.all([
+    supabase
+      .from("empresa_documentos")
+      .select("empresa_id, categoria, tipo, completo, url, cuerpo, visible, archivado")
+      .in("empresa_id", ids)
+      .eq("visible", true)
+      .eq("archivado", false)
+      .overrideTypes<Array<DocumentoScore & { empresa_id: string }>, { merge: false }>(),
+    supabase
+      .from("empresa_datos")
+      .select("empresa_id, clave, valor, url, visible")
+      .in("empresa_id", ids)
+      .eq("visible", true)
+      .overrideTypes<Array<DatoScore & { empresa_id: string }>, { merge: false }>(),
+  ]);
+  for (const [donde, r] of [["documentos", docs], ["datos", datos]] as const) {
+    if (r.error && !faltaMigracion(r.error)) {
+      console.error(`Supabase (getScoresEmpresas, ${donde}): ${r.error.message}`);
+      return new Map();
+    }
+  }
+  const documentos = docs.error ? [] : (docs.data ?? []);
+  const deDatos = datos.error ? [] : (datos.data ?? []);
+  return new Map(
+    ids.map((id) => [
+      id,
+      scoreDeEmpresa({
+        documentos: documentos.filter((d) => d.empresa_id === id),
+        datos: deDatos.filter((d) => d.empresa_id === id),
+      }),
+    ])
+  );
 }
 
 /** Slugs publicados, para `generateStaticParams`. */

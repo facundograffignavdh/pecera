@@ -26,6 +26,10 @@ const MENSAJES: Record<string, string> = {
   "no podés votar a tu empresa": "No podés votar a tu propia empresa.",
   "participante inexistente": "Ese proyecto ya no participa.",
   "evento inexistente": "Ese evento no está activo.",
+  // networking_feria
+  "evento inválido": "Ese evento no está activo.",
+  // panel_organizacion
+  "email inválido": "Revisá el email.",
   "sin sesión": SIN_SESION,
   "no autorizado": "Esta acción es solo para el equipo de Pecera.",
   "ese pitch no es tuyo": "Ese pitch no es de tu perfil.",
@@ -53,6 +57,9 @@ const MENSAJES: Record<string, string> = {
   "tiene que ser una integrante visible": "Tiene que ser una integrante de la empresa con el perfil visible.",
   "pitch inexistente": "Ese pitch ya no existe. Recargá la página.",
   "el tag no entra en la descripción (máx. 150)": "#feria21 no entra: la descripción ya tiene casi 150 caracteres. Acortala primero.",
+  // quien_vio
+  "demasiadas acciones": "Fueron muchos cambios seguidos. Esperá un minuto y probá de nuevo.",
+  "pitches libres: entre 0 y 20": "Los pitches libres van de 0 a 20.",
 };
 
 /** Error de Supabase → Resultado con un mensaje que se entiende. Nunca tira. */

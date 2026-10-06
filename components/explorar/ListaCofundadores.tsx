@@ -1,20 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Avatar from "@/components/Avatar";
 import { Etiqueta } from "@/components/Etiquetas";
+import { AccionesTarjeta, AvisoFlujo, DialogoRetiro, SeccionConexiones, useFlujoConexion } from "@/components/explorar/conexiones";
 import { type AccionesMatch, type EstadoMatch, useMatch } from "@/components/explorar/useMatch";
-import { canalesDe } from "@/lib/contacto";
-import { registrarContacto } from "@/lib/medicion";
-import { type Conexion, encaje, MENSAJE_MAX, NIVELES_ENCAJE } from "@/lib/cofundador";
+import { encaje, NIVELES_ENCAJE } from "@/lib/cofundador";
 import { APORTES, aporte, industria, labelDedicacion } from "@/lib/etiquetas";
 import { ROLES } from "@/lib/rol";
-import { boton } from "@/lib/ui";
 import type { Perfil } from "@/types/pecera";
-
-/** Lo que vale del match es que el interés es mutuo (el contacto ya era público). */
-const MENSAJE_MATCH = "¡Hubo match! Los dos quieren conocerse: escribile.";
 
 /**
  * Cofounder match, al estilo del de YC pero para el ecosistema de acá:
@@ -42,13 +37,7 @@ export function VistaCofundadores({
 }: { perfiles: Perfil[]; estado: EstadoMatch } & AccionesMatch) {
   const [busco, setBusco] = useState<string | null>(null);
   const [aporto, setAporto] = useState<string | null>(null);
-  const [abierto, setAbierto] = useState<string | null>(null);
-  const [mensaje, setMensaje] = useState("");
-  const [trabajando, setTrabajando] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
-  const [aRetirar, setARetirar] = useState<string | null>(null);
-  const dialogoRetiro = useRef<HTMLDialogElement>(null);
-
+  const flujoConexion = useFlujoConexion({ interesar, responder, retirar });
   const listo = estado.fase === "listo" ? estado : null;
   const yo = listo?.yo ?? null;
   const conexiones = listo?.conexiones ?? [];
@@ -62,84 +51,14 @@ export function VistaCofundadores({
   }, [perfiles, yo, busco]);
 
   const porPerfil = new Map(conexiones.map((c) => [c.perfil_id, c]));
-  const recibidos = conexiones.filter((c) => c.tipo === "recibido");
-  const matches = conexiones.filter((c) => c.tipo === "match");
-
-  async function mostrarInteres(id: string) {
-    setTrabajando(id);
-    setAviso(null);
-    const r = await interesar(id, mensaje);
-    setTrabajando(null);
-    if (r.error) {
-      setAviso(r.error);
-      return;
-    }
-    setAbierto(null);
-    setMensaje("");
-    setAviso(
-      r.resultado === "match"
-        ? MENSAJE_MATCH
-        : r.resultado === "rechazado"
-          ? "Por ahora no hay match con esta persona."
-          : r.resultado === "retirado"
-            ? "Ya habías retirado tu interés en esta persona."
-            : r.resultado === "ya_enviado"
-              ? "Ya le habías mostrado interés."
-              : "Listo: le avisamos que te interesa. Si te acepta, hay match."
-    );
-  }
-
-  async function contestar(id: string, aceptar: boolean) {
-    setTrabajando(id);
-    setAviso(null);
-    const r = await responder(id, aceptar);
-    setTrabajando(null);
-    setAviso(r.error ?? (aceptar ? MENSAJE_MATCH : "Listo, la dejamos pasar."));
-  }
-
-  async function sacar(id: string) {
-    setTrabajando(id);
-    await retirar(id);
-    setTrabajando(null);
-    setAviso("Retiraste tu interés.");
-  }
-
-  function pedirRetiro(id: string) {
-    setARetirar(id);
-    dialogoRetiro.current?.showModal();
-  }
-
-  function confirmarRetiro() {
-    const id = aRetirar;
-    dialogoRetiro.current?.close();
-    if (id) sacar(id);
-  }
 
   return (
     <div className="flex flex-col gap-8">
       <ComoFunciona />
       <Estado estado={estado} />
 
-      {aviso && (
-        <p role="status" aria-live="polite" className="rounded-2xl bg-tinta/5 px-4 py-3 text-sm font-medium text-tinta">
-          {aviso}
-        </p>
-      )}
-
-      {(recibidos.length > 0 || matches.length > 0) && (
-        <section aria-labelledby="conexiones" className="flex flex-col gap-3">
-          <h2 id="conexiones" className="font-display text-2xl font-semibold text-tinta">
-            Tus conexiones
-          </h2>
-          <ul className="grid gap-3 md:grid-cols-2">
-            {[...recibidos, ...matches].map((c) => (
-              <li key={`${c.tipo}-${c.perfil_id}`}>
-                <TarjetaConexion c={c} trabajando={trabajando === c.perfil_id} alResponder={contestar} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <AvisoFlujo aviso={flujoConexion.aviso} />
+      <SeccionConexiones conexiones={conexiones} flujo={flujoConexion} />
 
       <section aria-labelledby="lista" className="flex flex-col gap-4">
         <h2 id="lista" className="font-display text-2xl font-semibold text-tinta">
@@ -287,84 +206,13 @@ export function VistaCofundadores({
                     </span>
                   )}
 
-                  <div className="mt-auto flex flex-col gap-2 pt-1">
-                    {c?.tipo === "match" ? (
-                      <ContactoMatch c={c} />
-                    ) : c?.tipo === "recibido" ? (
-                      <BotonesRespuesta id={p.id} trabajando={trabajando === p.id} alResponder={contestar} />
-                    ) : c?.tipo === "enviado" ? (
-                      <p className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <span className="font-medium text-tinta">Interés enviado · esperando respuesta</span>
-                        <button
-                          type="button"
-                          disabled={trabajando === p.id}
-                          onClick={() => pedirRetiro(p.id)}
-                          className="font-medium text-tinta/70 underline underline-offset-4 hover:text-arcilla"
-                        >
-                          Retirar
-                        </button>
-                      </p>
-                    ) : puedeInteresar ? (
-                      abierto === p.id ? (
-                        <form
-                          className="flex flex-col gap-2"
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            void mostrarInteres(p.id);
-                          }}
-                        >
-                          <label className="text-xs font-medium text-tinta" htmlFor={`msg-${p.id}`}>
-                            Un mensaje corto (opcional)
-                          </label>
-                          <textarea
-                            id={`msg-${p.id}`}
-                            value={mensaje}
-                            maxLength={MENSAJE_MAX}
-                            rows={3}
-                            onChange={(e) => setMensaje(e.target.value)}
-                            placeholder="Contale por qué te interesa y qué querés construir."
-                            className="rounded-2xl border border-tinta/25 bg-marfil px-3 py-2 text-sm text-tinta placeholder:text-tinta/50"
-                          />
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs text-tinta/65">
-                              {mensaje.length}/{MENSAJE_MAX}
-                            </span>
-                            <span className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setAbierto(null);
-                                  setMensaje("");
-                                }}
-                                className="min-h-10 rounded-full px-3 text-sm font-medium text-tinta/75 hover:text-tinta"
-                              >
-                                Cancelar
-                              </button>
-                              <button
-                                type="submit"
-                                disabled={trabajando === p.id}
-                                className="boton min-h-10 rounded-full bg-tinta px-4 text-sm font-semibold text-marfil disabled:opacity-60"
-                              >
-                                {trabajando === p.id ? "Enviando…" : "Enviar interés"}
-                              </button>
-                            </span>
-                          </div>
-                        </form>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAbierto(p.id);
-                            setMensaje("");
-                            setAviso(null);
-                          }}
-                          className="boton min-h-11 rounded-full bg-naranja px-4 text-sm font-semibold text-tinta hover:bg-pecera"
-                        >
-                          Me interesa
-                        </button>
-                      )
-                    ) : null}
-                  </div>
+                  <AccionesTarjeta
+                    perfilId={p.id}
+                    conexion={c}
+                    puedeInteresar={puedeInteresar}
+                    flujo={flujoConexion}
+                    placeholder="Contale por qué te interesa y qué querés construir."
+                  />
                 </article>
               </li>
             );
@@ -372,36 +220,7 @@ export function VistaCofundadores({
         </ul>
       </section>
 
-      {/* Uno solo para toda la lista. Escape y tocar afuera cancelan; el foco vuelve solo. */}
-      <dialog
-        ref={dialogoRetiro}
-        aria-labelledby="retirar-titulo"
-        aria-describedby="retirar-texto"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) e.currentTarget.close();
-        }}
-        onClose={() => setARetirar(null)}
-        className="m-auto w-[min(24rem,calc(100vw-2rem))] rounded-3xl bg-marfil p-0 text-tinta shadow-[0_24px_64px_rgb(28_27_22/0.35)] backdrop:bg-tinta/50"
-      >
-        <div className="flex flex-col gap-5 p-6">
-          <div className="flex flex-col gap-2">
-            <h2 id="retirar-titulo" className="font-display text-2xl font-semibold">
-              ¿Retirar tu interés?
-            </h2>
-            <p id="retirar-texto" className="text-tinta/80">
-              No vas a poder volver a mostrárselo a esta persona.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <button type="button" onClick={confirmarRetiro} className={boton("peligro", "lg")}>
-              Retirar
-            </button>
-            <button type="button" onClick={() => dialogoRetiro.current?.close()} className={boton("secundario", "lg")}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </dialog>
+      <DialogoRetiro flujo={flujoConexion} />
     </div>
   );
 }
@@ -488,95 +307,6 @@ function Estado({ estado }: { estado: EstadoMatch }) {
       <Link href="/cuenta?editar=1" className="text-sm font-semibold text-tinta underline underline-offset-4">
         Cambiar
       </Link>
-    </div>
-  );
-}
-
-function BotonesRespuesta({
-  id,
-  trabajando,
-  alResponder,
-}: {
-  id: string;
-  trabajando: boolean;
-  alResponder: (id: string, aceptar: boolean) => void;
-}) {
-  return (
-    <div className="flex gap-2">
-      <button
-        type="button"
-        disabled={trabajando}
-        onClick={() => alResponder(id, true)}
-        className="boton min-h-11 flex-1 rounded-full bg-tinta px-4 text-sm font-semibold text-marfil disabled:opacity-60"
-      >
-        Aceptar
-      </button>
-      <button
-        type="button"
-        disabled={trabajando}
-        onClick={() => alResponder(id, false)}
-        className="boton min-h-11 flex-1 rounded-full border border-tinta/30 px-4 text-sm font-semibold text-tinta disabled:opacity-60"
-      >
-        Pasar
-      </button>
-    </div>
-  );
-}
-
-/** Match: el interés es mutuo. El contacto ya es público en el perfil; acá queda a mano. */
-function ContactoMatch({ c }: { c: Conexion }) {
-  const canales = canalesDe({ whatsapp: c.whatsapp, email: c.email } as Perfil, `Hola ${c.nombre}, hicimos match en Pecera.`);
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm font-semibold text-t-verde">{MENSAJE_MATCH}</p>
-      <div className="flex flex-wrap gap-2">
-        {canales.length > 0 ? (
-          canales.map((k) => (
-            <a
-              key={k.clave}
-              href={k.href}
-              target={k.externo ? "_blank" : undefined}
-              rel={k.externo ? "noopener noreferrer" : undefined}
-              onClick={() => registrarContacto({ perfilId: c.perfil_id, canal: k.clave })}
-              className="boton inline-flex min-h-10 items-center rounded-full bg-tinta px-4 text-sm font-semibold text-marfil"
-            >
-              {k.label}
-            </a>
-          ))
-        ) : (
-          <Link href={`/p/${c.slug}`} className="text-sm font-medium underline underline-offset-4">
-            Ver su perfil para contactarla/o
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function TarjetaConexion({
-  c,
-  trabajando,
-  alResponder,
-}: {
-  c: Conexion;
-  trabajando: boolean;
-  alResponder: (id: string, aceptar: boolean) => void;
-}) {
-  return (
-    <div className={`flex flex-col gap-3 rounded-3xl border px-4 py-4 ${c.tipo === "match" ? "border-t-verde bg-t-verde-suave/40" : "border-arcilla bg-t-arcilla-suave/40"}`}>
-      <Link href={`/p/${c.slug}`} className="flex items-center gap-3">
-        <Avatar perfil={{ nombre: c.nombre, rol: c.rol as Perfil["rol"], avatar_url: c.avatar_url }} size={44} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-display text-lg font-semibold leading-tight text-tinta">{c.nombre}</span>
-          <span className="block text-xs text-tinta/65">{c.tipo === "match" ? "Match" : "Te mostró interés"}</span>
-        </span>
-      </Link>
-      {c.mensaje && <p className="text-sm leading-relaxed text-tinta/85">“{c.mensaje}”</p>}
-      {c.tipo === "match" ? (
-        <ContactoMatch c={c} />
-      ) : (
-        <BotonesRespuesta id={c.perfil_id} trabajando={trabajando} alResponder={alResponder} />
-      )}
     </div>
   );
 }

@@ -2,9 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import EnlaceContacto from "@/components/EnlaceContacto";
 import { Etiqueta } from "@/components/Etiquetas";
+import { InsigniaScore, textoScore } from "@/components/InsigniaScore";
 import { canalesDe } from "@/lib/contacto";
-import { aporte, labelDedicacion, necesidad, tipoPortafolio } from "@/lib/etiquetas";
+import { CATEGORIAS_NECESIDAD, aporte, categoriaDe, labelComo, labelDedicacion, necesidad, tipoPortafolio } from "@/lib/etiquetas";
 import type { Racha } from "@/lib/racha";
+import type { Score } from "@/lib/score";
 import type { EmpresaResumen, ItemPortafolio, Perfil } from "@/types/pecera";
 
 /**
@@ -161,11 +163,20 @@ export function BloquePortafolio({ items }: { items: ItemPortafolio[] }) {
 }
 
 /** La empresa del perfil, con su logo: Empresa → Nombre, a un toque de su página. */
-export function TarjetaEmpresaPerfil({ empresa, cargo }: { empresa: EmpresaResumen; cargo: string | null }) {
+export function TarjetaEmpresaPerfil({
+  empresa,
+  cargo,
+  score,
+}: {
+  empresa: EmpresaResumen;
+  cargo: string | null;
+  /** Su score crediticio (lib/score.ts); sin él (no se pudo calcular) no se dibuja la insignia. */
+  score?: Score;
+}) {
   return (
     <Link
       href={`/e/${empresa.slug}`}
-      aria-label={`Empresa: ${empresa.nombre}. Ver la página de la empresa`}
+      aria-label={`Empresa: ${empresa.nombre}.${score ? ` ${textoScore(score)}.` : ""} Ver la página de la empresa`}
       className="boton group flex min-h-16 items-center gap-3 rounded-2xl border border-tinta/12 bg-marfil px-3 py-2.5 hover:border-arcilla"
     >
       <LogoEmpresa nombre={empresa.nombre} logo={empresa.logo_url ?? null} size={44} />
@@ -175,6 +186,7 @@ export function TarjetaEmpresaPerfil({ empresa, cargo }: { empresa: EmpresaResum
         </span>
         <span className="block truncate font-display text-lg font-semibold leading-tight text-tinta">{empresa.nombre}</span>
       </span>
+      {score && <InsigniaScore score={score} />}
       <span aria-hidden className="text-lg text-tinta/50 transition-transform duration-200 group-hover:translate-x-1">
         &rarr;
       </span>
@@ -219,33 +231,57 @@ export function BloqueTrayectoria({ perfil }: { perfil: Perfil }) {
   );
 }
 
-/** Qué busca y qué ofrece: la base del networking y del matching. */
+/** Qué busca y qué ofrece: la base del networking y del matching. Agrupado por categoría. */
 export function BloqueBuscaOfrece({ perfil }: { perfil: Perfil }) {
-  const busca = perfil.busca ?? [];
-  const ofrece = perfil.ofrece ?? [];
-  if (busca.length === 0 && ofrece.length === 0) return null;
+  const lados = [
+    { titulo: "Busca", lista: perfil.busca ?? [], detalle: perfil.busca_detalle ?? [], como: perfil.busca_como ?? [] },
+    { titulo: "Ofrece", lista: perfil.ofrece ?? [], detalle: perfil.ofrece_detalle ?? [], como: perfil.ofrece_como ?? [] },
+  ].filter((g) => g.lista.length > 0 || g.detalle.length > 0);
+  if (lados.length === 0) return null;
   return (
     <section aria-label="Busca y ofrece" className="grid gap-3 sm:grid-cols-2">
-      {[
-        { titulo: "Busca", lista: busca },
-        { titulo: "Ofrece", lista: ofrece },
-      ]
-        .filter((g) => g.lista.length > 0)
-        .map((g) => (
+      {lados.map((g) => {
+        const categorias = CATEGORIAS_NECESIDAD.map((c) => ({
+          ...c,
+          opciones: g.lista.filter((v) => categoriaDe(v) === c.valor),
+        })).filter((c) => c.opciones.length > 0);
+        return (
           <div key={g.titulo} className="rounded-3xl border border-tinta/10 bg-tinta/[0.02] px-5 py-4">
             <h2 className={SUBTITULO}>{g.titulo}</h2>
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {g.lista.map((v) => {
-                const n = necesidad(v);
-                return (
-                  <Etiqueta key={v} clase={n.clase}>
-                    {n.label}
-                  </Etiqueta>
-                );
-              })}
+            <div className="mt-2.5 flex flex-col gap-2.5">
+              {categorias.map((c) => (
+                <div key={c.valor}>
+                  {categorias.length > 1 && <p className="text-xs font-medium text-tinta/70">{c.label}</p>}
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {c.opciones.map((v) => {
+                      const n = necesidad(v);
+                      return (
+                        <Etiqueta key={v} clase={n.clase}>
+                          {n.label}
+                        </Etiqueta>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              {g.detalle.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {g.detalle.map((d) => (
+                    <Etiqueta key={d} clase="border border-tinta/20 text-tinta">
+                      {d}
+                    </Etiqueta>
+                  ))}
+                </div>
+              )}
+              {g.como.length > 0 && (
+                <p className="text-sm text-tinta/75">
+                  <span className="font-medium text-tinta">Cómo:</span> {g.como.map((c) => labelComo(c).toLowerCase()).join(" · ")}
+                </p>
+              )}
             </div>
           </div>
-        ))}
+        );
+      })}
     </section>
   );
 }

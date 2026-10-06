@@ -238,8 +238,8 @@ video {
   --alto-nav: 0px;
 }
 body:has(.nav-inferior) {
-  /* Píldora de 4rem + su margen de abajo (0,75rem o la barra de inicio del iPhone). */
-  --alto-nav: calc(4rem + max(0.75rem, env(safe-area-inset-bottom)));
+  /* Píldora de 3rem + su margen de abajo (0,5rem o la barra de inicio del iPhone). */
+  --alto-nav: calc(3rem + max(0.5rem, env(safe-area-inset-bottom)));
 }
 .nav-inferior {
   -webkit-tap-highlight-color: transparent;

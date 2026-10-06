@@ -62,8 +62,9 @@ function useEscribiendo(): boolean {
 }
 
 /**
- * Barra de navegación flotante abajo: una píldora de vidrio (como el logo), con las secciones
- * principales y el "+" naranja para subir el pitch. Su alto queda en `--alto-nav`
+ * Barra de navegación flotante abajo: una píldora de vidrio chata (como el logo), con los
+ * íconos de las secciones principales (sin texto: el nombre va en aria-label y title) y el
+ * "+" naranja para subir el pitch. Su alto queda en `--alto-nav`
  * (globals.css): las páginas y lo fijo abajo lo suman para que nada quede tapado.
  * El feed sigue a sangre: solo sube el bloque de datos del reel.
  */
@@ -80,13 +81,13 @@ export default function NavInferior() {
         <Link
           href={i.href}
           aria-label={i.label}
+          title={i.label}
           aria-current={actual ? "page" : undefined}
-          className={`boton flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[0.6875rem] leading-none text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
-            actual ? "bg-tinta/[0.07] font-semibold" : "font-medium hover:bg-tinta/[0.04]"
+          className={`boton flex min-h-11 flex-1 items-center justify-center rounded-full text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla ${
+            actual ? "bg-tinta/[0.07]" : "hover:bg-tinta/[0.04]"
           }`}
         >
           <Icono className="size-6" />
-          <span aria-hidden>{i.label}</span>
         </Link>
       </li>
     );
@@ -96,10 +97,10 @@ export default function NavInferior() {
     <nav
       aria-label="Navegación principal"
       data-escondida={escribiendo || undefined}
-      className="nav-inferior no-imprimir pointer-events-none fixed inset-x-0 bottom-0 z-30 px-[max(0.75rem,env(safe-area-inset-left))] pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      className="nav-inferior no-imprimir pointer-events-none fixed inset-x-0 bottom-0 z-30 px-[max(0.75rem,env(safe-area-inset-left))] pb-[max(0.5rem,env(safe-area-inset-bottom))]"
     >
       {/* Píldora flotante con el mismo vidrio que el logo de arriba. */}
-      <ul className="vidrio pointer-events-auto mx-auto grid h-16 max-w-md grid-cols-5 items-center rounded-full px-1.5">
+      <ul className="vidrio pointer-events-auto mx-auto grid h-12 max-w-md grid-cols-5 items-center rounded-full px-0.5">
         {IZQUIERDA.map(item)}
         <li className="flex justify-center">
           <Link
@@ -109,7 +110,8 @@ export default function NavInferior() {
               // Ya en /cuenta: solo lleva al botón y lo resalta.
               if (ruta === "/cuenta" && resaltar("subir-pitch")) e.preventDefault();
             }}
-            className="boton flex size-12 items-center justify-center rounded-full bg-naranja text-tinta shadow-[0_4px_14px_rgb(28_27_22/0.18)] hover:bg-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
+            // 40 px de botón; el ::after lleva la zona táctil a 44 px.
+            className="boton relative flex size-10 items-center justify-center rounded-full bg-naranja after:absolute after:-inset-0.5 text-tinta shadow-[0_4px_14px_rgb(28_27_22/0.18)] hover:bg-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla"
           >
             <IconoMas className="size-6" />
           </Link>

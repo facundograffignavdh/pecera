@@ -93,3 +93,22 @@ export async function congelarDemoDay(): Promise<Resultado> {
   if (r.ok || r.mensaje !== NO_DISPONIBLE) return r;
   return rpc("admin_congelar_demo_day", {}, "/admin");
 }
+
+/** Habilita (o saca) un email de la Universidad para el panel /organizacion de la feria. */
+export async function organizador(email: string, habilitar: boolean) {
+  return rpc(
+    "admin_organizador",
+    { p_evento: EVENTO_ACTUAL.slug, p_email: email, p_habilitar: habilitar },
+    "/admin"
+  );
+}
+
+/** Interruptores de emergencia (quien_vio): visitas, pared de pitches (y cuántos libres) y traspaso. */
+export async function funciones(visitas: boolean, pared: boolean, libres: number, traspaso: boolean) {
+  return rpc("admin_funciones", { p_visitas: visitas, p_pared: pared, p_libres: libres, p_traspaso: traspaso }, "/admin");
+}
+
+/** Interruptor del score crediticio (score_switch). Revalida todo: el cambio se ve en la próxima carga. */
+export async function interruptorScore(activo: boolean) {
+  return rpc("admin_score", { p_activo: activo }, "/");
+}

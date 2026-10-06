@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Familjen_Grotesk } from "next/font/google";
 import "./globals.css";
+import AvisoVisitas from "@/components/AvisoVisitas";
 import AvisoCuentaEliminada from "@/components/AvisoCuentaEliminada";
 import Medicion from "@/components/Medicion";
 import NavInferior from "@/components/NavInferior";
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AvisoCuentaEliminada />
         <Medicion />
         <PreguntaMotivo />
+        <AvisoVisitas />
         <TecladoIOS />
       </body>
     </html>

@@ -15,10 +15,12 @@ import AltaPerfil from "@/components/cuenta/AltaPerfil";
 import AvisoCuentaPersonal from "@/components/cuenta/AvisoCuentaPersonal";
 import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
 import EmpresasDueno from "@/components/cuenta/EmpresasDueno";
+import PestanasCuenta from "@/components/cuenta/PestanasCuenta";
 import ResaltarAncla from "@/components/cuenta/ResaltarAncla";
 import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
 import EnVivo from "@/components/EnVivo";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
+import type { Consentimiento } from "@/components/networking/CasillaUniversidad";
 import TarjetaNFC from "@/components/cuenta/TarjetaNFC";
 import TarjetaPortafolio from "@/components/cuenta/TarjetaPortafolio";
 import RelacionesPendientes, { type RelacionPendiente } from "@/components/cuenta/RelacionesPendientes";
@@ -43,13 +45,15 @@ import { type Avance, type Hito } from "@/lib/build";
 import { conEmpresa, urlPerfil } from "@/lib/cuenta";
 import { type EmpresaMia, MAX_EMPRESAS, leerMisEmpresas } from "@/lib/cuenta-empresa";
 import type { CuentaLocal } from "@/lib/cuenta-local";
-import { faltaMigracion } from "@/lib/datos";
+import { faltaMigracion, getScoresEmpresas } from "@/lib/datos";
+import { buscaOfreceCompleto } from "@/lib/networking";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
 import type { NewsletterLink } from "@/lib/newsletter";
-import { COLUMNAS_PROPIO, COLUMNAS_PROPIO_BASE, COLUMNAS_PROPIO_LISTA } from "@/lib/perfil-servidor";
+import { COLUMNAS_PROPIO, COLUMNAS_PROPIO_BASE, COLUMNAS_PROPIO_LISTA, COLUMNAS_PROPIO_NETWORKING } from "@/lib/perfil-servidor";
 import { COLUMNAS_PORTFOLIO, type EntradaPortfolio, type Servicio, type Tesis } from "@/lib/portfolio";
 import { calcularRacha } from "@/lib/racha";
+import type { Score } from "@/lib/score";
 import { ROLES } from "@/lib/rol";
 import { boton } from "@/lib/ui";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
@@ -86,7 +90,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         .maybeSingle()
         .overrideTypes<PerfilPropio | null, { merge: false }>();
     // En cascada: feria_pro → feria_lista → lo de siempre.
-    let { data, error: errorLectura } = await leer(COLUMNAS_PROPIO);
+    let { data, error: errorLectura } = await leer(COLUMNAS_PROPIO_NETWORKING);
+    if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO));
     if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO_LISTA));
     if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO_BASE));
     if (errorLectura) throw new Error(`Supabase (cuenta): ${errorLectura.message}`);
@@ -99,6 +104,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     user && perfil ? leerExtras(supabase) : null,
     user ? esDelEquipo(supabase) : false,
   ]);
+
+  // Score crediticio de cada una de mis empresas, tal como lo ve cualquiera (lo transparente).
+  // No lanza: si falla, la lista de empresas se ve igual, sin la insignia.
+  const scores = extras?.disponible ? await getScoresEmpresas(extras.empresas.map((e) => e.id)) : new Map<string, Score>();
 
   // "Mis pitches" es un extra: si falla, se edita el perfil igual. Con
   // mis_pitches_detalle, también los ocultos y las acciones de editar/ocultar.
@@ -145,6 +154,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
       <Encabezado variante="cuenta" />
       <RecordarCuenta cuenta={cuentaLocal} />
       <div className="mx-auto w-full max-w-md px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(max(0.75rem,env(safe-area-inset-top))+4.5rem)] md:max-w-2xl lg:max-w-6xl lg:px-8">
+        {user && <PestanasCuenta actual="perfil" />}
         {!user ? (
           <section className="mx-auto mt-8 flex max-w-md flex-col gap-4">
             <h1 className="font-display text-3xl font-semibold leading-tight text-tinta">Tu perfil en Pecera</h1>
@@ -199,6 +209,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               email={user.email ?? ""}
               news={news}
               portfolio={portfolio}
+              scores={scores}
             />
 
             {/* ---- Lo que no es del perfil ---- */}
@@ -215,7 +226,14 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   }
                 }
               />
-              {extras?.disponible && <TarjetaEvento participa={extras.participa} rol={perfil.rol} />}
+              {extras?.disponible && (
+                <TarjetaEvento
+                  participa={extras.participa}
+                  rol={perfil.rol}
+                  buscaOfreceCompleto={buscaOfreceCompleto(perfil)}
+                  consentimiento={extras.consentimiento}
+                />
+              )}
               <TarjetaNFC slug={perfil.slug} completo={null} />
 
               {esAdmin && (
@@ -271,6 +289,7 @@ function PerfilEditable({
   email,
   news,
   portfolio,
+  scores,
 }: {
   perfil: PerfilPropio;
   extras: Extras | null;
@@ -279,6 +298,7 @@ function PerfilEditable({
   email: string;
   news: { disponible: boolean; newsletter: NewsletterLink | null } | null;
   portfolio: DatosPortfolio | null;
+  scores: Map<string, Score>;
 }) {
   const empresas = (extras?.empresas ?? []).map((e) => ({
     id: e.id,
@@ -306,6 +326,7 @@ function PerfilEditable({
     newsletter: news?.newsletter ?? null,
     portfolio,
     logos: new Map(),
+    scores,
   };
 
   const vacioPortfolio =
@@ -344,7 +365,7 @@ function PerfilEditable({
             </div>
           </div>
         ),
-        empresas: extras?.disponible ? <EmpresasDueno empresas={extras.empresas} max={MAX_EMPRESAS} /> : null,
+        empresas: extras?.disponible ? <EmpresasDueno empresas={extras.empresas} max={MAX_EMPRESAS} scores={Object.fromEntries(scores)} /> : null,
         barra: null,
         pitches: (
           <>
@@ -462,6 +483,8 @@ type Extras = {
   /** Todas sus empresas, la principal primero. */
   empresas: EmpresaMia[];
   participa: boolean;
+  /** Consentimiento para la organización de la feria; null si la base no tiene networking_feria. */
+  consentimiento: Consentimiento | null;
   /** null si la base todavía no tiene feria_pro: la sección no se muestra. */
   portafolio: ItemPortafolio[] | null;
   /** Build in Public de la principal; null si la base no lo tiene (o falló la lectura). */
@@ -496,14 +519,19 @@ async function leerBuild(
 }
 
 async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>>): Promise<Extras> {
-  const [mias, evento, portafolio] = await Promise.all([
+  const [mias, evento, portafolio, consentimiento] = await Promise.all([
     leerMisEmpresas(supabase),
     supabase.rpc("mi_evento", { p_evento: EVENTO_ACTUAL.slug }),
     supabase.rpc("mi_portafolio"),
+    supabase.rpc("mi_consentimiento_evento", { p_evento: EVENTO_ACTUAL.slug }),
   ]);
   if (!mias.disponible) {
-    return { disponible: false, empresas: [], participa: false, build: null, portafolio: null };
+    return { disponible: false, empresas: [], participa: false, consentimiento: null, build: null, portafolio: null };
   }
+  if (consentimiento.error && !faltaMigracion(consentimiento.error)) {
+    console.error(`Supabase (mi_consentimiento_evento): ${consentimiento.error.message}`);
+  }
+  const filaConsentimiento = (consentimiento.data as Array<{ acepta: boolean; decidido_at: string }> | null)?.[0];
   if (evento.error) console.error(`Supabase (mi_evento): ${evento.error.message}`);
   if (portafolio.error && !faltaMigracion(portafolio.error)) {
     console.error(`Supabase (mi_portafolio): ${portafolio.error.message}`);
@@ -515,6 +543,9 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
     empresas: mias.empresas,
     build: principal ? await leerBuild(supabase, principal.id) : null,
     participa: !!filaEvento?.participa,
+    consentimiento: consentimiento.error
+      ? null
+      : { acepta: !!filaConsentimiento?.acepta, fecha: filaConsentimiento?.decidido_at ?? null },
     portafolio: portafolio.error ? null : ((portafolio.data ?? []) as ItemPortafolio[]),
   };
 }
