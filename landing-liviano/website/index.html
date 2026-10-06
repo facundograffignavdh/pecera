@@ -104,6 +104,29 @@
           </h2>
           <span class="lema__raya" aria-hidden="true"></span>
         </div>
+
+        <!-- Pitches reales de la app, debajo del lema ya revelado (fuera del pin). Sin JS o si
+             la app no responde, no aparece. -->
+        <div id="pitches" class="pitches" aria-labelledby="pitches-titulo" role="region" hidden>
+          <div class="pitches__cabeza">
+            <div>
+              <p class="etiqueta"><span class="insignia-pitch">▶ Pitch</span>En la Pecera ahora</p>
+              <h3 id="pitches-titulo" class="pitches__titulo">Ya están mostrando lo que construyen.</h3>
+            </div>
+            <div class="pitches__controles">
+              <button type="button" class="pitches__boton pitches__pausa vidrio" data-pitches="pausa" hidden>
+                <span class="pitches__pausa-icono" aria-hidden="true"></span><span class="pitches__pausa-texto">Pausar</span>
+              </button>
+              <button type="button" class="pitches__boton pitches__flecha vidrio" data-pitches="anterior" aria-label="Pitch anterior">
+                <span aria-hidden="true">←</span>
+              </button>
+              <button type="button" class="pitches__boton pitches__flecha vidrio" data-pitches="siguiente" aria-label="Pitch siguiente">
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+          <ul class="pitches__pista" tabindex="0" aria-label="Pitches publicados en Pecera. Usá las flechas para moverte." data-lenis-prevent-horizontal></ul>
+        </div>
       </section>
 
       <!-- 3. El problema → la solución -->
