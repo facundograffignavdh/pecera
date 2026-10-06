@@ -86,7 +86,7 @@ export default function AvisoVisitas() {
   return (
     <section
       aria-labelledby="aviso-visitas-titulo"
-      className="tema-fijo aparecer vidrio fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom),calc(var(--alto-nav)_+_0.5rem))] z-50 mx-auto max-w-md rounded-2xl px-4 py-3 text-tinta shadow-lg"
+      className="aparecer vidrio fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom),calc(var(--alto-nav)_+_0.5rem))] z-50 mx-auto max-w-md rounded-2xl px-4 py-3 text-tinta shadow-lg"
     >
       <h2 id="aviso-visitas-titulo" className="text-sm font-semibold">
         Nuevo: quién vio tu perfil
