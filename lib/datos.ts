@@ -495,9 +495,24 @@ export async function getLogos(empresaIds: string[]): Promise<Map<string, string
 }
 
 /**
+ * Interruptor de emergencia del score crediticio (/admin → Funciones, `config_score`). Es la
+ * ÚNICA lectura: todo lo del score pasa por acá. Apagado por defecto y ante cualquier duda
+ * (falla la consulta, falta la migración, respuesta rara): nunca se muestra el score por error.
+ * Las páginas ISR (/p, /e, /explorar) lo reflejan en hasta 60 s.
+ */
+export const scoreActivo = cache(async (): Promise<boolean> => {
+  const { data, error } = await supabase.rpc("config_score");
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (scoreActivo): ${error.message}`);
+    return false;
+  }
+  return data === true;
+});
+
+/**
  * Score crediticio (A-D) de cada empresa, por id, según lo TRANSPARENTE de su Dataroom
  * (documentos y datos con el switch en "Transparente"; la RLS ya deja solo eso y
- * lo de empresas visibles). Se calcula acá, sin tabla ni migración. No lanza: si la
+ * lo de empresas visibles). Se calcula acá, sin tabla. Con el interruptor apagado, mapa vacío. No lanza: si la
  * consulta falla, el mapa queda sin esa empresa y la página no dibuja la insignia
  * (nunca un "Sin score" que no es verdad). Sin las migraciones del Dataroom o de
  * Transparencia, esa parte cuenta como vacía.
@@ -505,6 +520,8 @@ export async function getLogos(empresaIds: string[]): Promise<Map<string, string
 export async function getScoresEmpresas(empresaIds: string[]): Promise<Map<string, Score>> {
   const ids = [...new Set(empresaIds)].filter(Boolean);
   if (ids.length === 0) return new Map();
+  // Interruptor apagado: ni una consulta, y ninguna página dibuja el score.
+  if (!(await scoreActivo())) return new Map();
   const [docs, datos] = await Promise.all([
     supabase
       .from("empresa_documentos")

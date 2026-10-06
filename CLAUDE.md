@@ -335,7 +335,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     confía en la lista del navegador a propósito: verificarla contra la medición sería el cruce que se prohíbe.
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
-- Score crediticio A-D (rama `score-crediticio`; **sin migración**: se calcula en la app). Categoriza el
+- Score crediticio A-D (rama `score-crediticio`; se calcula en la app, la única migración es el interruptor). Categoriza el
   riesgo de inversión según cuánta información de la empresa es **transparente** en su Dataroom
   (documentos y datos con el switch en "Transparente"; lo privado no cuenta). TODA empresa tiene score y
   arranca en D; A es el menor riesgo. La fórmula vive solo en `lib/score.ts` (sin imports en runtime, para
@@ -351,7 +351,14 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   Se muestra en `/e/[slug]` (`PanelScore`), en la tarjeta de empresa de /p y /cuenta, en el Dataroom del
   dueño (público vs. potencial con lo privado) y en /explorar (insignia + filtro en Startups). La "i"
   (`Info`) explica cómo mejorarlo. `InsigniaScore.tsx` es aparte y liviano: Explorar la carga en el cliente.
-  **Pendiente legal**: el texto de la "i" aclara que mide cuánta información hay, no si es verdadera, y que
+  **Interruptor de emergencia, APAGADO por defecto** (migración `20261018120000_score_switch.sql`, después de
+  quien_vio; columna `funciones_config.score_activo`, `config_score()` para anon y `admin_score(p_activo)` solo
+  admins; pruebas `supabase/pruebas/score_switch.mjs`; vuelta atrás `supabase/rollback-score-switch.sql`, que NO
+  es migración). Se prende en /admin → Resumen → Funciones ("Score crediticio"). La ÚNICA lectura es
+  `scoreActivo()` (`lib/datos.ts`): si falla o falta la migración, apagado. Apagado no se ve NADA (insignias,
+  filtro de Startups, `PanelScore`, la "i", el bloque del Dataroom) y `getScoresEmpresas` devuelve un Map vacío
+  sin consultar. La acción revalida todo; si se cambia por SQL, /p, /e y /explorar (ISR) tardan hasta 60 s.
+  **Pendiente legal** (sigue vigente; por eso el score está apagado): el texto de la "i" aclara que mide cuánta información hay, no si es verdadera, y que
   no es una calificación de riesgo regulada ni asesoramiento; antes del lanzamiento, que el abogado revise
   el nombre "crediticio" y los rótulos "Riesgo bajo/alto" (calificadoras de riesgo, CNV).
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.

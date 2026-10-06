@@ -11,6 +11,7 @@ import Medicion from "@/app/admin/medicion";
 import {
   autopublicar,
   funciones,
+  interruptorScore,
   configurarEvento,
   marcarOriginalBorrado,
   ocultarEmpresa,
@@ -231,11 +232,15 @@ const CANALES: [Canal["clave"], string][] = [
 ];
 
 async function Resumen({ supabase }: { supabase: Supabase }) {
-  const [resumen, medicion, config] = await Promise.all([
+  const [resumen, medicion, config, configScore] = await Promise.all([
     supabase.rpc("admin_resumen"),
     supabase.rpc("admin_metricas"),
     supabase.rpc("config_funciones"),
+    supabase.rpc("config_score"),
   ]);
+  // Sin la migración score_switch, no aparece la fila del score.
+  if (configScore.error && !faltaMigracion(configScore.error)) fallo("config_score", configScore.error);
+  const score = configScore.error ? null : configScore.data === true;
   // Sin la migración quien_vio, los interruptores no aparecen.
   if (config.error && !faltaMigracion(config.error)) fallo("config_funciones", config.error);
   const cfg = config.error ? null : (config.data as ConfigFunciones | null);
@@ -368,7 +373,7 @@ async function Resumen({ supabase }: { supabase: Supabase }) {
         </BotonAccion>
       </div>
 
-      {cfg && <Funciones cfg={cfg} />}
+      {cfg && <Funciones cfg={cfg} score={score} />}
     </div>
   );
 }
@@ -382,7 +387,7 @@ type ConfigFunciones = {
 };
 
 /** Interruptores de emergencia (quien_vio): se leen en cada carga, sin deploy. */
-function Funciones({ cfg }: { cfg: ConfigFunciones }) {
+function Funciones({ cfg, score }: { cfg: ConfigFunciones; score: boolean | null }) {
   const filas = [
     {
       titulo: "Quién vio tu perfil (Mi CRM)",
@@ -411,6 +416,21 @@ function Funciones({ cfg }: { cfg: ConfigFunciones }) {
       accion: funciones.bind(null, cfg.visitas_activas, cfg.pared_activa, cfg.pared_libres, !cfg.traspaso_activo),
       confirmar: "¿Prender el traspaso? Requiere también “Quién vio tu perfil” prendido.",
     },
+    // Score crediticio (score_switch): las páginas ISR lo reflejan en hasta 60 s.
+    ...(score === null
+      ? []
+      : [
+          {
+            titulo: "Score crediticio",
+            texto: score
+              ? "Prendido: las empresas muestran su letra en Explorar, perfiles, su página y el Dataroom."
+              : "Apagado: no se muestra nada del score en ningún lado.",
+            prendido: score,
+            accion: interruptorScore.bind(null, !score),
+            confirmar:
+              "¿Prender el score? Todas las empresas van a mostrar una letra, y la mayoría va a figurar con D (riesgo alto)",
+          },
+        ]),
   ];
   return (
     <section aria-labelledby="funciones-titulo" className={`${CAJA} flex flex-col gap-3`}>

@@ -70,7 +70,14 @@ function texto(f: FichaDirectorio): string {
  * que cambian según lo que se mira. Los filtros de inversores y aliados usan su
  * portfolio real (en qué invirtieron, con quién trabajaron), no solo lo declarado.
  */
-export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
+export default function Explorar({
+  fichas,
+  conScore = false,
+}: {
+  fichas: FichaDirectorio[];
+  /** Interruptor del score (lib/datos scoreActivo): apagado, ni filtro ni insignias. */
+  conScore?: boolean;
+}) {
   const params = useSearchParams();
   const [q, setQ] = useState(() => (params.get("q") ?? "").slice(0, 80));
   const [vista, setVista] = useState<Vista>(() => {
@@ -99,7 +106,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
         if (industria && !f.industrias.includes(industria) && !f.industriasPortfolio.includes(industria)) return false;
         if (vista === "startups" && etapa && f.etapa !== etapa) return false;
         if (vista === "startups" && ronda && f.ronda !== ronda) return false;
-        if (vista === "startups" && score) {
+        if (conScore && vista === "startups" && score) {
           // El score es de las empresas: una persona no lo tiene, así que con este filtro no aparece.
           const letra = f.clase === "empresa" && f.score ? f.score.letra : undefined;
           if (!letra) return false;
@@ -114,7 +121,7 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
         return palabras.every((p) => t.includes(p));
       })
       .map(({ f }) => f);
-  }, [indice, qDiferida, vista, industria, etapa, ronda, geografia, especialidad, conPortfolio, score]);
+  }, [indice, qDiferida, vista, industria, etapa, ronda, geografia, especialidad, conPortfolio, score, conScore]);
 
   function cambiarVista(v: Vista) {
     setVista(v);
@@ -197,11 +204,13 @@ export default function Explorar({ fichas }: { fichas: FichaDirectorio[] }) {
                 <option key={r.valor} value={r.valor}>Busca {r.label}</option>
               ))}
             </select>
-            <select aria-label="Score crediticio: riesgo de inversión" value={score} onChange={(e) => { setScore(e.target.value as FiltroScore); setPagina(1); }} className={SELECT}>
-              {OPCIONES_SCORE.map((o) => (
-                <option key={o.valor} value={o.valor}>{o.label}</option>
-              ))}
-            </select>
+            {conScore && (
+              <select aria-label="Score crediticio: riesgo de inversión" value={score} onChange={(e) => { setScore(e.target.value as FiltroScore); setPagina(1); }} className={SELECT}>
+                {OPCIONES_SCORE.map((o) => (
+                  <option key={o.valor} value={o.valor}>{o.label}</option>
+                ))}
+              </select>
+            )}
           </>
         )}
         {vista === "inversores" && (

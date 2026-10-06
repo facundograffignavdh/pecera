@@ -18,7 +18,7 @@ import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { conProtocolo, hrefInstagram } from "@/lib/contacto";
 import LogoEntidad from "@/components/LogoEntidad";
-import { getApoyos, getDocumentosPublicos, getEmpresa, getLogos } from "@/lib/datos";
+import { getApoyos, getDocumentosPublicos, getEmpresa, getLogos, scoreActivo } from "@/lib/datos";
 import { defTipo } from "@/lib/portfolio";
 import { ROLES } from "@/lib/rol";
 import { cargo, labelIndustria, labelRonda } from "@/lib/etiquetas";
@@ -68,13 +68,15 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
   const [principal, ...otros] = [...pitches].sort((a, b) => b.orden - a.orden);
   const hayBuild = hitos.length > 0 || avances.length > 0;
   const hayRonda = !!ronda || datos.datos.some((d) => defDato(d.clave)?.categoria === "Ronda");
-  const [documentos, apoyos, logos] = await Promise.all([
+  const [documentos, apoyos, logos, conScore] = await Promise.all([
     getDocumentosPublicos(empresa.id),
     getApoyos(empresa.id),
     getLogos([empresa.id]),
+    scoreActivo(),
   ]);
   // Score crediticio: solo de lo transparente (documentos y datos visibles), sin consultas de más.
-  const score = scoreDeEmpresa({ documentos, datos: datos.datos });
+  // Con el interruptor apagado, nada.
+  const score = conScore ? scoreDeEmpresa({ documentos, datos: datos.datos }) : null;
   const hayTransparencia = documentos.length > 0 || datos.datos.some((d) => defDato(d.clave)?.categoria !== "Ronda");
 
   const canales = [
@@ -130,7 +132,7 @@ export default async function EmpresaPage({ params }: PageProps<"/e/[slug]">) {
           )}
         </header>
 
-        <PanelScore score={score} nombre={empresa.nombre} className="mt-5" />
+        {score && <PanelScore score={score} nombre={empresa.nombre} className="mt-5" />}
 
         {empresa.descripcion && (
           <DescripcionConTags

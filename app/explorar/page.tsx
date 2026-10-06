@@ -6,7 +6,7 @@ import Explorar from "@/components/explorar/Explorar";
 import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { SelloFeria21 } from "@/components/eventos/MarcaFeria21";
-import { getTags } from "@/lib/datos";
+import { getTags, scoreActivo } from "@/lib/datos";
 import { getDirectorio } from "@/lib/explorar";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { TAG_FERIA } from "@/lib/hashtags";
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
  * la búsqueda (?q=…&ver=…) para compartirla.
  */
 export default async function ExplorarPage() {
-  const [fichas, tags] = await Promise.all([getDirectorio(), getTags()]);
+  const [fichas, tags, conScore] = await Promise.all([getDirectorio(), getTags(), scoreActivo()]);
   const feria = tags.find((t) => t.tag === TAG_FERIA);
   const otrosTags = tags.filter((t) => t.tag !== TAG_FERIA).slice(0, 12);
 
@@ -49,7 +49,7 @@ export default async function ExplorarPage() {
         <div className="mt-6">
           {/* Lee ?q= y ?ver= en el navegador: la página sigue estática. */}
           <Suspense fallback={<p className="text-sm text-tinta/60">Cargando el directorio…</p>}>
-            <Explorar fichas={fichas} />
+            <Explorar fichas={fichas} conScore={conScore} />
           </Suspense>
         </div>
         {/* Hashtags: cada uno es una sección con sus pitches; #feria21 es la feria. */}
