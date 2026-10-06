@@ -318,6 +318,13 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     /cuenta/crm. Interruptor (`InterruptorVisitas`), resumen identificado + total anónimo (`metricas_perfil`, desde
     siempre), lista con filtros y páginas (`mis_visitas`), "Lo que otros ven de mí" (`mis_visitas_hechas`) y
     `BorrarHistorial`. Fuera de la v1: "Escribirle", notas, CSV, notificaciones; `contactos` sigue anónima.
+  - Pared de pitches (apagada por defecto; /admin → Funciones, con cuántos libres, default 2): solo `Reel`/`Feed`
+    reproducen pitches (perfil, empresa y "Ver el pitch" son posters que llevan a `/#<pitch>`), así que la pared vive en
+    `Feed` (`usePared` en `lib/pared.ts`, reglas puras en `lib/pared-reglas.ts`, prueba `node scripts/pruebas/pared.ts`).
+    Contador por navegador (`pecera:pared`: pitches distintos a los 3 s, sin sesión); el siguiente distinto queda sin
+    `src`, con velo y `PopupPared` (Entrar con Google con `next=<ruta>#<pitch>`, `AvisoNavegadorInterno`, links a
+    perfil/Explorar/Eventos, se cierra). Sin config o sin storage, abierta. `BienvenidaPared` al volver ofrece el
+    perfil sin bloquear. Es capa en el cliente: invita e identifica, NO protege videos (R2 público, URLs en el RSC).
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.

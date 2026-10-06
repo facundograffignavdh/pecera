@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ID_FEED } from "@/components/LogoInicio";
+import BienvenidaPared from "@/components/BienvenidaPared";
 import PieLegal from "@/components/PieLegal";
+import PopupPared from "@/components/PopupPared";
 import PopupPique from "@/components/PopupPique";
 import Reel from "@/components/Reel";
+import { usePared } from "@/lib/pared";
 import { usePiques } from "@/lib/piques";
 import { useSubtitulosActivos } from "@/lib/subtitulos";
 import { quitarVisitaPique, registrarVisita } from "@/lib/visitas";
@@ -24,6 +27,13 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
   const [popup, setPopup] = useState<ItemFeed | null>(null);
   // Con doble toque el pop-up espera a que termine la ráfaga de corazones.
   const esperaPopup = useRef<number | null>(null);
+  // Pared de pitches (sin cuenta, apagada salvo que /admin la prenda). El pop-up sale solo al
+  // llegar a un reel bloqueado; si lo cierra, vuelve recién cuando toca "Entrar" en el reel.
+  const pared = usePared();
+  const [paredCerrada, setParedCerrada] = useState(false);
+  const itemActivo = items[indiceActivo];
+  const itemPared =
+    itemActivo && !paredCerrada && pared.bloqueado(itemActivo.pitch.id) ? itemActivo : null;
 
   useEffect(
     () => () => {
@@ -80,14 +90,16 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
           item={item}
           indice={indice}
           activo={indice === indiceActivo}
-          cargar={Math.abs(indice - indiceActivo) <= 1}
+          cargar={Math.abs(indice - indiceActivo) <= 1 && !pared.bloqueado(item.pitch.id)}
+          bloqueado={pared.bloqueado(item.pitch.id)}
+          onPared={() => setParedCerrada(false)}
           silenciado={silenciado}
           onAlternarSonido={alternarSonido}
           conSubtitulos={conSubtitulos}
           mostrarCC={haySubtitulos}
           onAlternarSubtitulos={() => setConSubtitulos(!conSubtitulos)}
           onForzarSilencio={forzarSilencio}
-          retenido={popup !== null}
+          retenido={popup !== null || itemPared !== null}
           piques={piques.conteos.get(item.pitch.id) ?? 0}
           piqueado={piques.mios.has(item.pitch.id)}
           onAlternarPique={() => {
@@ -114,6 +126,8 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
       ))}
 
       <PopupPique item={popup} onCerrado={() => setPopup(null)} />
+      <PopupPared item={itemPared} onCerrado={() => setParedCerrada(true)} />
+      <BienvenidaPared />
 
       <section
         ref={(el) => registrarRef(items.length, el)}
