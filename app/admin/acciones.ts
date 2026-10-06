@@ -107,3 +107,8 @@ export async function organizador(email: string, habilitar: boolean) {
 export async function funciones(visitas: boolean, pared: boolean, libres: number, traspaso: boolean) {
   return rpc("admin_funciones", { p_visitas: visitas, p_pared: pared, p_libres: libres, p_traspaso: traspaso }, "/admin");
 }
+
+/** Interruptor del score crediticio (score_switch). Revalida todo: el cambio se ve en la próxima carga. */
+export async function interruptorScore(activo: boolean) {
+  return rpc("admin_score", { p_activo: activo }, "/");
+}

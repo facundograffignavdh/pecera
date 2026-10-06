@@ -45,7 +45,7 @@ import { type Avance, type Hito } from "@/lib/build";
 import { conEmpresa, urlPerfil } from "@/lib/cuenta";
 import { type EmpresaMia, MAX_EMPRESAS, leerMisEmpresas } from "@/lib/cuenta-empresa";
 import type { CuentaLocal } from "@/lib/cuenta-local";
-import { faltaMigracion } from "@/lib/datos";
+import { faltaMigracion, getScoresEmpresas } from "@/lib/datos";
 import { buscaOfreceCompleto } from "@/lib/networking";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
@@ -53,6 +53,7 @@ import type { NewsletterLink } from "@/lib/newsletter";
 import { COLUMNAS_PROPIO, COLUMNAS_PROPIO_BASE, COLUMNAS_PROPIO_LISTA, COLUMNAS_PROPIO_NETWORKING } from "@/lib/perfil-servidor";
 import { COLUMNAS_PORTFOLIO, type EntradaPortfolio, type Servicio, type Tesis } from "@/lib/portfolio";
 import { calcularRacha } from "@/lib/racha";
+import type { Score } from "@/lib/score";
 import { ROLES } from "@/lib/rol";
 import { boton } from "@/lib/ui";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
@@ -103,6 +104,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     user && perfil ? leerExtras(supabase) : null,
     user ? esDelEquipo(supabase) : false,
   ]);
+
+  // Score crediticio de cada una de mis empresas, tal como lo ve cualquiera (lo transparente).
+  // No lanza: si falla, la lista de empresas se ve igual, sin la insignia.
+  const scores = extras?.disponible ? await getScoresEmpresas(extras.empresas.map((e) => e.id)) : new Map<string, Score>();
 
   // "Mis pitches" es un extra: si falla, se edita el perfil igual. Con
   // mis_pitches_detalle, también los ocultos y las acciones de editar/ocultar.
@@ -204,6 +209,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               email={user.email ?? ""}
               news={news}
               portfolio={portfolio}
+              scores={scores}
             />
 
             {/* ---- Lo que no es del perfil ---- */}
@@ -283,6 +289,7 @@ function PerfilEditable({
   email,
   news,
   portfolio,
+  scores,
 }: {
   perfil: PerfilPropio;
   extras: Extras | null;
@@ -291,6 +298,7 @@ function PerfilEditable({
   email: string;
   news: { disponible: boolean; newsletter: NewsletterLink | null } | null;
   portfolio: DatosPortfolio | null;
+  scores: Map<string, Score>;
 }) {
   const empresas = (extras?.empresas ?? []).map((e) => ({
     id: e.id,
@@ -318,6 +326,7 @@ function PerfilEditable({
     newsletter: news?.newsletter ?? null,
     portfolio,
     logos: new Map(),
+    scores,
   };
 
   const vacioPortfolio =
@@ -356,7 +365,7 @@ function PerfilEditable({
             </div>
           </div>
         ),
-        empresas: extras?.disponible ? <EmpresasDueno empresas={extras.empresas} max={MAX_EMPRESAS} /> : null,
+        empresas: extras?.disponible ? <EmpresasDueno empresas={extras.empresas} max={MAX_EMPRESAS} scores={Object.fromEntries(scores)} /> : null,
         barra: null,
         pitches: (
           <>

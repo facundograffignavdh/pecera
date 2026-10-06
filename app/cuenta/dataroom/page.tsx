@@ -7,10 +7,13 @@ import { EmpresaActual } from "@/components/cuenta/EmpresaActual";
 import SelectorEmpresa from "@/components/cuenta/SelectorEmpresa";
 import { BotonArchivar, FilaDato, FilaDocumento } from "@/components/dataroom/FilasDataroom";
 import Marco, { SinEmpresa, SinSesion } from "@/components/dataroom/Marco";
+import { PanelScore } from "@/components/ScoreEmpresa";
+import { scoreActivo } from "@/lib/datos";
 import { conEmpresa } from "@/lib/cuenta";
 import { cuentaConEmpresa, rpcEn } from "@/lib/cuenta-empresa";
 import { CATEGORIAS_DATAROOM, CATEGORIA_DE_DATO, type Documento, haceCuanto } from "@/lib/dataroom";
 import { PLANTILLAS, plantilla, progresoPlantilla } from "@/lib/plantillas";
+import { scoreDeEmpresa } from "@/lib/score-empresa";
 import { defDato } from "@/lib/transparencia";
 import type { DatoEmpresa } from "@/types/pecera";
 import { boton } from "@/lib/ui";
@@ -44,7 +47,7 @@ export default async function DataroomPage({ searchParams }: PageProps<"/cuenta/
     );
   }
 
-  const [docsRes, datosRes] = await Promise.all([
+  const [docsRes, datosRes, conScore] = await Promise.all([
     supabase
       .from("empresa_documentos")
       .select(COLUMNAS)
@@ -52,6 +55,7 @@ export default async function DataroomPage({ searchParams }: PageProps<"/cuenta/
       .order("updated_at", { ascending: false })
       .overrideTypes<Documento[], { merge: false }>(),
     rpcEn(supabase, "mis_datos_en", "mis_datos_empresa", empresa.id, {}),
+    scoreActivo(),
   ]);
   if (docsRes.error) throw new Error(`Supabase (dataroom): ${docsRes.error.message}`);
   // Con varias empresas, los links llevan esta (cada pestaña queda en la suya).
@@ -73,6 +77,11 @@ export default async function DataroomPage({ searchParams }: PageProps<"/cuenta/
   const conInfo = porCategoria.filter((c) => c.estado === "con-info").length;
   const transparentes = activos.filter((d) => d.visible).length + datos.filter((d) => d.visible).length;
   const vacio = activos.length === 0 && datos.length === 0;
+  // Score crediticio: el público (solo lo transparente, como lo ve un inversor) y el potencial
+  // (con lo privado), para decirle qué letra tendría si hace transparente lo que ya subió.
+  // Con el interruptor apagado, nada.
+  const scorePublico = conScore ? scoreDeEmpresa({ documentos: activos, datos }) : null;
+  const scorePotencial = conScore ? scoreDeEmpresa({ documentos: activos, datos }, { soloVisibles: false }) : null;
 
   return (
     <Marco volver={ruta("/cuenta/empresa?pestana=metricas")} textoVolver="Volver a la empresa" ancho="max-w-md md:max-w-3xl lg:max-w-5xl">
@@ -89,6 +98,10 @@ export default async function DataroomPage({ searchParams }: PageProps<"/cuenta/
             transparente.
           </p>
         </header>
+
+        {scorePublico && scorePotencial && (
+          <PanelScore score={scorePublico} nombre={empresa.nombre} propio={{ potencial: scorePotencial }} className="mt-6" />
+        )}
 
         <section aria-labelledby="progreso-titulo" className="mt-6 flex flex-col gap-3 rounded-3xl border border-tinta/10 bg-tinta/[0.03] px-4 py-5">
           <div className="flex items-baseline justify-between gap-3">

@@ -15,6 +15,7 @@ import {
   getNewsletter,
   getPerfil,
   getPortfolio,
+  getScoresEmpresas,
   getSeguidores,
   getSlugs,
 } from "@/lib/datos";
@@ -64,10 +65,11 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
   // Todas sus empresas visibles, la principal primero. Build in Public: el de la primera.
   const suyas = empresasDe(leido);
   const idsEmpresas = suyas.map((e) => e.id ?? "");
-  const [build, newsletter, portfolio] = await Promise.all([
+  const [build, newsletter, portfolio, scores] = await Promise.all([
     suyas[0]?.id ? getBuildEmpresa(suyas[0].id) : null,
     getNewsletter(leido.id),
     conPortfolio ? getPortfolio(leido.id) : null,
+    getScoresEmpresas(idsEmpresas),
   ]);
   const logos = await getLogos([...idsEmpresas, ...(portfolio?.entradas.map((e) => e.empresa_id ?? "") ?? [])]);
   // El logo de cada empresa: el de empresa_logos y, si no hay, el de feria_pro.
@@ -84,7 +86,7 @@ export default async function PerfilPage({ params }: PageProps<"/p/[slug]">) {
         <MedirPerfil perfilId={perfil.id} />
 
         <VistaPerfil
-          datos={{ perfil, pitches, portafolio, racha, metricas, seguidores, build, newsletter, portfolio, logos }}
+          datos={{ perfil, pitches, portafolio, racha, metricas, seguidores, build, newsletter, portfolio, logos, scores }}
           slots={{ editar: <BotonEditarFicha slug={perfil.slug} /> }}
         />
 

@@ -1,5 +1,6 @@
 import { urlMedia } from "@/lib/media";
-import { faltaMigracion, getLogos } from "@/lib/datos";
+import { faltaMigracion, getLogos, getScoresEmpresas } from "@/lib/datos";
+import type { Score } from "@/lib/score";
 import { supabase } from "@/lib/supabase";
 import type { Rol, TipoPerfil } from "@/types/pecera";
 
@@ -9,6 +10,9 @@ import type { Rol, TipoPerfil } from "@/types/pecera";
  * en fintech" encuentra a quien invirtió en fintech, no solo a quien lo escribió.
  * Todo es público (RLS de anon). Nunca lanza: sin una tabla, esa parte va vacía.
  */
+
+/** Del score crediticio (lib/score.ts) solo lo que el directorio usa: así no viaja el detalle por áreas. */
+export type ScoreFicha = Pick<Score, "letra" | "puntos">;
 
 export type FichaDirectorio = {
   clase: "perfil" | "empresa";
@@ -37,6 +41,8 @@ export type FichaDirectorio = {
   categoriasServicio: string[];
   geografias: string[];
   modelos: string[];
+  /** Solo en las empresas; null en las personas o si no se pudo calcular (sin insignia). */
+  score: ScoreFicha | null;
 };
 
 type FilaPerfil = {
@@ -125,11 +131,13 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
       categoriasServicio: [...new Set((sv.get(p.id) ?? []).map((s) => s.categoria).filter((x): x is string => !!x))],
       geografias: ts.get(p.id)?.geografias ?? [],
       modelos: ts.get(p.id)?.modelos ?? [],
+      score: null,
     };
   });
 
   const filasEmpresa = (empresas.data ?? []) as Array<{ id: string; slug: string; nombre: string; descripcion: string | null; industrias: string[]; etapa: string | null; ronda: string | null }>;
-  const logos = await getLogos(filasEmpresa.map((e) => e.id));
+  const ids = filasEmpresa.map((e) => e.id);
+  const [logos, scores] = await Promise.all([getLogos(ids), getScoresEmpresas(ids)]);
   const fichasEmpresa: FichaDirectorio[] = filasEmpresa.map((e) => ({
     clase: "empresa",
     slug: e.slug,
@@ -154,6 +162,7 @@ export async function getDirectorio(): Promise<FichaDirectorio[]> {
     categoriasServicio: [],
     geografias: [],
     modelos: [],
+    score: scores.has(e.id) ? { letra: scores.get(e.id)!.letra, puntos: scores.get(e.id)!.puntos } : null,
   }));
 
   return [...fichasEmpresa, ...fichasPerfil];
