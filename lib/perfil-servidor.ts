@@ -8,11 +8,12 @@ import { CAMPOS_LISTA, CAMPOS_SIMPLES, type CampoPerfil, type Errores } from "@/
  * exportar funciones comunes.
  */
 
-/** Columnas del perfil propio, en cascada: feria_pro → feria_lista → lo de siempre. */
+/** Columnas del perfil propio, en cascada: networking_feria → feria_pro → feria_lista → lo de siempre. */
 export const COLUMNAS_PROPIO_BASE =
   "id, slug, nombre, tipo, rol, descripcion, avatar_url, whatsapp, email, linkedin, instagram, web, publicado, oculto";
 export const COLUMNAS_PROPIO_LISTA = `${COLUMNAS_PROPIO_BASE}, etapa, ronda, industrias, cargo, especialidades, ticket, rondas_interes, empresa_id`;
 export const COLUMNAS_PROPIO = `${COLUMNAS_PROPIO_LISTA}, busca_cofundador, cofundador_aporta, cofundador_busca, cofundador_dedicacion, cofundador_nota, ubicacion, experiencia, educacion, skills, busca, ofrece`;
+export const COLUMNAS_PROPIO_NETWORKING = `${COLUMNAS_PROPIO}, busca_detalle, ofrece_detalle, busca_como, ofrece_como`;
 
 export const ERROR_GENERAL = "No pudimos guardar. Probá de nuevo en un rato.";
 export const AVISO_SIN_MIGRACION =
@@ -55,10 +56,11 @@ export function errorDeLaBase(error: PostgrestError, errores: Errores): EstadoGu
   return { errores, general: ERROR_GENERAL };
 }
 
-/** Lo que muestra el perfil: el feed, Explorar, la página pública y /cuenta. */
+/** Lo que muestra el perfil: el feed, Explorar, Cofundadores/Networking, la página pública y /cuenta. */
 export function revalidarPerfil(slug: string) {
   revalidatePath("/");
   revalidatePath("/explorar");
+  revalidatePath("/cofundadores");
   revalidatePath(`/p/${slug}`);
   revalidatePath("/cuenta");
 }

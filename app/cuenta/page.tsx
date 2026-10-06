@@ -19,6 +19,7 @@ import ResaltarAncla from "@/components/cuenta/ResaltarAncla";
 import AvisoNavegadorInterno from "@/components/AvisoNavegadorInterno";
 import EnVivo from "@/components/EnVivo";
 import TarjetaEvento from "@/components/cuenta/TarjetaEvento";
+import type { Consentimiento } from "@/components/networking/CasillaUniversidad";
 import TarjetaNFC from "@/components/cuenta/TarjetaNFC";
 import TarjetaPortafolio from "@/components/cuenta/TarjetaPortafolio";
 import RelacionesPendientes, { type RelacionPendiente } from "@/components/cuenta/RelacionesPendientes";
@@ -44,10 +45,11 @@ import { conEmpresa, urlPerfil } from "@/lib/cuenta";
 import { type EmpresaMia, MAX_EMPRESAS, leerMisEmpresas } from "@/lib/cuenta-empresa";
 import type { CuentaLocal } from "@/lib/cuenta-local";
 import { faltaMigracion } from "@/lib/datos";
+import { buscaOfreceCompleto } from "@/lib/networking";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
 import type { NewsletterLink } from "@/lib/newsletter";
-import { COLUMNAS_PROPIO, COLUMNAS_PROPIO_BASE, COLUMNAS_PROPIO_LISTA } from "@/lib/perfil-servidor";
+import { COLUMNAS_PROPIO, COLUMNAS_PROPIO_BASE, COLUMNAS_PROPIO_LISTA, COLUMNAS_PROPIO_NETWORKING } from "@/lib/perfil-servidor";
 import { COLUMNAS_PORTFOLIO, type EntradaPortfolio, type Servicio, type Tesis } from "@/lib/portfolio";
 import { calcularRacha } from "@/lib/racha";
 import { ROLES } from "@/lib/rol";
@@ -86,7 +88,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         .maybeSingle()
         .overrideTypes<PerfilPropio | null, { merge: false }>();
     // En cascada: feria_pro → feria_lista → lo de siempre.
-    let { data, error: errorLectura } = await leer(COLUMNAS_PROPIO);
+    let { data, error: errorLectura } = await leer(COLUMNAS_PROPIO_NETWORKING);
+    if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO));
     if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO_LISTA));
     if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO_BASE));
     if (errorLectura) throw new Error(`Supabase (cuenta): ${errorLectura.message}`);
@@ -215,7 +218,14 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   }
                 }
               />
-              {extras?.disponible && <TarjetaEvento participa={extras.participa} rol={perfil.rol} />}
+              {extras?.disponible && (
+                <TarjetaEvento
+                  participa={extras.participa}
+                  rol={perfil.rol}
+                  buscaOfreceCompleto={buscaOfreceCompleto(perfil)}
+                  consentimiento={extras.consentimiento}
+                />
+              )}
               <TarjetaNFC slug={perfil.slug} completo={null} />
 
               {esAdmin && (
@@ -462,6 +472,8 @@ type Extras = {
   /** Todas sus empresas, la principal primero. */
   empresas: EmpresaMia[];
   participa: boolean;
+  /** Consentimiento para la organización de la feria; null si la base no tiene networking_feria. */
+  consentimiento: Consentimiento | null;
   /** null si la base todavía no tiene feria_pro: la sección no se muestra. */
   portafolio: ItemPortafolio[] | null;
   /** Build in Public de la principal; null si la base no lo tiene (o falló la lectura). */
@@ -496,14 +508,19 @@ async function leerBuild(
 }
 
 async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>>): Promise<Extras> {
-  const [mias, evento, portafolio] = await Promise.all([
+  const [mias, evento, portafolio, consentimiento] = await Promise.all([
     leerMisEmpresas(supabase),
     supabase.rpc("mi_evento", { p_evento: EVENTO_ACTUAL.slug }),
     supabase.rpc("mi_portafolio"),
+    supabase.rpc("mi_consentimiento_evento", { p_evento: EVENTO_ACTUAL.slug }),
   ]);
   if (!mias.disponible) {
-    return { disponible: false, empresas: [], participa: false, build: null, portafolio: null };
+    return { disponible: false, empresas: [], participa: false, consentimiento: null, build: null, portafolio: null };
   }
+  if (consentimiento.error && !faltaMigracion(consentimiento.error)) {
+    console.error(`Supabase (mi_consentimiento_evento): ${consentimiento.error.message}`);
+  }
+  const filaConsentimiento = (consentimiento.data as Array<{ acepta: boolean; decidido_at: string }> | null)?.[0];
   if (evento.error) console.error(`Supabase (mi_evento): ${evento.error.message}`);
   if (portafolio.error && !faltaMigracion(portafolio.error)) {
     console.error(`Supabase (mi_portafolio): ${portafolio.error.message}`);
@@ -515,6 +532,9 @@ async function leerExtras(supabase: Awaited<ReturnType<typeof supabaseConSesion>
     empresas: mias.empresas,
     build: principal ? await leerBuild(supabase, principal.id) : null,
     participa: !!filaEvento?.participa,
+    consentimiento: consentimiento.error
+      ? null
+      : { acepta: !!filaConsentimiento?.acepta, fecha: filaConsentimiento?.decidido_at ?? null },
     portafolio: portafolio.error ? null : ((portafolio.data ?? []) as ItemPortafolio[]),
   };
 }

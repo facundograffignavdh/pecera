@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import {
   CAMPOS_LISTA,
   CAMPOS_SIMPLES,
+  COLUMNAS_NETWORKING,
   type CampoLista,
   type CampoPerfil,
   type CampoSimple,
@@ -24,6 +25,7 @@ import {
   COLUMNAS_PROPIO,
   COLUMNAS_PROPIO_BASE,
   COLUMNAS_PROPIO_LISTA,
+  COLUMNAS_PROPIO_NETWORKING,
   ERROR_GENERAL,
   type EstadoGuardar,
   errorDeLaBase,
@@ -41,7 +43,7 @@ const CAMPOS_SECCION: Record<Seccion, CampoPerfil[]> = {
   ficha: ["nombre", "rol", "ubicacion", "descripcion", "whatsapp", "email", "linkedin", "instagram", "web"],
   etiquetas: ["etapa", "ronda", "ticket", "industrias", "especialidades", "rondas_interes"],
   trayectoria: ["experiencia", "educacion", "skills"],
-  buscaOfrece: ["busca", "ofrece"],
+  buscaOfrece: ["busca", "ofrece", "busca_detalle", "ofrece_detalle", "busca_como", "ofrece_como"],
   cofundador: ["busca_cofundador", "cofundador_aporta", "cofundador_busca", "cofundador_dedicacion", "cofundador_nota"],
 };
 
@@ -101,7 +103,8 @@ async function guardarSeccionAdentro(formData: FormData): Promise<EstadoGuardar>
       .eq("usuario_id", user.id)
       .maybeSingle()
       .overrideTypes<Fila | null, { merge: false }>();
-  let { data: fila, error: errorLectura } = await leer(COLUMNAS_PROPIO);
+  let { data: fila, error: errorLectura } = await leer(COLUMNAS_PROPIO_NETWORKING);
+  if (faltaMigracion(errorLectura)) ({ data: fila, error: errorLectura } = await leer(COLUMNAS_PROPIO));
   if (faltaMigracion(errorLectura)) ({ data: fila, error: errorLectura } = await leer(COLUMNAS_PROPIO_LISTA));
   if (faltaMigracion(errorLectura)) ({ data: fila, error: errorLectura } = await leer(COLUMNAS_PROPIO_BASE));
   if (errorLectura) return errorDeLaBase(errorLectura, {});
@@ -137,6 +140,11 @@ async function guardarSeccionAdentro(formData: FormData): Promise<EstadoGuardar>
     ({ error } = await editar(cambios));
   }
   let aviso: string | undefined;
+  if (faltaMigracion(error) && COLUMNAS_NETWORKING.some((c) => c in cambios)) {
+    // Sin networking_feria: lo de siempre de busca/ofrece, sin detalle ni "cómo".
+    for (const c of COLUMNAS_NETWORKING) delete cambios[c];
+    ({ error } = await editar(cambios));
+  }
   if (faltaMigracion(error)) {
     // La base no tiene las columnas nuevas: solo lo de siempre (si hay algo).
     const base = quedarse(cambios, Object.keys(soloBase(datos)).concat("oculto"));

@@ -2,10 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Refresca la sesión de Supabase. Corre en /cuenta, /auth, /subir, /admin y
- * /eventos (por las actions de votación). El feed, los perfiles y las empresas no
- * pasan por acá y siguen estáticos. El proxy no hace dinámica a una página: solo
- * renueva la cookie si vence.
+ * Refresca la sesión de Supabase. Corre en /cuenta, /auth, /subir, /admin,
+ * /eventos (por las actions de votación), /cofundadores (por la action que guarda
+ * busca/ofrece desde Networking) y /organizacion (el panel de la Universidad). El
+ * feed, los perfiles y las empresas no pasan por acá y siguen estáticos. El proxy
+ * no hace dinámica a una página: solo renueva la cookie si vence.
  */
 export async function proxy(request: NextRequest) {
   let respuesta = NextResponse.next({ request });
@@ -37,5 +38,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cuenta/:path*", "/auth/:path*", "/subir", "/admin/:path*", "/eventos/:path*"],
+  matcher: ["/cuenta/:path*", "/auth/:path*", "/subir", "/admin/:path*", "/eventos/:path*", "/cofundadores", "/organizacion/:path*"],
 };

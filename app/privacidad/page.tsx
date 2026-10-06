@@ -15,6 +15,7 @@ const INDICE = [
   { id: "datos", titulo: "Qué datos guardamos" },
   { id: "para-que", titulo: "Para qué los usamos" },
   { id: "publico", titulo: "Qué es público y qué no" },
+  { id: "universidad", titulo: "Feria 21: compartir con la organización" },
   { id: "proveedores", titulo: "Proveedores y dónde se guardan" },
   { id: "conservacion", titulo: "Cuánto tiempo los guardamos" },
   { id: "derechos", titulo: "Tus derechos" },
@@ -33,8 +34,8 @@ export default function PrivacidadPage() {
   return (
     <PaginaLegal
       titulo="Política de privacidad"
-      actualizado="4 de octubre de 2026"
-      actualizadoIso="2026-10-04"
+      actualizado="6 de octubre de 2026"
+      actualizadoIso="2026-10-06"
       intro={
         <p>
           Pecera muestra pitches en video y perfiles de emprendedores, empresas, inversores y
@@ -125,6 +126,23 @@ export default function PrivacidadPage() {
             Cuando le mostrás interés a alguien, guardamos a quién, el mensaje que le escribís (hasta
             280 caracteres), en qué quedó (pendiente, match, pasó o lo retiraste) y las fechas.
           </li>
+          <li id="networking">
+            <strong className="font-semibold text-tinta">Networking.</strong> Qué buscás y qué
+            ofrecés (hasta 10 opciones de cada lado, de una lista por categorías: capital, equipo,
+            mercado, herramientas y otras), los detalles cortos que escribas (por ejemplo,
+            «Figma» o «créditos de AWS») y cómo (pago, canje, sin costo o a conversar). Cuando le
+            mostrás interés a alguien desde Networking, guardamos lo mismo que en la búsqueda de
+            cofundador/a (a quién, el mensaje, en qué quedó y las fechas) y, si lo hiciste con el
+            filtro de la Feria 21, que fue en la feria.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Compartir con la organización de la
+            Feria 21 (opcional).</strong> Si tildás la casilla para compartir tu perfil con la
+            Universidad Siglo 21, guardamos tu elección, la fecha y la versión del texto que
+            aceptaste, y la Universidad puede ver tu perfil público y lo que buscás y ofrecés. Si
+            la destildás, dejás de aparecer y guardamos que la retiraste y la fecha. Ver{" "}
+            <a href="#universidad" className={CLASE_ENLACE}>Feria 21: compartir con la organización</a>.
+          </li>
           <li>
             <strong className="font-semibold text-tinta">El formulario de carga.</strong> Los
             pitches se suben con un formulario de Google Forms. De cada envío guardamos el email
@@ -201,11 +219,15 @@ export default function PrivacidadPage() {
             cada empresa que confirme las relaciones que la nombran.</li>
           <li>Que encuentres perfiles y empresas en Explorar.</li>
           <li>Conectar a quienes buscan cofundador/a cuando el interés es mutuo.</li>
+          <li>Ordenar el Networking por lo que buscás y lo que ofrecen los demás (y al revés), y
+            conectar a las personas cuando el interés es mutuo.</li>
           <li>Organizar los eventos y contar los votos del público.</li>
           <li>Mantener tu sesión abierta y cuidar el servicio de abusos.</li>
         </ul>
         <p>No vendemos tus datos, no los usamos para publicidad y no los compartimos con nadie
-          más que los proveedores de la sección de abajo.</p>
+          más que los proveedores de la sección de abajo y, solo si lo aceptaste, con la
+          organización de la Feria 21 (ver{" "}
+          <a href="#universidad" className={CLASE_ENLACE}>Feria 21: compartir con la organización</a>).</p>
       </Seccion>
 
       <Seccion id="publico" titulo="Qué es público y qué no">
@@ -238,6 +260,47 @@ export default function PrivacidadPage() {
           se publican</strong>: los ven solo quien lo manda y quien lo recibe. Si la otra persona
           pasa, no se lo avisamos a quien lo mandó.
         </p>
+        <p>
+          Lo que buscás y ofrecés (con los detalles y el cómo) es parte de tu perfil público: se
+          muestra en tu perfil y en Networking, y quien entra con su cuenta ve cuánto encaja con
+          vos y por qué. Los intereses de Networking y sus mensajes, igual que los de
+          cofundador/a, los ven solo quien lo manda y quien lo recibe.
+        </p>
+      </Seccion>
+
+      <Seccion id="universidad" titulo="Feria 21: compartir con la organización">
+        <p>
+          La Feria 21 la organiza la Universidad Siglo 21. En Mi perfil (y al anotarte en la feria)
+          hay una casilla <strong className="font-semibold text-tinta">opcional</strong> que dice:
+          «Acepto compartir mi perfil y lo que busco y ofrezco con la Universidad Siglo 21,
+          organizadora de la Feria 21, para facilitar conexiones durante el evento.»
+        </p>
+        <ul>
+          <li>No la necesitás para usar Pecera, anotarte en la feria ni hacer networking.</li>
+          <li>
+            <strong className="font-semibold text-tinta">Qué ve la Universidad, si la tildaste.</strong>{" "}
+            Las autoridades de la Universidad que el equipo de Pecera habilita (entran con su
+            cuenta a un panel propio) ven tu perfil público (nombre, rol, empresas, zona y
+            descripción, con el link a tu perfil), lo que buscás y ofrecés (con los detalles y el
+            cómo), si estás anotado en la feria y la fecha en que aceptaste. Pueden descargarlo
+            en una planilla. Lo usan solo para facilitar conexiones durante el evento, según el
+            convenio entre Pecera y la Universidad.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Qué no ve nunca:</strong> el email de tu
+            cuenta, tus mensajes, a quién le mostraste interés ni quién te lo mostró a vos. De
+            quienes no tildaron la casilla ve solo números totales (cuántas personas, cuántos
+            intereses y matches, qué es lo más buscado y ofrecido), sin nombres.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">La podés retirar cuando quieras</strong>:
+            en <Link href="/cuenta" className={CLASE_ENLACE}>Mi perfil</Link>, en la tarjeta de la
+            Feria 21, destildando la casilla. Desde ese momento dejás de aparecer en el panel de la
+            Universidad, y guardamos que la retiraste y la fecha. Lo que la Universidad ya haya
+            descargado antes queda de su lado: para que lo borre, escribinos a <Email /> y se lo
+            pedimos.
+          </li>
+        </ul>
       </Seccion>
 
       <Seccion id="proveedores" titulo="Proveedores y dónde se guardan">
@@ -277,10 +340,11 @@ export default function PrivacidadPage() {
           tu navegador hasta que borres los datos del sitio.
         </p>
         <p>
-          El mensaje de un interés de cofundador/a se guarda mientras esté pendiente o haya match.
+          El mensaje de un interés de cofundador/a o de Networking se guarda mientras esté pendiente o haya match.
           Si la otra persona pasa o lo retirás, borramos el mensaje y queda solo el registro (quién,
           a quién, en qué quedó y la fecha) para que no se vuelva a mandar. Todo eso se borra
-          cuando cualquiera de los dos elimina su cuenta.
+          cuando cualquiera de los dos elimina su cuenta. Tu elección sobre compartir con la
+          organización de la Feria 21 se guarda mientras tu cuenta exista.
         </p>
         <p>
           Cuando eliminás tu cuenta, los videos, fotos, logos e imágenes se borran de nuestros
@@ -313,7 +377,8 @@ export default function PrivacidadPage() {
             pitches (con sus videos, subtítulos, piques y vistas, y los que mandaste por el
             formulario y todavía no se publicaron), tu newsletter, links y documentos, portfolio,
             servicios, tesis, votos, participación en eventos y seguidores, tus intereses de
-            cofundador/a con sus mensajes (los que mandaste y los que recibiste), y los emails de tus
+            cofundador/a y de Networking con sus mensajes (los que mandaste y los que recibiste), tu
+            elección sobre compartir con la organización de la Feria 21, y los emails de tus
             envíos del formulario. También lo que hiciste desde ese navegador y desde los otros
             navegadores unidos a tu cuenta (piques, vistas, contactos, actividad y a quién
             seguís; si otra cuenta también usa ese navegador, lo anónimo queda), esa unión, y lo

@@ -262,6 +262,41 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     el avatar, Mi red desde el perfil propio y el selector de tema está al final de /cuenta.
   - Compartir en el reel (`BotonCompartirReel`, entre el corazón y el CC): `navigator.share` o copia un
     mensaje con `/?src=compartir#<pitch>` y `/sumate`.
+- Networking de la Feria 21 (rama `networking-feria`, migración `20261015120000_networking_feria.sql`,
+  después de persona_empresa; pruebas `supabase/pruebas/networking_feria.mjs` y
+  `node scripts/pruebas/networking.ts`; vuelta atrás `supabase/rollback-networking-feria.sql`, que NO es
+  migración y es con pérdida; guía en `docs/GUIA-FERIA.md` §7).
+  - Busca/ofrece en dos niveles: `CATEGORIAS_NECESIDAD` (10) y `NECESIDADES` (opción + categoría) en
+    `lib/etiquetas.ts`, espejo de `necesidades_validas()` (la usan `perfiles_busca_valido`/`_ofrece_valido`,
+    redefinidos: tope 10). Los 10 valores de antes siguen: 8 son opciones con el mismo id e `inversion` y
+    `talento` son "en general" (valen por su categoría, no se ofrecen para elegir). Detalle libre
+    (`busca_detalle`/`ofrece_detalle`, 8 de ≤ 30) y "cómo" por lado (`busca_como`/`ofrece_como`: `COMOS`).
+    Un solo selector, `components/networking/SelectorBuscaOfrece.tsx` (categorías plegables, buscador,
+    ejemplos por rol que suman), en la hoja del perfil y en Networking; guarda `guardarSeccion("buscaOfrece")`.
+  - `/cofundadores` = pestañas `PestanasCofundadores` (`?ver=networking`, `?alcance=feria|plataforma`,
+    `?editar=1`): Cofundadores sin cambios y `ListaNetworking` (todos los roles, filtro Feria 21 por defecto
+    para quien participa, con `SelloFeria21` y `s21-*`). Encaje en `lib/networking.ts`
+    (`encajeNetworking`: exacta 12, categoría 4, tope 30 por dirección; cómo +4; zona, industrias, etapa;
+    razones con el nombre, nunca un pronombre). `lib/cofundador.ts` no cambia (solo exporta `lugar`).
+  - Conexión: `networking_intereses` (tabla aparte: la PK de `cofundador_intereses` no admite un tipo sin
+    redefinir todo) con `networking_interesar(p_a, p_mensaje, p_evento)`, `_responder`, `_retirar` y
+    `mis_networking_conexiones`; tope propio de 20/día; `evento_id` = Feria 21 o null. El flujo de pantalla
+    es compartido: `components/explorar/conexiones.tsx` y `useMatch`/`useNetworking` en `useMatch.ts`.
+  - Aviso al anotarse (`AvisoNetworkingFeria`, en `TarjetaEvento`): al anotarse o al entrar a /cuenta si la
+    anotó /admin; "Ahora no" lo cierra hasta el día siguiente (`pecera:aviso-networking`); con busca y ofrece
+    completos no aparece más. Casilla OPCIONAL para la Universidad (`CasillaUniversidad`,
+    `CONSENTIMIENTO_U21` con versión): `evento_consentimientos` por `guardar_consentimiento_evento` /
+    `mi_consentimiento_evento`; retirar = `acepta false` con fecha. Con el convenio firmado, lo ve la
+    Universidad en `/organizacion` (abajo). `/privacidad#universidad` lo explica.
+  - `borrar_mi_cuenta` no cambió: las dos tablas nuevas caen en cascada con el perfil (probado).
+- Panel de la Universidad (migración `20261016120000_panel_organizacion.sql`, después de networking_feria;
+  pruebas `supabase/pruebas/panel_organizacion.mjs`; guía `docs/GUIA-FERIA.md` §8). `/organizacion`
+  (dinámica, con sesión; en el matcher de `proxy.ts`, fuera de robots): entran los emails de
+  `evento_organizadores` (privada; las carga /admin → Universidad con `admin_organizador`/`admin_organizadores`)
+  y los admins (`puede_ver_organizacion`). `organizacion_networking(p_evento)`: números de la feria sin el
+  equipo y, con nombre, SOLO quienes aceptaron (`evento_consentimientos.acepta`) con perfil visible; nunca
+  mensajes ni quién con quién; `sin_completar` solo para admins. CSV de los consentidos en
+  `/organizacion/csv` (celdas sin fórmulas, BOM). Helpers en `lib/organizacion.ts`.
 - `components/TecladoIOS.tsx` (en el layout): iOS Safari deja la ventana corrida al cerrar el
   teclado (hueco abajo); al perder el foco vuelve `window` a 0. Nada scrollea el documento.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
@@ -328,6 +363,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/sitemap.xml` y `/robots.txt` → `app/sitemap.ts` y `app/robots.ts` (no indexa cuenta,
   admin, auth ni subir)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
+- `/organizacion` (+ `/csv`) → panel de la Universidad para la Feria 21 (emails habilitados en /admin → Universidad, y admins)
 - `/admin/vivo` → pantalla del stand: CI de hoy, ticker anónimo y ranking de la votación, cada 15 s
   (`admin_vivo_en` + `admin_ranking_evento`)
 - `/cuenta/empresa` → Administrar empresa (`?empresa=slug`; sin él, la principal; `?pestana=`): pestañas
@@ -337,7 +373,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/cuenta/empresa/salir` → salir de una empresa (`?empresa=slug`); si es la última integrante,
   qué se borra, exportar el Dataroom y confirmación con ELIMINAR
 - `/explorar` (startups, inversores, aliados y hashtags), `/t/[tag]` y `/t/[tag]/feed`
-  (sección por hashtag; `#feria21` = la feria), `/cofundadores` (cofounder match),
+  (sección por hashtag; `#feria21` = la feria), `/cofundadores` (pestañas Cofundadores y Networking),
   `/red` (Mi red: los perfiles que seguís, en el celular)
 - `/sumate` → landing de adquisición (ISR 60 s), armada en `components/landing/`: Hero
   (con `EcosistemaVivo`: tarjetas de ejemplo unidas por corrientes y el isotipo quieto en
@@ -408,6 +444,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   (`lib/hashtags.ts`) se calculan sin migración. Colores con sentido: `AREAS` en
   `lib/etiquetas.ts` (un color = un área). Modo noche: variables CSS en `globals.css`;
   `.tema-fijo` para lo que va sobre video.
+- networking_feria: `networking_intereses` (de, a, mensaje ≤ 280, estado, evento_id; sin políticas, solo por
+  RPC) y `evento_consentimientos` (evento_id, perfil_id, acepta, version, decidido_at; privada, solo por RPC).
+  Las dos caen en cascada al borrar el perfil. `evento_organizadores` (evento_id, email en minúsculas;
+  privada, solo por RPC de admin): quién de la Universidad entra a /organizacion.
 - cofundador_conexiones (`20261009120000_cofundador_conexiones.sql`, después de borrar_cuenta;
   pruebas en `supabase/pruebas/cofundador.mjs`): `cofundador_intereses` (de, a, mensaje ≤ 280, estado
   pendiente/aceptado/rechazado/retirado; sin políticas: solo por RPC `cofundador_interesar`,

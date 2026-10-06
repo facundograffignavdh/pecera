@@ -1,7 +1,9 @@
 import {
   APORTES,
   CARGOS,
+  COMOS,
   DEDICACIONES,
+  DETALLE_MAX,
   EDUCACION_MAX,
   ESPECIALIDADES,
   ETAPAS,
@@ -10,6 +12,7 @@ import {
   MAX_ESPECIALIDADES,
   MAX_INDUSTRIAS_INTERES,
   MAX_INDUSTRIAS_PROYECTO,
+  MAX_DETALLE,
   MAX_NECESIDADES,
   MAX_SKILLS,
   NECESIDADES,
@@ -171,7 +174,11 @@ export type CampoLista =
   | "cofundador_busca"
   | "skills"
   | "busca"
-  | "ofrece";
+  | "ofrece"
+  | "busca_detalle"
+  | "ofrece_detalle"
+  | "busca_como"
+  | "ofrece_como";
 
 export type CampoPerfil = CampoSimple | CampoLista | "slug" | "consentimiento" | "busca_cofundador";
 
@@ -204,6 +211,10 @@ export const CAMPOS_LISTA: CampoLista[] = [
   "skills",
   "busca",
   "ofrece",
+  "busca_detalle",
+  "ofrece_detalle",
+  "busca_como",
+  "ofrece_como",
 ];
 
 export type EntradaPerfil = Partial<Record<CampoSimple, string>> &
@@ -252,7 +263,18 @@ export type DatosProfesionales = {
   ofrece: string[];
 };
 
-export type DatosEditables = DatosBase & DatosRol & DatosCofundador & DatosProfesionales;
+/** Networking (migración networking_feria): detalle libre y "cómo" de cada lado. */
+export type DatosNetworking = {
+  busca_detalle: string[];
+  ofrece_detalle: string[];
+  busca_como: string[];
+  ofrece_como: string[];
+};
+
+/** Columnas de la migración networking_feria: si faltan, se guarda sin ellas. */
+export const COLUMNAS_NETWORKING: (keyof DatosNetworking)[] = ["busca_detalle", "ofrece_detalle", "busca_como", "ofrece_como"];
+
+export type DatosEditables = DatosBase & DatosRol & DatosCofundador & DatosProfesionales & DatosNetworking;
 
 /**
  * WhatsApp: Argentina se guarda como 10 dígitos (área + número, sin 0 ni 15);
@@ -334,6 +356,7 @@ export function validarPerfil(
   const rolDatos = validarRol(rol, entrada, errores, pedirEtiquetas);
   const cofundador = validarCofundador(entrada, errores);
   const profesionales = validarProfesionales(entrada, errores);
+  const networking = validarNetworking(entrada, errores);
 
   return {
     datos: {
@@ -349,6 +372,7 @@ export function validarPerfil(
       ...rolDatos,
       ...cofundador,
       ...profesionales,
+      ...networking,
     },
     errores,
   };
@@ -364,16 +388,7 @@ function validarProfesionales(entrada: EntradaPerfil, errores: Errores): DatosPr
   if (experiencia.length > EXPERIENCIA_MAX) errores.experiencia = `Hasta ${EXPERIENCIA_MAX} caracteres.`;
   if (educacion.length > EDUCACION_MAX) errores.educacion = `Hasta ${EDUCACION_MAX} caracteres.`;
 
-  // Skills: sin repetidos (sin importar mayúsculas), cortas y hasta 10.
-  const vistas = new Set<string>();
-  const skills: string[] = [];
-  for (const crudo of entrada.skills ?? []) {
-    const skill = crudo.trim().replace(/\s+/g, " ").slice(0, SKILL_MAX);
-    const clave = skill.toLowerCase();
-    if (!skill || vistas.has(clave)) continue;
-    vistas.add(clave);
-    skills.push(skill);
-  }
+  const skills = limpiarEtiquetas(entrada.skills, SKILL_MAX);
   if (skills.length > MAX_SKILLS) errores.skills = `Hasta ${MAX_SKILLS} skills.`;
 
   const busca = limpiarLista(entrada.busca, NECESIDADES);
@@ -388,6 +403,34 @@ function validarProfesionales(entrada: EntradaPerfil, errores: Errores): DatosPr
     skills: skills.slice(0, MAX_SKILLS),
     busca,
     ofrece,
+  };
+}
+
+/** Etiquetas libres (skills, detalle de busca/ofrece): sin repetidos sin importar mayúsculas, recortadas. */
+export function limpiarEtiquetas(lista: string[] | undefined, largo: number): string[] {
+  const vistas = new Set<string>();
+  const salida: string[] = [];
+  for (const crudo of lista ?? []) {
+    const etiqueta = crudo.trim().replace(/\s+/g, " ").slice(0, largo).trim();
+    const clave = etiqueta.toLowerCase();
+    if (!etiqueta || vistas.has(clave)) continue;
+    vistas.add(clave);
+    salida.push(etiqueta);
+  }
+  return salida;
+}
+
+/** Detalle libre y "cómo" de busca/ofrece: todo opcional. */
+function validarNetworking(entrada: EntradaPerfil, errores: Errores): DatosNetworking {
+  const busca_detalle = limpiarEtiquetas(entrada.busca_detalle, DETALLE_MAX);
+  const ofrece_detalle = limpiarEtiquetas(entrada.ofrece_detalle, DETALLE_MAX);
+  if (busca_detalle.length > MAX_DETALLE) errores.busca_detalle = `Hasta ${MAX_DETALLE}.`;
+  if (ofrece_detalle.length > MAX_DETALLE) errores.ofrece_detalle = `Hasta ${MAX_DETALLE}.`;
+  return {
+    busca_detalle: busca_detalle.slice(0, MAX_DETALLE),
+    ofrece_detalle: ofrece_detalle.slice(0, MAX_DETALLE),
+    busca_como: limpiarLista(entrada.busca_como, COMOS),
+    ofrece_como: limpiarLista(entrada.ofrece_como, COMOS),
   };
 }
 
