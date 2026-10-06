@@ -9,7 +9,7 @@ Familjen Grotesk, el vidrio (`.vidrio`), el switch liquid glass, la luz en capas
 sobre el video (`.pez-*`) y las animaciones de `/sumate` (`data-revelar`, títulos
 palabra por palabra, titular rotativo, botones magnéticos con brillo, Build in
 Public con hitos, barra y racha). Textos e información salen de
-https://pecera-virid.vercel.app/sumate.
+https://pecera.lat/sumate.
 
 ## Stack
 
@@ -74,21 +74,35 @@ website/
 ## Secciones
 
 1. **Hero:** chip de Feria 21, "Construí / Fondeá / Invertí en startups", CTAs, para quién
-2. **Lema (fijado):** "Las bocas cerradas no se alimentan.", palabra por palabra con el scroll
+2. **Lema (fijado):** "Las bocas cerradas no se alimentan.", palabra por palabra con el scroll.
+   Debajo, fuera del pin, el carrusel de pitches reales (`src/pitches.js`, de `/api/landing/pitches`)
 3. **01 El problema → 02 La solución:** las herramientas sueltas se ordenan en un perfil
+   **Demo (#demo):** la animación del celular de la app en un iframe (`src/demo.js`)
 4. **Pitch de 90 segundos:** feed, piques, contacto directo
 5. **Transparencia:** switch liquid glass Privado ↔ Transparente (interactivo)
 6. **03 Para vos (fijado):** una tarjeta a la vez: emprendo, invierto, acompaño, cofundadores, Academy
 7. **04 Build in Public:** cuatro pasos y tarjeta de ejemplo con hitos, actividad y racha
-8. **05 El ecosistema:** descubrir, construir, conectar, fondear, aprender
+8. **05 El ecosistema:** mapa interactivo con los cinco grupos (`src/mapa.js`, copia de
+   `components/landing/MapaEcosistema.tsx`; el evento y los conteos de lecciones y templates van fijos)
 9. **Sumate:** tres roles que llevan a `/cuenta?rol=…` de la app
 10. **Pie:** newsletter, links, pie legal obligatorio
 
-Todos los CTA van a la app (`https://pecera-virid.vercel.app`). Si cambia una
-ruta de la app, actualizar los links en `index.html`.
+Todos los CTA van a la app por una sola constante, `VITE_APP_URL` (`vite.config.js`, por
+defecto `https://pecera.lat`): en `index.html` se escribe `%VITE_APP_URL%/ruta` y en JS sale de
+`src/app-url.js`. `VITE_API_BASE` (por defecto, la misma) es de dónde sale el carrusel. Las dos se
+pisan por entorno, por ejemplo en el Preview de Vercel.
 
 ## Comportamiento
 
+- Demo del celular: `public/demo-video/` es una COPIA de `public/demo-video/` de la app. No se edita
+  acá: se cambia la original y `npm run sync-demo`. `npm run build` corre antes `sync-demo --check`
+  y corta si la copia quedó vieja. El iframe se carga a 300 px de entrar y se suelta (about:blank)
+  al alejarse; con reducir movimiento, `img/demo-fijo.jpg` (el cuadro del pique). Pesa: support.js
+  (71 KB) + React/ReactDOM y Babel standalone desde unpkg (~300 KB gzip) + compilar 113 KB de JSX en
+  el navegador.
+- Carrusel: avanza solo (22 px/s) con la sección a la vista, Pausar/Seguir, se pausa con el mouse o
+  el foco adentro y se detiene al tocarlo. La rueda vertical baja la página; lo horizontal del
+  trackpad (`data-lenis-prevent-horizontal`), Shift + rueda, arrastre y flechas lo mueven.
 - Mientras "Para vos" está fijado, el video avanza al 18 % de velocidad
   (`PIN_VIDEO_SPEED` en `main.js`) para no saltearse el paso del macro al escritorio.
 - Celular y táctil: póster fijo en vez del video, sin pines, tarjetas apiladas.

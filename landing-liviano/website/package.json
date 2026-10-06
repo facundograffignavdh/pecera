@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/sync-demo.mjs --check",
     "build": "vite build",
     "preview": "vite preview",
-    "prepare-media": "node scripts/prepare-media.mjs"
+    "prepare-media": "node scripts/prepare-media.mjs",
+    "sync-demo": "node scripts/sync-demo.mjs"
   },
   "dependencies": {
     "gsap": "^3.13.0",

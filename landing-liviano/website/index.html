@@ -50,7 +50,7 @@
         <a href="#build-in-public">Build in Public</a>
       </nav>
       <div class="nav__acciones">
-        <a href="https://pecera-virid.vercel.app/cuenta" class="nav__entrar vidrio">Entrar</a>
+        <a href="%VITE_APP_URL%/cuenta" class="nav__entrar vidrio">Entrar</a>
         <a href="#sumate" class="boton boton--primario boton--sm brillo">Sumate</a>
       </div>
       <span id="progreso" class="progreso" aria-hidden="true"></span>
@@ -60,7 +60,7 @@
       <!-- 1. Hero -->
       <section id="home" class="hero" aria-labelledby="hero-titulo">
         <div class="hero__panel vidrio">
-          <a href="https://pecera-virid.vercel.app/eventos/feria-21" class="chip entrada">
+          <a href="%VITE_APP_URL%/eventos/feria-21" class="chip entrada">
             <span class="chip__estado"><span class="punto-vivo"></span>Se viene</span>
             Feria 21 · 7, 8 y 9 de octubre <span aria-hidden="true" class="chip__flecha">→</span>
           </a>
@@ -80,7 +80,7 @@
           </p>
           <div class="hero__ctas entrada" style="animation-delay: 220ms">
             <a href="#sumate" class="boton boton--primario boton--lg brillo" data-magnetic>Sumate a Pecera</a>
-            <a href="https://pecera-virid.vercel.app/?ref=landing" class="boton boton--secundario boton--lg">Mirá los pitches</a>
+            <a href="%VITE_APP_URL%/?ref=landing" class="boton boton--secundario boton--lg">Mirá los pitches</a>
           </div>
           <p class="hero__fino entrada" style="animation-delay: 300ms">Gratis · Entrás con Google · Tu perfil en 2 minutos</p>
           <ul class="roles-mini entrada" aria-label="Para quién es Pecera" style="animation-delay: 380ms">
@@ -156,6 +156,31 @@
         </div>
       </section>
 
+      <!-- 3b. Demo del celular: la animación de la app (public/demo-video, copiada con npm run sync-demo).
+           El iframe se carga al acercarse y se suelta al alejarse; con reducir movimiento, imagen fija. -->
+      <section id="demo" class="bloque bloque--centro demo" aria-labelledby="demo-titulo">
+        <div class="panel panel--ancho vidrio demo__panel" data-revelar>
+          <p class="etiqueta"><span class="etiqueta__raya"></span>Cómo se ve</p>
+          <h2 id="demo-titulo" class="titulo-seccion" data-palabras>Así se ve Pecera en 30 segundos.</h2>
+          <div class="demo__marco">
+            <iframe
+              class="demo__iframe"
+              data-src="./demo-video/index.html"
+              title="Demo animada de Pecera: el feed de pitches, un pique y el perfil de contacto"
+              tabindex="-1"
+              aria-hidden="true"
+              loading="lazy"
+            ></iframe>
+            <img class="demo__fijo" src="/img/demo-fijo.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async" hidden />
+          </div>
+          <p class="sr-only">
+            La demo muestra el feed de Pecera: pitches verticales de 90 segundos que se deslizan uno atrás del otro. Con
+            un doble toque das un pique, aparece el aviso "¡Te picó!" y desde el perfil de esa persona le escribís
+            directo por WhatsApp.
+          </p>
+        </div>
+      </section>
+
       <!-- 4. El pitch de 90 segundos -->
       <section id="pitch" class="bloque" aria-labelledby="pitch-titulo">
         <div class="panel vidrio" data-revelar>
@@ -170,7 +195,7 @@
             <li>Tocá dos veces para dar un pique: la señal de que algo te interesa.</li>
             <li>Escribile directo: WhatsApp, email o LinkedIn.</li>
           </ul>
-          <a href="https://pecera-virid.vercel.app/?ref=landing" class="enlace">Mirá los pitches <span aria-hidden="true">→</span></a>
+          <a href="%VITE_APP_URL%/?ref=landing" class="enlace">Mirá los pitches <span aria-hidden="true">→</span></a>
         </div>
       </section>
 
@@ -214,31 +239,31 @@
               <p class="tarjeta__rol"><span class="punto punto--arcilla"></span>Emprendo</p>
               <h3>Mostrá lo que construís y llegá preparado a la ronda.</h3>
               <p>La página de tu empresa con equipo, producto y One Pager. Tu ronda y tus métricas, privadas hasta que decidís compartirlas.</p>
-              <a href="https://pecera-virid.vercel.app/cuenta?rol=emprendedor" class="enlace">Entrar como emprendedor <span aria-hidden="true">→</span></a>
+              <a href="%VITE_APP_URL%/cuenta?rol=emprendedor" class="enlace">Entrar como emprendedor <span aria-hidden="true">→</span></a>
             </article>
             <article class="tarjeta vidrio" style="--rol: var(--inversor)">
               <p class="tarjeta__rol"><span class="punto punto--inversor"></span>Invierto</p>
               <h3>Descubrí temprano y mostrá lo que ya hiciste.</h3>
               <p>Tu tesis, tu portfolio con inversiones que confirma cada empresa y un track record calculado, no declarado.</p>
-              <a href="https://pecera-virid.vercel.app/cuenta?rol=inversor" class="enlace">Entrar como inversor <span aria-hidden="true">→</span></a>
+              <a href="%VITE_APP_URL%/cuenta?rol=inversor" class="enlace">Entrar como inversor <span aria-hidden="true">→</span></a>
             </article>
             <article class="tarjeta vidrio" style="--rol: var(--aliado)">
               <p class="tarjeta__rol"><span class="punto punto--aliado"></span>Acompaño</p>
               <h3>Mostrá cómo ayudás y que te encuentren cuando te necesitan.</h3>
               <p>Tus servicios, las startups que acompañaste y tus casos de éxito. Aparecés en Explorar cuando alguien busca lo que ofrecés.</p>
-              <a href="https://pecera-virid.vercel.app/cuenta?rol=aliado" class="enlace">Entrar como aliado <span aria-hidden="true">→</span></a>
+              <a href="%VITE_APP_URL%/cuenta?rol=aliado" class="enlace">Entrar como aliado <span aria-hidden="true">→</span></a>
             </article>
             <article class="tarjeta vidrio" style="--rol: var(--naranja-texto)">
               <p class="tarjeta__rol"><span class="punto punto--pecera"></span>Busco socio/a</p>
               <h3>Encontrá cofundador/a, como en YC.</h3>
               <p>El encaje ordena por complemento y te dice el porqué. WhatsApp y email aparecen solo cuando hay match.</p>
-              <a href="https://pecera-virid.vercel.app/cofundadores" class="enlace">Ver cofundadores <span aria-hidden="true">→</span></a>
+              <a href="%VITE_APP_URL%/cofundadores" class="enlace">Ver cofundadores <span aria-hidden="true">→</span></a>
             </article>
             <article class="tarjeta vidrio" style="--rol: var(--t-ocre)">
               <p class="tarjeta__rol"><span class="punto punto--obra"></span>Aprendo</p>
               <h3>Aprendé, documentá y llegá preparado.</h3>
               <p>13 lecciones de Startup Essentials y 10 templates guiados que se vuelven tu Dataroom.</p>
-              <a href="https://pecera-virid.vercel.app/academy" class="enlace">Ver la Academy <span aria-hidden="true">→</span></a>
+              <a href="%VITE_APP_URL%/academy" class="enlace">Ver la Academy <span aria-hidden="true">→</span></a>
             </article>
           </div>
         </div>
@@ -299,16 +324,54 @@
 
       <!-- 8. El ecosistema, conectado -->
       <section id="ecosistema" class="bloque bloque--der" aria-labelledby="eco-titulo">
-        <div class="panel vidrio" data-revelar>
+        <div class="panel panel--ancho vidrio" data-revelar>
           <p class="etiqueta"><span class="etiqueta__num">05</span><span class="etiqueta__raya"></span>El ecosistema</p>
           <h2 id="eco-titulo" class="titulo-seccion" data-palabras>Todo lo que pasa en la Pecera, conectado.</h2>
-          <dl class="verbos">
-            <div><dt>Descubrir</dt><dd>Feed de pitches y Explorar, con filtros por rol, industria, etapa y portfolio real.</dd></div>
-            <div><dt>Construir</dt><dd>Hitos, avances cortos y una racha que se calcula sola.</dd></div>
-            <div><dt>Conectar</dt><dd>Piques, contacto directo y cofundadores.</dd></div>
-            <div><dt>Fondear</dt><dd>Tu ronda, instrumento y valuación, paso a paso y con cada concepto explicado.</dd></div>
-            <div><dt>Aprender</dt><dd>Academy y un Dataroom que mostrás cuando vos querés.</dd></div>
-          </dl>
+          <p class="texto">Cinco cosas que hacés acá. Elegí una para ver con qué se hace.</p>
+          <!-- Mapa (components/landing/MapaEcosistema.tsx de la app). Sin JS se ve Descubrir;
+               main.js (setupMapa) arma el panel de cada grupo desde MAPA_GRUPOS. -->
+          <div class="mapa" id="mapa">
+            <div class="mapa__lienzo">
+              <svg class="mapa__svg" viewBox="0 0 100 100" aria-hidden="true">
+                <circle cx="50" cy="50" r="36" fill="none" stroke="rgb(28 27 22 / 0.12)" stroke-width="0.35" stroke-dasharray="1 1.4" />
+                <path class="rama" d="M50 50 L50 14" vector-effect="non-scaling-stroke" data-activa />
+                <path class="rama" d="M50 50 L84 39" vector-effect="non-scaling-stroke" />
+                <path class="rama" d="M50 50 L71 79" vector-effect="non-scaling-stroke" />
+                <path class="rama" d="M50 50 L29 79" vector-effect="non-scaling-stroke" />
+                <path class="rama" d="M50 50 L16 39" vector-effect="non-scaling-stroke" />
+                <path class="pulso" d="M50 50 L50 14" pathLength="1" style="--d: 600ms" />
+                <path class="pulso" d="M50 50 L84 39" pathLength="1" style="--d: 1500ms" />
+                <path class="pulso" d="M50 50 L71 79" pathLength="1" style="--d: 2400ms" />
+                <path class="pulso" d="M50 50 L29 79" pathLength="1" style="--d: 3300ms" />
+                <path class="pulso" d="M50 50 L16 39" pathLength="1" style="--d: 4200ms" />
+              </svg>
+              <div class="mapa__centro"><img src="/brand/isotipo-naranja.png" alt="" width="600" height="388" /></div>
+              <div role="tablist" aria-label="Grupos de módulos de Pecera" aria-orientation="horizontal">
+                <button type="button" role="tab" id="mapa-tab-0" class="mapa__tab" style="left: 50%; top: 14%" aria-selected="true" aria-controls="mapa-panel" tabindex="0">Descubrir</button>
+                <button type="button" role="tab" id="mapa-tab-1" class="mapa__tab" style="left: 84%; top: 39%" aria-selected="false" aria-controls="mapa-panel" tabindex="-1">Construir</button>
+                <button type="button" role="tab" id="mapa-tab-2" class="mapa__tab" style="left: 71%; top: 79%" aria-selected="false" aria-controls="mapa-panel" tabindex="-1">Conectar</button>
+                <button type="button" role="tab" id="mapa-tab-3" class="mapa__tab" style="left: 29%; top: 79%" aria-selected="false" aria-controls="mapa-panel" tabindex="-1">Fondear</button>
+                <button type="button" role="tab" id="mapa-tab-4" class="mapa__tab" style="left: 16%; top: 39%" aria-selected="false" aria-controls="mapa-panel" tabindex="-1">Aprender</button>
+              </div>
+            </div>
+            <div id="mapa-panel" class="mapa__panel" role="tabpanel" aria-labelledby="mapa-tab-0">
+              <h3 class="mapa__nombre">Descubrir</h3>
+              <p class="mapa__bajada">Encontrá proyectos, inversores y aliados sin depender de a quién conocés.</p>
+              <ul class="mapa__modulos">
+                <li>
+                  <div><p class="mapa__modulo">Feed de pitches</p><p class="mapa__texto">Pitches verticales de 90 segundos, uno atrás del otro.</p></div>
+                  <a class="mapa__abrir" href="%VITE_APP_URL%/">Abrir <span aria-hidden="true">→</span><span class="sr-only"> Feed de pitches</span></a>
+                </li>
+                <li>
+                  <div><p class="mapa__modulo">Explorar</p><p class="mapa__texto">Directorio con búsqueda y filtros por rol, industria, etapa y portfolio.</p></div>
+                  <a class="mapa__abrir" href="%VITE_APP_URL%/explorar">Abrir <span aria-hidden="true">→</span><span class="sr-only"> Explorar</span></a>
+                </li>
+                <li>
+                  <div><p class="mapa__modulo">Perfiles y empresas</p><p class="mapa__texto">Cada persona y cada empresa con su página y su link para compartir.</p></div>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -319,17 +382,17 @@
           <h2 id="sumate-titulo" class="cierre__titulo" data-palabras>Empezá a construir a la vista.</h2>
           <p class="texto">Gratis y sin comisiones: Pecera no toma equity ni cobra por inversión. Tu perfil está listo en 2 minutos.</p>
           <div class="roles">
-            <a href="https://pecera-virid.vercel.app/cuenta?rol=emprendedor" class="rol" style="--rol: var(--arcilla)">
+            <a href="%VITE_APP_URL%/cuenta?rol=emprendedor" class="rol" style="--rol: var(--arcilla)">
               <span class="punto punto--arcilla"></span><b>Estoy construyendo</b><small>Tengo una startup o un proyecto</small>
             </a>
-            <a href="https://pecera-virid.vercel.app/cuenta?rol=inversor" class="rol" style="--rol: var(--inversor)">
+            <a href="%VITE_APP_URL%/cuenta?rol=inversor" class="rol" style="--rol: var(--inversor)">
               <span class="punto punto--inversor"></span><b>Invierto</b><small>Busco startups para invertir</small>
             </a>
-            <a href="https://pecera-virid.vercel.app/cuenta?rol=aliado" class="rol" style="--rol: var(--aliado)">
+            <a href="%VITE_APP_URL%/cuenta?rol=aliado" class="rol" style="--rol: var(--aliado)">
               <span class="punto punto--aliado"></span><b>Acompaño startups</b><small>Mentoría, coaching, aceleración</small>
             </a>
           </div>
-          <a href="https://pecera-virid.vercel.app/?ref=landing" class="enlace">Solo quiero mirar <span aria-hidden="true">→</span></a>
+          <a href="%VITE_APP_URL%/?ref=landing" class="enlace">Solo quiero mirar <span aria-hidden="true">→</span></a>
           <p class="fino">Entrás con tu cuenta de Google. Sin contraseñas nuevas.</p>
         </div>
       </section>
@@ -347,22 +410,22 @@
       <nav class="pie__cols" aria-label="Pie de página">
         <div>
           <p>Pecera</p>
-          <a href="https://pecera-virid.vercel.app/?ref=landing">Feed de pitches</a>
-          <a href="https://pecera-virid.vercel.app/explorar">Explorar</a>
-          <a href="https://pecera-virid.vercel.app/eventos/feria-21">Feria 21</a>
-          <a href="https://pecera-virid.vercel.app/academy">Academy</a>
+          <a href="%VITE_APP_URL%/?ref=landing">Feed de pitches</a>
+          <a href="%VITE_APP_URL%/explorar">Explorar</a>
+          <a href="%VITE_APP_URL%/eventos/feria-21">Feria 21</a>
+          <a href="%VITE_APP_URL%/academy">Academy</a>
         </div>
         <div>
           <p>Explorar</p>
-          <a href="https://pecera-virid.vercel.app/explorar?ver=startups">Startups</a>
-          <a href="https://pecera-virid.vercel.app/explorar?ver=inversores">Inversores</a>
-          <a href="https://pecera-virid.vercel.app/explorar?ver=aliados">Aliados</a>
-          <a href="https://pecera-virid.vercel.app/academy/docs">Glosario y documentos</a>
+          <a href="%VITE_APP_URL%/explorar?ver=startups">Startups</a>
+          <a href="%VITE_APP_URL%/explorar?ver=inversores">Inversores</a>
+          <a href="%VITE_APP_URL%/explorar?ver=aliados">Aliados</a>
+          <a href="%VITE_APP_URL%/academy/docs">Glosario y documentos</a>
         </div>
         <div>
           <p>Tu cuenta</p>
-          <a href="https://pecera-virid.vercel.app/cuenta">Entrar</a>
-          <a href="https://pecera-virid.vercel.app/subir">Subir mi pitch</a>
+          <a href="%VITE_APP_URL%/cuenta">Entrar</a>
+          <a href="%VITE_APP_URL%/subir">Subir mi pitch</a>
         </div>
       </nav>
       <p class="pie__legal">
@@ -371,8 +434,8 @@
       </p>
       <p class="pie__firma">
         <img src="/brand/wordmark-tinta.png" alt="pecera" width="74" height="16" />
-        Nacida en Córdoba, para toda Latinoamérica · <a href="https://pecera-virid.vercel.app/privacidad">Privacidad</a> ·
-        <a href="https://pecera-virid.vercel.app/terminos">Condiciones</a>
+        Nacida en Córdoba, para toda Latinoamérica · <a href="%VITE_APP_URL%/privacidad">Privacidad</a> ·
+        <a href="%VITE_APP_URL%/terminos">Condiciones</a>
       </p>
     </footer>
 
