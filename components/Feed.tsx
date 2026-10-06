@@ -7,6 +7,7 @@ import PopupPique from "@/components/PopupPique";
 import Reel from "@/components/Reel";
 import { usePiques } from "@/lib/piques";
 import { useSubtitulosActivos } from "@/lib/subtitulos";
+import { quitarVisitaPique, registrarVisita } from "@/lib/visitas";
 import type { ItemFeed } from "@/types/pecera";
 
 /** Lo que tarda en salir el pop-up tras un doble toque: deja ver los corazones. */
@@ -91,11 +92,17 @@ export default function Feed({ items }: { items: ItemFeed[] }) {
           piqueado={piques.mios.has(item.pitch.id)}
           onAlternarPique={() => {
             const dado = piques.alternar(item.pitch.id);
-            if (dado) setPopup(item);
+            if (dado) {
+              registrarVisita("pique", item.pitch.id);
+              setPopup(item);
+            } else {
+              quitarVisitaPique(item.pitch.id);
+            }
             return dado;
           }}
           onDarPique={() => {
             if (!piques.dar(item.pitch.id)) return;
+            registrarVisita("pique", item.pitch.id);
             if (esperaPopup.current !== null) clearTimeout(esperaPopup.current);
             esperaPopup.current = window.setTimeout(() => {
               esperaPopup.current = null;

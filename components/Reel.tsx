@@ -7,6 +7,7 @@ import { ColumnaReel, DEGRADADO_REEL, DatosReel } from "@/components/ReelPartes"
 import Subtitulos from "@/components/Subtitulos";
 import { registrarActividad } from "@/lib/actividad";
 import { registrarVista } from "@/lib/medicion";
+import { registrarVisita } from "@/lib/visitas";
 import { marcarPistaVista, usePistaPendiente } from "@/lib/pista-pique";
 import type { ItemFeed } from "@/types/pecera";
 
@@ -196,6 +197,7 @@ export default function Reel({
     if (!vistaContada.current && video.currentTime >= SEGUNDOS_VISTA) {
       vistaContada.current = true;
       registrarVista(pitch.id);
+      registrarVisita("pitch", pitch.id);
     }
     if (!completoContado.current && video.duration > 0 && video.currentTime / video.duration >= FRACCION_COMPLETO) {
       completoContado.current = true;
