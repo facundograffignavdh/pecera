@@ -60,6 +60,22 @@ const MENSAJES: Record<string, string> = {
   // quien_vio
   "demasiadas acciones": "Fueron muchos cambios seguidos. Esperá un minuto y probá de nuevo.",
   "pitches libres: entre 0 y 20": "Los pitches libres van de 0 a 20.",
+  // alta_rapida
+  "falta el consentimiento": "Falta el consentimiento.",
+  "dato inválido: nombre": "Revisá el nombre: de 1 a 80 caracteres, en una línea.",
+  "dato inválido: descripcion": "Revisá la descripción: de 1 a 150 caracteres, en una línea.",
+  "dato inválido: empresa": "Revisá el nombre de la empresa: de 1 a 80 caracteres.",
+  "dato inválido: empresa_descripcion": "Revisá la línea de la empresa: hasta 280 caracteres, en una línea.",
+  "dato inválido: empresa_tipo": "Elegí un tipo de empresa de la lista.",
+  "dato inválido: rol": "Elegí un rol de la lista.",
+  "dato inválido: tipo": "Elegí un tipo de la lista.",
+  "dato inválido: cargo": "Elegí un cargo de la lista.",
+  "ya no se puede deshacer": "Ya no se puede deshacer (pasaron 10 minutos o ya tiene cuenta). Usá Editar.",
+  "solo perfiles del equipo sin cuenta": "Solo se borran desde acá perfiles creados por el equipo y sin cuenta.",
+  "el perfil tiene cuenta": "Ese perfil ya tiene cuenta: lo edita su dueña.",
+  "perfil inexistente": "Ese perfil ya no existe. Recargá la página.",
+  "ya es parte de esa empresa": "Ya es parte de esa empresa.",
+  "ese perfil ya tiene dueña": "Ese perfil ya tiene una cuenta vinculada.",
 };
 
 /** Error de Supabase → Resultado con un mensaje que se entiende. Nunca tira. */
