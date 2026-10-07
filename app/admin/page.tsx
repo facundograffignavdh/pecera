@@ -138,9 +138,14 @@ async function ConSesion({
   return (
     <>
       <p className="mt-1 break-all text-sm text-tinta/60">{email}</p>
-      <Link href="/admin/vivo" className="mt-2 inline-block text-sm font-semibold underline underline-offset-4">
-        Pantalla del stand (en vivo) →
-      </Link>
+      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+        <Link href="/admin/alta" className="inline-block text-sm font-semibold underline underline-offset-4">
+          + Alta rápida
+        </Link>
+        <Link href="/admin/vivo" className="inline-block text-sm font-semibold underline underline-offset-4">
+          Pantalla del stand (en vivo) →
+        </Link>
+      </div>
       <nav aria-label="Secciones del panel" className="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5">
         {VISTAS.map((x) => (
           <Link
@@ -475,10 +480,15 @@ type PerfilAdmin = {
   piques: number;
   participa: boolean;
   created_at: string;
+  /** Solo con alta_rapida (admin_perfiles_v2). */
+  creado_equipo?: boolean;
+  con_reclamo?: boolean;
 };
 
 async function Perfiles({ supabase, filtro }: { supabase: Supabase; filtro: string }) {
-  const { data, error } = await supabase.rpc("admin_perfiles");
+  // Con alta_rapida, también si lo creó el equipo y si espera un reclamo; sin ella, lo de siempre.
+  let { data, error } = await supabase.rpc("admin_perfiles_v2");
+  if (faltaMigracion(error)) ({ data, error } = await supabase.rpc("admin_perfiles"));
   fallo("admin_perfiles", error);
   const todos = (data ?? []) as PerfilAdmin[];
   const lista = todos.filter((p) =>
@@ -488,7 +498,9 @@ async function Perfiles({ supabase, filtro }: { supabase: Supabase; filtro: stri
         ? p.publicado && !p.oculto
         : filtro === "ocultos"
           ? p.oculto
-          : true
+          : filtro === "sin-empresa"
+            ? !p.empresa
+            : true
   );
 
   return (
@@ -501,8 +513,12 @@ async function Perfiles({ supabase, filtro }: { supabase: Supabase; filtro: stri
           ["pendientes", `Pendientes (${todos.filter((p) => !p.publicado).length})`],
           ["publicados", "Publicados"],
           ["ocultos", "Ocultos por la persona"],
+          ["sin-empresa", `Sin empresa (${todos.filter((p) => !p.empresa).length})`],
         ]}
       />
+      <Link href="/admin/alta" className="mb-4 inline-flex min-h-10 items-center rounded-full bg-naranja px-4 text-sm font-semibold text-tinta hover:bg-pecera">
+        + Alta rápida
+      </Link>
       <ul className="flex flex-col gap-2">
         {lista.map((p) => (
           <li key={p.id} className={`${CAJA} flex flex-wrap items-center justify-between gap-3`}>
@@ -513,6 +529,8 @@ async function Perfiles({ supabase, filtro }: { supabase: Supabase; filtro: stri
                 {!p.publicado && <span className={`${PILDORA} bg-t-ocre-suave text-t-ocre`}>Pendiente</span>}
                 {p.oculto && <span className={`${PILDORA} bg-tinta/10 text-tinta`}>Oculto</span>}
                 {p.participa && <span className={`${PILDORA} bg-t-arcilla-suave text-t-arcilla`}>Feria</span>}
+                {p.creado_equipo && <span className={`${PILDORA} bg-tinta/10 text-tinta`}>Equipo</span>}
+                {p.con_reclamo && <span className={`${PILDORA} bg-tinta/10 text-tinta`}>Reclamo pendiente</span>}
               </p>
               <p className="mt-0.5 text-xs text-tinta/60">
                 /{p.slug} · {p.pitches} pitches · {p.piques} piques
@@ -526,6 +544,12 @@ async function Perfiles({ supabase, filtro }: { supabase: Supabase; filtro: stri
                   Ver
                 </Link>
               )}
+              <Link
+                href={`/admin/perfil/${p.id}`}
+                className="inline-flex min-h-10 items-center rounded-full border border-tinta/30 px-3.5 text-sm font-medium text-tinta hover:border-tinta"
+              >
+                Editar
+              </Link>
               <BotonAccion
                 accion={publicarPerfil.bind(null, p.id, !p.publicado)}
                 estilo={p.publicado ? "secundario" : "primario"}

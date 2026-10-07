@@ -257,3 +257,49 @@ Migración aditiva `supabase/migrations/20261016120000_panel_organizacion.sql` (
 2. En `/admin` → Universidad, habilitar los emails de Google de las autoridades.
 3. Pasarles el link `https://<dominio>/organizacion`.
 
+
+---
+
+## 9. Alta rápida en el stand (`/admin/alta`)
+
+Rama `alta-rapida`, migración `20261019120000_alta_rapida.sql` (después de score_switch; pruebas
+`supabase/pruebas/alta_rapida.mjs`; vuelta atrás `supabase/rollback-alta-rapida.sql`, que NO es
+migración y es con pérdida del registro y los emails de reclamo).
+
+### En el stand (menos de 30 segundos)
+1. Desde el celular, `/admin` → **+ Alta rápida** (solo cuentas de `admins`).
+2. Nombre y apellido, qué hace en una línea, la empresa (opcional) y, si la da, su email de Google
+   "para que reclame su perfil". Enter pasa al siguiente campo.
+3. Si aparece **"Ya existe: …, ¿es la misma persona?"**: «Abrir» lleva a ese perfil; si es otra,
+   «No, es otra persona» (o «Crear igual»). Si la empresa ya existe, **«Sumar a …»** la suma sin
+   duplicarla y sin cambiar quién la administra ni quién la representa en la feria.
+4. **Contale** lo que dice el texto de la casilla y tildala solo si dice que sí. Sin eso no se crea.
+5. Opcional: el **Stand** (día y número) arma el link de la tarjeta NFC con el esquema de la planilla
+   (`s<100 × (día − 6) + stand>`: jueves 8, stand 16 → `s216`). Solo se muestra, no se guarda.
+6. Listo: link del perfil (copiar), link de la tarjeta, **Crear otro** (deja fijas las opciones) y
+   las últimas 5 altas con **Editar** y **Deshacer** (solo durante 10 minutos).
+
+"Más opciones" (cerrado): rol (emprendedor), tipo de la empresa (startup) y publicado (tildado).
+El perfil nace como cuenta personal (`tipo = persona`), sin dueña.
+
+### Después: la persona reclama su perfil
+- Si dejó su email de Google: cuando entra a Pecera con esa cuenta y abre **Mi perfil**, ve
+  "Encontramos tu perfil de la feria: ¿es tuyo?". Al confirmar (con la casilla de consentimiento)
+  queda como dueña, y las empresas sin administradora pasan a ella. En Gmail no importan los
+  puntos ni lo que va después de "+".
+- Si entró con otro email: `/admin/perfil/<id>` → **Vincular con cuenta** (la cuenta tiene que haber
+  entrado una vez y no tener perfil).
+- Si ya tenía su propio perfil, o dijo "No es mío": aparece en `/admin` → Perfiles → **Para revisar**.
+  Nada se fusiona solo.
+
+### Editar desde `/admin`
+`/admin` → Perfiles → **Editar** en cada fila. Sin cuenta: todo, el email de reclamo, vincular y
+**Eliminar** (si lo creó el equipo; derecho de supresión). Con cuenta: solo nombre y descripción.
+Empresa: editar nombre y línea, **Sumar otra** (crear o sumarse a una existente, hasta 5). Filtro
+**Sin empresa** para completar las que faltan. Todo queda en `equipo_acciones` (quién, cuándo y qué
+columnas, nunca los valores).
+
+### Puesta en marcha
+1. Correr `20261019120000_alta_rapida.sql` en el SQL editor (archivo completo).
+2. Prueba manual: un solo perfil, **sin publicar**, renombrado a `test-…` por SQL, y borrarlo
+   después con «Eliminar perfil».
