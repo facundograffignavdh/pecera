@@ -7,7 +7,7 @@ import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { GaleriaEdicion, PortadaFeria21, TituloFeria } from "@/components/eventos/MarcaFeria21";
 import Votacion from "@/components/eventos/Votacion";
-import { getEstadoEvento, getLogosParticipantes } from "@/lib/datos";
+import { getDiasFeria, getEstadoEvento, getLogosParticipantes } from "@/lib/datos";
 import { EVENTO_ACTUAL, EVENTOS, getEventoDefinido } from "@/lib/eventos";
 
 export const revalidate = 60;
@@ -48,7 +48,10 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
   const estado = await getEstadoEvento(evento.slug);
   // Compite cualquier perfil anotado: emprendedores, inversores y aliados.
   const participantes = estado.participantes;
-  const logos = await getLogosParticipantes(participantes.map((p) => p.empresa_slug));
+  const [logos, dias] = await Promise.all([
+    getLogosParticipantes(participantes.map((p) => p.empresa_slug)),
+    getDiasFeria(evento.slug),
+  ]);
   // La Feria 21 lleva la identidad de Semana 21 (verde, mayúsculas, trazo amarillo).
   const feria = evento.slug === EVENTO_ACTUAL.slug;
 
@@ -115,6 +118,7 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
               evento={evento.slug}
               participantes={participantes}
               logos={logos}
+              dias={dias}
               abierta={estado.votacionAbierta}
               resultadosVisibles={estado.resultadosVisibles}
               resultados={estado.resultados}

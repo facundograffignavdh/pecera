@@ -875,13 +875,23 @@ async function Universidad({ supabase }: { supabase: Supabase }) {
 }
 
 async function Evento({ supabase }: { supabase: Supabase }) {
-  const [estado, participantes, resultados, perfiles, feria] = await Promise.all([
+  const [estado, participantes, resultados, perfiles, feria, sinCuentaRes] = await Promise.all([
     supabase.rpc("admin_evento", { p_evento: EVENTO_ACTUAL.slug }),
     supabase.rpc("participantes_evento", { p_evento: EVENTO_ACTUAL.slug }),
     supabase.rpc("resultados_evento", { p_evento: EVENTO_ACTUAL.slug }),
     supabase.rpc("admin_perfiles"),
     supabase.rpc("admin_feria", { p_evento: EVENTO_ACTUAL.slug }),
+    supabase.rpc("admin_votos_sin_cuenta", { p_evento: EVENTO_ACTUAL.slug }),
   ]);
+  // Sin la migración feria_stands_votos no hay votos sin cuenta.
+  if (sinCuentaRes.error && !faltaMigracion(sinCuentaRes.error)) fallo("admin_votos_sin_cuenta", sinCuentaRes.error);
+  const sinCuenta = new Map(
+    ((sinCuentaRes.error ? [] : sinCuentaRes.data ?? []) as Array<{ perfil_id: string; votos: number }>).map((r) => [
+      r.perfil_id,
+      Number(r.votos),
+    ])
+  );
+  const totalSinCuenta = [...sinCuenta.values()].reduce((t, n) => t + n, 0);
   fallo("admin_evento", estado.error);
   fallo("participantes_evento", participantes.error);
   fallo("resultados_evento", resultados.error);
@@ -919,6 +929,9 @@ async function Evento({ supabase }: { supabase: Supabase }) {
         <div className={CAJA}>
           <p className="text-xs text-tinta/60">Votos</p>
           <p className="font-display text-3xl font-semibold tabular-nums text-tinta">{e.votos}</p>
+          {totalSinCuenta > 0 && (
+            <p className="text-xs text-tinta/70">{totalSinCuenta} sin cuenta (un voto por celular)</p>
+          )}
         </div>
       </div>
 
@@ -971,8 +984,13 @@ async function Evento({ supabase }: { supabase: Supabase }) {
                 <span className={`ml-2 ${PILDORA} text-marfil ${ROLES[p.rol].bg}`}>{ROLES[p.rol].label}</span>
               </span>
               <span className="flex items-center gap-3">
-                <span className="text-sm font-semibold tabular-nums text-tinta">
+                <span className="text-right text-sm font-semibold tabular-nums text-tinta">
                   {`${votos.get(p.perfil_id) ?? 0} votos`}
+                  {(sinCuenta.get(p.perfil_id) ?? 0) > 0 && (
+                    <span className="block text-xs font-normal text-tinta/70">
+                      {sinCuenta.get(p.perfil_id)} sin cuenta
+                    </span>
+                  )}
                 </span>
                 <BotonAccion
                   accion={participante.bind(null, p.perfil_id, false)}

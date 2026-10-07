@@ -811,6 +811,21 @@ export async function getLogosParticipantes(empresaSlugs: Array<string | null>):
   return porSlug;
 }
 
+/**
+ * Días de cada participante según la planilla de stands (`feria_dias`: solo ids y
+ * fechas "YYYY-MM-DD"). Sin la migración o si falla, vacío: el filtro muestra a todos.
+ */
+export async function getDiasFeria(evento: string): Promise<Record<string, string[]>> {
+  const { data, error } = await supabase.rpc("feria_dias", { p_evento: evento });
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getDiasFeria): ${error.message}`);
+    return {};
+  }
+  return Object.fromEntries(
+    ((data ?? []) as Array<{ perfil_id: string; dias: string[] }>).map((f) => [f.perfil_id, f.dias])
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Landing
 // ---------------------------------------------------------------------------

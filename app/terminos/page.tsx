@@ -32,8 +32,8 @@ export default function TerminosPage() {
   return (
     <PaginaLegal
       titulo="Condiciones de uso"
-      actualizado="29 de septiembre de 2026"
-      actualizadoIso="2026-09-29"
+      actualizado="7 de octubre de 2026"
+      actualizadoIso="2026-10-07"
       intro={
         <p>
           Estas condiciones explican cómo funciona Pecera y qué acordamos cuando la usás. Al crear
@@ -71,8 +71,11 @@ export default function TerminosPage() {
         </p>
         <p>
           La votación de un evento es del público y sirve para reconocer proyectos: no es una
-          evaluación, una recomendación ni una garantía. Es un voto por cuenta de Google; si
-          detectamos votos armados o cuentas falsas, podemos anularlos.
+          evaluación, una recomendación ni una garantía. Es un voto por celular (o por cuenta de
+          Google, si entrás); si detectamos votos armados o cuentas falsas, podemos anularlos. En la
+          Feria 21, el más votado recibe la insignia «Ganador Feria 21» y el Verificado de Pecera:
+          reconocen el resultado de la votación y que revisamos que el perfil sea real; no son una
+          certificación de la empresa ni una recomendación para invertir.
         </p>
       </Seccion>
 

@@ -35,8 +35,8 @@ export default function PrivacidadPage() {
   return (
     <PaginaLegal
       titulo="Política de privacidad"
-      actualizado="6 de octubre de 2026"
-      actualizadoIso="2026-10-06"
+      actualizado="7 de octubre de 2026"
+      actualizadoIso="2026-10-07"
       intro={
         <p>
           Pecera muestra pitches en video y perfiles de emprendedores, empresas, inversores y
@@ -168,6 +168,16 @@ export default function PrivacidadPage() {
             perfil o desde el aviso del pique. Guardamos el identificador, el pitch o el perfil,
             el canal y la fecha, más un contador para frenar abusos. No está atado a tu nombre;
             si entrás con tu cuenta, se une a ella (ver más abajo).
+          </li>
+          <li id="votacion">
+            <strong className="font-semibold text-tinta">Tu voto en la Feria 21.</strong> Podés votar
+            sin cuenta: guardamos el identificador al azar de tu navegador, a quién votaste y la
+            fecha, para que haya un voto por celular y lo puedas cambiar. Si entrás con tu cuenta y
+            votás, vale el voto de la cuenta y el del celular se borra. Nunca mostramos quién votó a
+            quién: solo los totales, cuando el equipo publica los resultados. Para ordenar la
+            votación por día usamos la planilla de stands de la feria (nombre, emprendimiento y día),
+            que guardamos aparte y solo ve el equipo: si tenés cuenta, sirve para mostrarte en tu
+            día y anotarte en la votación.
           </li>
           <li id="medicion">
             <strong className="font-semibold text-tinta">La actividad y de dónde llegaste.</strong>{" "}

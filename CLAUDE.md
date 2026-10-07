@@ -430,6 +430,29 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   Sin resultados, orden al azar por visitante (`lib/orden-votacion.ts`, variable de módulo: votar no
   reordena; el servidor dibuja esqueletos). "Entrar para votar" de la tarjeta envía el form
   `entrar-votar` de la franja; en un navegador interno (`useNavegadorInterno`) lleva al aviso.
+  Filtro por día (chips sacados del programa; arranca en el día de hoy de Buenos Aires) y
+  búsqueda (nombre, empresa, descripción); quien no está en la planilla aparece todos los días.
+- Stands y voto sin cuenta (migración `20261019120000_feria_stands_votos.sql`, después de
+  score_switch; pruebas `supabase/pruebas/feria_stands_votos.mjs`; vuelta atrás
+  `supabase/rollback-feria-stands-votos.sql`, que NO es migración y es con pérdida).
+  - `feria_stands` (privada): la planilla de stands. Se carga con un SQL que NO va al repo (nombres
+    de personas sin cuenta). `feria_anotar_stands()` vincula cada stand una sola vez (slug → nombre →
+    perfil con el nombre del emprendimiento → empresa) y lo anota en el evento; corre sola por triggers
+    de perfiles, empresas y empresa_miembros (nunca traba: si falla, nada). Si /admin saca a alguien, no
+    vuelve solo. `feria_dias` (anon) da solo perfil_id → días (`getDiasFeria`).
+  - `votos_dispositivo`: sin sesión se vota con el uuid de `lib/dispositivo.ts` (`lib/voto-feria.ts`,
+    RPC directo desde el navegador) y **vale igual** que el voto con cuenta (decisión del equipo; se
+    infla fácil: /admin muestra cuántos son sin cuenta por participante, `admin_votos_sin_cuenta`).
+    Frenos: límite de frecuencia y, si el dispositivo está vinculado a una cuenta, ni a sí mismo, ni a
+    su empresa, ni si esa cuenta ya votó; si la cuenta vota, el voto del dispositivo vinculado se borra
+    (trigger `votos_sin_doble`). `votar` no cambió; los conteos (`resultados_evento`,
+    `total_votos_evento`, `admin_evento`, `admin_ranking_evento`, `evento_mover_votos`) suman las dos
+    tablas. Sin la migración, se vuelve a pedir sesión.
+  - `components/AvisoFeria.tsx` (layout): con la votación abierta (consulta cacheada 5 min en
+    sessionStorage), pop-up una vez por visita y el sello FERIA 21 en el borde izquierdo hasta que el
+    navegador vote (`pecera:voto-feria`). No va en la página de la votación, /admin, /organizacion,
+    /auth, legales, `/cuenta/eliminar` ni imprimibles. Premio: insignia «Ganador Feria 21» y Verificado
+    de Pecera (los Términos aclaran que no son certificación ni recomendación).
 - `/docs` → redirige a `/academy/docs`; `/docs/conceptos` y `/docs/legales` siguen estáticas
 - `/academy`, `/academy/docs`, `/academy/essentials/[slug]` → Academy (estáticas)
 - `/explorar` → directorio con búsqueda (`?q=`) y vistas (`?ver=startups|inversores|aliados`);

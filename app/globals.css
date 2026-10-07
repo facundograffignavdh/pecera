@@ -1357,3 +1357,20 @@ html .tema-fijo {
   --color-celeste-suave: #dde8f1;
   --color-obra-suave: #f8ebcb;
 }
+
+/* Sello FERIA 21 del borde (AvisoFeria): un vaivén corto cada 5 s para llamar la atención.
+   Solo transform; con "reducir movimiento", quieto. */
+@keyframes burbuja-feria {
+  0%, 84%, 100% { transform: translateX(-0.375rem) rotate(0deg); }
+  88% { transform: translateX(0) rotate(-4deg); }
+  92% { transform: translateX(0) rotate(3deg); }
+  96% { transform: translateX(-0.125rem) rotate(-2deg); }
+}
+.burbuja-feria {
+  animation: burbuja-feria 5s var(--ease-pecera) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .burbuja-feria {
+    animation: none;
+  }
+}
