@@ -784,6 +784,48 @@ export async function getEstadoEvento(evento: string): Promise<EstadoEvento> {
   };
 }
 
+/**
+ * Logo de cada empresa de los participantes, por slug. Consulta aparte (no cambia
+ * `participantes_evento`): gana `empresa_logos` y `empresas.logo_url` queda de respaldo.
+ * Nunca lanza: si falla, se ven las iniciales.
+ */
+export async function getLogosParticipantes(empresaSlugs: Array<string | null>): Promise<Record<string, string>> {
+  const slugs = [...new Set(empresaSlugs.filter((s): s is string => !!s))];
+  if (slugs.length === 0) return {};
+  const { data, error } = await supabase
+    .from("empresas")
+    .select("id, slug, logo_url")
+    .in("slug", slugs)
+    .overrideTypes<Array<{ id: string; slug: string; logo_url: string | null }>, { merge: false }>();
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getLogosParticipantes): ${error.message}`);
+    return {};
+  }
+  const filas = data ?? [];
+  const logos = await getLogos(filas.map((e) => e.id));
+  const porSlug: Record<string, string> = {};
+  for (const e of filas) {
+    const url = logos.get(e.id) ?? (e.logo_url && urlMedia(e.logo_url));
+    if (url) porSlug[e.slug] = url;
+  }
+  return porSlug;
+}
+
+/**
+ * Días de cada participante según la planilla de stands (`feria_dias`: solo ids y
+ * fechas "YYYY-MM-DD"). Sin la migración o si falla, vacío: el filtro muestra a todos.
+ */
+export async function getDiasFeria(evento: string): Promise<Record<string, string[]>> {
+  const { data, error } = await supabase.rpc("feria_dias", { p_evento: evento });
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getDiasFeria): ${error.message}`);
+    return {};
+  }
+  return Object.fromEntries(
+    ((data ?? []) as Array<{ perfil_id: string; dias: string[] }>).map((f) => [f.perfil_id, f.dias])
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Landing
 // ---------------------------------------------------------------------------

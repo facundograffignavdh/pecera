@@ -9,7 +9,7 @@ import type { ItemFeed } from "@/types/pecera";
 let orden: string[] | null = null;
 
 /** Entero al azar en [0, n), sin el sesgo del módulo. */
-function alAzar(n: number): number {
+export function alAzar(n: number): number {
   const limite = Math.floor(0x1_0000_0000 / n) * n;
   const buf = new Uint32Array(1);
   do crypto.getRandomValues(buf);
@@ -18,7 +18,7 @@ function alAzar(n: number): number {
 }
 
 /** Fisher-Yates sobre una copia. */
-function barajar<T>(lista: T[]): T[] {
+export function barajar<T>(lista: T[]): T[] {
   const copia = [...lista];
   for (let i = copia.length - 1; i > 0; i--) {
     const j = alAzar(i + 1);
