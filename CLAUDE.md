@@ -421,8 +421,15 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
 - `/e/[slug]` → página de empresa: equipo con cargos, pitches de todos y datos de
   transparencia compartidos (ISR, se genera en la primera visita)
-- `/eventos` y `/eventos/[slug]` → Feria 21: programa, cómo votar y votación
-  (`components/eventos/Votacion.tsx` pide el estado de la sesión al montar)
+- `/eventos` y `/eventos/[slug]` → Feria 21: portada → votación a todo el ancho (`#votacion`) →
+  cómo votar (reglas en `<details id="reglas">`, que abre "Ver las reglas" de la franja) → programa.
+  `components/eventos/Votacion.tsx` pide el estado de la sesión al montar y dibuja `VistaVotacion`
+  (presentacional: franja verde `tema-fijo` con el mensaje según el estado + `EstadoSesion`) y
+  `TarjetaParticipante` (horizontal hasta `lg`; póster → "Ver pitch" en `/#<pitch_id>`, avatar
+  `optimizada`, logo de `getLogosParticipantes`: `empresa_logos` con respaldo en `empresas.logo_url`).
+  Sin resultados, orden al azar por visitante (`lib/orden-votacion.ts`, variable de módulo: votar no
+  reordena; el servidor dibuja esqueletos). "Entrar para votar" de la tarjeta envía el form
+  `entrar-votar` de la franja; en un navegador interno (`useNavegadorInterno`) lleva al aviso.
 - `/docs` → redirige a `/academy/docs`; `/docs/conceptos` y `/docs/legales` siguen estáticas
 - `/academy`, `/academy/docs`, `/academy/essentials/[slug]` → Academy (estáticas)
 - `/explorar` → directorio con búsqueda (`?q=`) y vistas (`?ver=startups|inversores|aliados`);
