@@ -105,8 +105,7 @@ pisan por entorno, por ejemplo en el Preview de Vercel.
   trackpad (`data-lenis-prevent-horizontal`), Shift + rueda, arrastre y flechas lo mueven.
 - Mientras "Para vos" está fijado, el video avanza al 18 % de velocidad
   (`PIN_VIDEO_SPEED` en `main.js`) para no saltearse el paso del macro al escritorio.
-- Celular y táctil: póster fijo en vez del video, sin pines, tarjetas apiladas. `bg.mp4` ni se
-  descarga: el `<video>` no trae `src` y `main.js` se lo pone solo en escritorio.
+- Celular y táctil: póster fijo en vez del video, sin pines, tarjetas apiladas.
 - `prefers-reduced-motion`: sin scroll suave ni animaciones automáticas; el lema
   aparece entero.
 - Las capas de luz del fondo no usan `mix-blend-mode`: con dos capas de pantalla
