@@ -1677,259 +1677,30 @@ html:not([data-revelar]) .racha-punto[data-lleno] {
   scale: 1.1;
 }
 
-/* 3b. Demo del celular: iframe 16:9 que se carga al acercarse */
-.demo__panel {
-  text-align: left;
-}
-
-.demo__marco {
-  position: relative;
-  margin-top: 1.5rem;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-radius: var(--radius-tarjeta);
-  background: var(--marfil);
-  box-shadow: 0 1px 2px rgb(28 27 22 / 0.12), 0 24px 56px rgb(28 27 22 / 0.16);
-}
-
-/* El Stage de la animación reserva 44 px para su barra (oculta): el iframe mide 44 px más
-   y se corre 22 px para arriba, así el escenario llena el cuadro sin bandas. */
-.demo__iframe {
-  position: absolute;
-  left: 0;
-  top: -22px;
-  width: 100%;
-  height: calc(100% + 44px);
-  border: 0;
-  pointer-events: none;
-}
-
-.demo__fijo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.demo__fijo[hidden] {
-  display: none;
-}
-
-/* En el celular, a ancho completo: 16:9 a 390 px son ~219 px de alto */
-@media (max-width: 768px) {
-  .demo {
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  .demo__panel {
-    border-radius: 0;
-    border-left: 0;
-    border-right: 0;
-  }
-
-  .demo__marco {
-    margin-inline: calc(-1 * clamp(1.5rem, 3vw, 2.5rem));
-    border-radius: 0;
-  }
-}
-
-/* 8. Ecosistema: mapa (MapaEcosistema.tsx de la app) */
-.mapa {
-  margin-top: 1.6rem;
+/* 8. Ecosistema */
+.verbos {
+  margin: 1.4rem 0 0;
   display: grid;
-  gap: 2rem;
-  align-items: center;
 }
 
-@media (min-width: 900px) {
-  .mapa {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 3rem;
-  }
-}
-
-.mapa__lienzo {
-  position: relative;
-  width: 100%;
-  max-width: 26rem;
-  margin: 0 auto;
-  aspect-ratio: 1;
-}
-
-.mapa__svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.rama {
-  fill: none;
-  stroke: rgb(28 27 22 / 0.16);
-  stroke-width: 1.2;
-  transition:
-    stroke var(--duracion) var(--ease-pecera),
-    stroke-width var(--duracion) var(--ease-pecera);
-}
-
-.rama[data-activa] {
-  stroke: var(--pecera);
-  stroke-width: 2;
-}
-
-.pulso {
-  fill: none;
-  stroke: var(--pecera);
-  stroke-width: 1.1;
-  stroke-linecap: round;
-  stroke-dasharray: 0.002 0.998;
-  opacity: 0;
-  animation: pulso 5s linear var(--d, 2600ms) infinite;
-}
-
-@keyframes pulso {
-  0% { stroke-dashoffset: 0; opacity: 0; }
-  8% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { stroke-dashoffset: -1; opacity: 0; }
-}
-
-.mapa__centro {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 26%;
-  aspect-ratio: 1;
+.verbos div {
   display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 1px solid var(--tinta-10);
-  background: var(--marfil);
-  box-shadow: 0 10px 30px rgb(28 27 22 / 0.1);
-  transform: translate(-50%, -50%);
-}
-
-.mapa__centro img {
-  width: 62%;
-  height: auto;
-}
-
-.mapa__tab {
-  position: absolute;
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  padding: 0 1rem;
-  border-radius: 999px;
-  border: 1px solid var(--tinta-15);
-  background: var(--marfil);
-  color: var(--tinta);
-  font: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  translate: -50% -50%;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    background-color var(--duracion) var(--ease-pecera),
-    border-color var(--duracion) var(--ease-pecera),
-    scale var(--duracion) var(--ease-pecera);
-}
-
-.mapa__tab:hover {
-  border-color: rgb(28 27 22 / 0.4);
-}
-
-.mapa__tab[aria-selected="true"] {
-  scale: 1.05;
-  border-color: var(--naranja);
-  background: var(--naranja);
-  box-shadow: 0 8px 20px rgb(244 124 60 / 0.3);
-}
-
-.mapa__tab:focus-visible {
-  outline: 2px solid var(--arcilla);
-  outline-offset: 2px;
-}
-
-.mapa__nombre {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(1.6rem, 2.6vw, 2.2rem);
-  line-height: 1.1;
-}
-
-.mapa__bajada {
-  margin-top: 0.5rem;
-  font-size: 1.06rem;
-  line-height: 1.5;
-  color: var(--tinta-80);
-  text-wrap: pretty;
-}
-
-.mapa__modulos {
-  margin: 1.25rem 0 0;
-  padding: 0;
-  list-style: none;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 1rem;
+  padding: 0.85rem 0;
   border-top: 1px solid var(--tinta-10);
 }
 
-.mapa__modulos li {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--tinta-10);
-}
-
-.mapa__modulo {
+.verbos dt {
+  font-family: var(--font-display);
   font-weight: 600;
+  font-size: 1.15rem;
 }
 
-.mapa__texto {
-  margin-top: 0.1rem;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  color: var(--tinta-70);
-}
-
-.mapa__abrir {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-  min-height: 2.75rem;
-  padding: 0 0.5rem;
-  border-radius: 999px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--naranja-texto);
-  text-decoration: none;
-}
-
-.mapa__abrir:hover {
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-@media (max-width: 480px) {
-  .mapa__lienzo {
-    max-width: 21rem;
-  }
-
-  .mapa__tab {
-    padding: 0 0.7rem;
-    font-size: 0.82rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pulso {
-    display: none;
-  }
+.verbos dd {
+  margin: 0;
+  color: var(--tinta-80);
+  line-height: 1.45;
 }
 
 /* 9. Cierre */
@@ -2220,6 +1991,11 @@ html[data-revelar] [data-revelar]:not([data-visible]) .palabra {
   .roles,
   .pie__cols {
     grid-template-columns: 1fr;
+  }
+
+  .verbos div {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
   }
 }
 

@@ -363,7 +363,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   el nombre "crediticio" y los rótulos "Riesgo bajo/alto" (calificadoras de riesgo, CNV).
 - `landing-liviano/` (rama `landing-liviano`): landing de scroll con video, **proyecto Vite aparte**
   (JS + GSAP + Lenis, su propio `package.json`; no es Next ni parte de `/sumate`). Todos sus CTA
-  apuntan por URL absoluta a la app (`https://pecera.lat`, una sola constante `VITE_APP_URL`). No lo despliega el proyecto de
+  apuntan por URL absoluta a la app (`pecera-virid.vercel.app`). No lo despliega el proyecto de
   Vercel de la app: va como otro proyecto con Root Directory `landing-liviano/website`. Detalle en
   `landing-liviano/website/README.md`. ESLint lo ignora. `website/postcss.config.js` está vacío a
   propósito: sin él Vite toma el `postcss.config.mjs` de Tailwind de la raíz y la build falla.
@@ -373,12 +373,6 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     al acercarse, esqueletos sin saltos, se mueve solo y despacio (con Pausar; nunca con reducir movimiento) y cada
     tarjeta abre `${VITE_APP_URL}/#<pitch>`. Si falla o viene vacío, desaparece. `VITE_APP_URL` y `VITE_API_BASE` (por
     defecto `https://pecera.lat`) viven en `website/vite.config.js` y se pisan por entorno (Vercel Preview).
-  - Mapa del ecosistema en #ecosistema (`src/mapa.js`): copia en JS de `MapaEcosistema.tsx` (tablist con flechas).
-    Fijos: evento Feria 21 (`/eventos/feria-21`), 13 lecciones y 10 templates; si cambian en la app, cambiarlos ahí.
-  - Demo del celular en #demo: iframe a `website/public/demo-video/`, COPIA de `public/demo-video/` (`npm run sync-demo`;
-    el `prebuild` corta si quedó vieja). Se carga al acercarse y se suelta al alejarse; con reducir movimiento,
-    `img/demo-fijo.jpg`. `public/demo-video/index.html` oculta la barra de reproducción (`[data-omelette-chrome]`) y
-    pinta el margen del Stage en Marfil (vale también para /sumate).
 - Endpoint público de la landing: `GET /api/landing/pitches` (`app/api/landing/pitches/route.ts`, `?n=` 1-20, 12 por
   defecto). Mismas condiciones que el feed, sin `test-*` ni el perfil `pecera`, solo con poster, orden por `orden` e `id`.
   Expone EXACTAMENTE `id, poster, descripcion (≤ 90, sin hashtags), nombre, slug, rol, empresa` (armado campo por campo
