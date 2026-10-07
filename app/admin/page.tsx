@@ -10,6 +10,7 @@ import LibresPared from "@/components/admin/LibresPared";
 import Medicion from "@/app/admin/medicion";
 import {
   autopublicar,
+  borrarPerfilEquipo,
   funciones,
   interruptorScore,
   configurarEvento,
@@ -491,6 +492,12 @@ async function Perfiles({ supabase, filtro }: { supabase: Supabase; filtro: stri
   if (faltaMigracion(error)) ({ data, error } = await supabase.rpc("admin_perfiles"));
   fallo("admin_perfiles", error);
   const todos = (data ?? []) as PerfilAdmin[];
+  // "Para revisar" (alta_rapida): reclamos que no se resolvieron solos. Si falla, la lista igual.
+  const revisar = await supabase.rpc("admin_reclamos_revisar");
+  if (revisar.error && !faltaMigracion(revisar.error)) {
+    console.error(`Supabase (admin_reclamos_revisar): ${revisar.error.code} ${revisar.error.message}`);
+  }
+  const paraRevisar = ((!revisar.error && revisar.data) || []) as ReclamoRevisar[];
   const lista = todos.filter((p) =>
     filtro === "pendientes"
       ? !p.publicado
@@ -516,6 +523,7 @@ async function Perfiles({ supabase, filtro }: { supabase: Supabase; filtro: stri
           ["sin-empresa", `Sin empresa (${todos.filter((p) => !p.empresa).length})`],
         ]}
       />
+      {paraRevisar.length > 0 && <ParaRevisar lista={paraRevisar} />}
       <Link href="/admin/alta" className="mb-4 inline-flex min-h-10 items-center rounded-full bg-naranja px-4 text-sm font-semibold text-tinta hover:bg-pecera">
         + Alta rápida
       </Link>
@@ -563,6 +571,64 @@ async function Perfiles({ supabase, filtro }: { supabase: Supabase; filtro: stri
         {lista.length === 0 && <li className="text-sm text-tinta/60">No hay perfiles con este filtro.</li>}
       </ul>
     </>
+  );
+}
+
+type ReclamoRevisar = {
+  perfil_id: string;
+  slug: string;
+  nombre: string;
+  email: string;
+  rechazado_at: string | null;
+  propio_id: string | null;
+  propio_slug: string | null;
+  propio_nombre: string | null;
+};
+
+/**
+ * Perfiles del equipo cuyo email de reclamo es de una cuenta que ya tiene su perfil, o que la
+ * persona dijo que no eran suyos. Nada se fusiona solo: el equipo decide.
+ */
+function ParaRevisar({ lista }: { lista: ReclamoRevisar[] }) {
+  return (
+    <section aria-labelledby="para-revisar" className={`${CAJA} mb-4 flex flex-col gap-3`}>
+      <h2 id="para-revisar" className="font-display text-lg font-semibold text-tinta">
+        Para revisar ({lista.length})
+      </h2>
+      <ul className="flex flex-col gap-3">
+        {lista.map((r) => (
+          <li key={r.perfil_id} className="flex flex-col gap-2 border-t border-tinta/10 pt-3 first:border-t-0 first:pt-0">
+            <p className="text-sm text-tinta">
+              <strong className="font-semibold">{r.nombre}</strong> (/{r.slug}, del equipo) · <span className="break-all">{r.email}</span>
+            </p>
+            <p className="text-sm text-tinta/80">
+              {r.propio_id
+                ? `Esa cuenta ya tiene su perfil: ${r.propio_nombre} (/${r.propio_slug}). Si es la misma persona, borrá el del equipo; si no, corregí el email.`
+                : "Entró con ese email y dijo que no era suyo. Corregí el email o vinculalo con la cuenta correcta."}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link href={`/admin/perfil/${r.perfil_id}`} className="inline-flex min-h-10 items-center rounded-full border border-tinta/30 px-3.5 text-sm font-medium text-tinta hover:border-tinta">
+                Editar el del equipo
+              </Link>
+              {r.propio_id && (
+                <Link href={`/admin/perfil/${r.propio_id}`} className="text-sm text-tinta underline underline-offset-4">
+                  Ver su perfil
+                </Link>
+              )}
+              {r.propio_id && (
+                <BotonAccion
+                  accion={borrarPerfilEquipo.bind(null, r.perfil_id)}
+                  estilo="peligro"
+                  confirmar={`¿Borrar el perfil del equipo "${r.nombre}"? Queda solo el de su cuenta. No se puede deshacer.`}
+                >
+                  Borrar el del equipo
+                </BotonAccion>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

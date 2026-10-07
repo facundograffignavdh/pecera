@@ -361,6 +361,29 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   **Pendiente legal** (sigue vigente; por eso el score está apagado): el texto de la "i" aclara que mide cuánta información hay, no si es verdadera, y que
   no es una calificación de riesgo regulada ni asesoramiento; antes del lanzamiento, que el abogado revise
   el nombre "crediticio" y los rótulos "Riesgo bajo/alto" (calificadoras de riesgo, CNV).
+- Alta rápida y reclamo (rama `alta-rapida`, migración `20261019120000_alta_rapida.sql`, después de
+  score_switch; pruebas `supabase/pruebas/alta_rapida.mjs` y `node scripts/pruebas/tarjeta.ts`; vuelta atrás
+  `supabase/rollback-alta-rapida.sql`, que NO es migración y es con pérdida; guía `docs/GUIA-FERIA.md` §9).
+  Todo por funciones `admin_*` security definer (`exigir_admin` + `admin_como_sistema`): un insert con el
+  cliente normal le pondría como dueña al admin (`perfiles_guardian`). Tablas privadas: `perfiles_alta_equipo`
+  (quién y cuándo creó, consentimiento y versión), `perfiles_reclamo` (email de Google para reclamar, NUNCA en
+  `perfiles.email`; `email_canonico`: en Gmail sin puntos ni "+") y `equipo_acciones` (registro: quién, cuándo,
+  qué columnas, nunca valores). **Ninguna tabla nueva con FK a `perfiles` y a `empresas` a la vez** (PGRST201):
+  `empresa_id` ahí es uuid común. Topes con `medicion_limitar(<uid>, …)`.
+  - `/admin/alta` (`components/admin/AltaRapida.tsx`, reglas en `lib/alta-rapida.ts`): perfil sin cuenta,
+    `tipo='persona'`, publicado por defecto, con `CONSENTIMIENTO_ALTA` (versión) obligatorio; empresa nueva
+    (`dueno_id` null) o "Sumar a" una existente (no cambia dueña ni representante); parecidos antes de crear
+    (`admin_parecidos`, "Crear igual"); Deshacer 10 min (solo quien la creó). Stand → link de la tarjeta con
+    `codigoTarjeta` (`lib/tarjeta.ts`: `s<100*(día-6)+stand>`, jue 8 stand 16 = s216), solo se muestra.
+  - `/admin/perfil/[id]` (`components/admin/EditarPerfil.tsx`): sin cuenta, todo + email de reclamo, vincular
+    (`admin_vincular_cuenta`: devuelve false sin decir por qué) y eliminar (solo creados por el equipo);
+    con cuenta, solo nombre y descripción. Empresas: editar (también con dueña), agregar
+    (`dueno_id = usuario_id` de la persona) o sumar, hasta 5. Perfiles: `admin_perfiles_v2`, filtro "Sin empresa"
+    y "Para revisar" (`admin_reclamos_revisar`).
+  - Reclamo: solo en `/cuenta` (nunca en el callback), antes del alta: `mi_reclamo_pendiente()` usa el email
+    VERIFICADO de la sesión (no recibe emails) → `ReclamoPerfil` → `reclamar_perfil(perfil, consentimiento)`
+    (solo cambia `usuario_id` y `consentimiento_at`; empresas sin dueña pasan a ella; borra el email). Si la
+    cuenta ya tiene perfil o dice "No es mío" (`rechazar_reclamo`), va a "Para revisar". Nada se fusiona solo.
 - `landing-liviano/` (rama `landing-liviano`): landing de scroll con video, **proyecto Vite aparte**
   (JS + GSAP + Lenis, su propio `package.json`; no es Next ni parte de `/sumate`). Todos sus CTA
   apuntan por URL absoluta a la app (`pecera-virid.vercel.app`). No lo despliega el proyecto de
@@ -434,6 +457,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   admin, auth ni subir)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
 - `/organizacion` (+ `/csv`) → panel de la Universidad para la Feria 21 (emails habilitados en /admin → Universidad, y admins)
+- `/admin/alta` → alta rápida en el stand (solo equipo); `/admin/perfil/[id]` → editor del equipo
 - `/admin/vivo` → pantalla del stand: CI de hoy, ticker anónimo y ranking de la votación, cada 15 s
   (`admin_vivo_en` + `admin_ranking_evento`)
 - `/cuenta/empresa` → Administrar empresa (`?empresa=slug`; sin él, la principal; `?pestana=`): pestañas
