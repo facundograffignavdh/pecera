@@ -361,6 +361,17 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   **Pendiente legal** (sigue vigente; por eso el score está apagado): el texto de la "i" aclara que mide cuánta información hay, no si es verdadera, y que
   no es una calificación de riesgo regulada ni asesoramiento; antes del lanzamiento, que el abogado revise
   el nombre "crediticio" y los rótulos "Riesgo bajo/alto" (calificadoras de riesgo, CNV).
+- Juego del stand (rama `juego-stand`, migración `20261019120000_juego_stand.sql`, después de score_switch;
+  pruebas `supabase/pruebas/juego_stand.mjs`; vuelta atrás `supabase/rollback-juego-stand.sql`, que NO es
+  migración y es con pérdida; guía `docs/GUIA-FERIA.md` §9). `/stand` (estática, noindex, sin barra inferior):
+  datos (nombre, apellido, teléfono con `TelefonoPais`, ¿tarjeta NFC con tu logo?, consentimiento) → 3 intentos
+  para un número de 3 cifras → N tarjetas (5 por defecto) para los primeros que aciertan, con código de 6 letras.
+  **El número nunca va en el repo ni al navegador**: se carga en /admin → Juego del stand (`admin_stand_config`)
+  y ninguna función lo devuelve. Todo por RPC `security definer` (`stand_estado`, `stand_registrar`,
+  `stand_mi_juego`, `stand_adivinar`): la base cuenta intentos y tarjetas (bloquea la fila del juego), un juego
+  por teléfono atado al dispositivo. Cliente en `lib/stand.ts` + `components/stand/JuegoStand.tsx` (retoma con
+  `pecera:stand`); la Feria muestra `TarjetaJuegoStand` con `getEstadoStand` (null sin migración = sin sección).
+  /privacidad#juego-stand promete borrar los datos antes del 31/12/2026 (a mano, ver la guía).
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)

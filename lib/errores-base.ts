@@ -60,6 +60,9 @@ const MENSAJES: Record<string, string> = {
   // quien_vio
   "demasiadas acciones": "Fueron muchos cambios seguidos. Esperá un minuto y probá de nuevo.",
   "pitches libres: entre 0 y 20": "Los pitches libres van de 0 a 20.",
+  // juego_stand
+  "ese jugador no ganó una tarjeta": "Esa persona no ganó una tarjeta.",
+  "datos inválidos": "Revisá los datos: alguno no es válido.",
 };
 
 /** Error de Supabase → Resultado con un mensaje que se entiende. Nunca tira. */

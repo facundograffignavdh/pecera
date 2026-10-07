@@ -30,6 +30,7 @@ function sinAviso(ruta: string): boolean {
   return (
     ruta.startsWith("/cuenta/crm") ||
     ruta.startsWith("/admin/vivo") ||
+    ruta.startsWith("/stand") ||
     ruta.startsWith("/sumate") ||
     ruta.startsWith("/auth") ||
     ruta.endsWith("/one-pager") ||

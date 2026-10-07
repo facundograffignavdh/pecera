@@ -7,7 +7,8 @@ import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { GaleriaEdicion, PortadaFeria21, TituloFeria } from "@/components/eventos/MarcaFeria21";
 import Votacion from "@/components/eventos/Votacion";
-import { getEstadoEvento } from "@/lib/datos";
+import TarjetaJuegoStand from "@/components/stand/TarjetaJuegoStand";
+import { getEstadoEvento, getEstadoStand } from "@/lib/datos";
 import { EVENTO_ACTUAL, EVENTOS, getEventoDefinido } from "@/lib/eventos";
 
 export const revalidate = 60;
@@ -45,11 +46,12 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
   const evento = getEventoDefinido(slug);
   if (!evento) notFound();
 
-  const estado = await getEstadoEvento(evento.slug);
-  // Compite cualquier perfil anotado: emprendedores, inversores y aliados.
-  const participantes = estado.participantes;
   // La Feria 21 lleva la identidad de Semana 21 (verde, mayúsculas, trazo amarillo).
   const feria = evento.slug === EVENTO_ACTUAL.slug;
+  // El juego del stand solo en la Feria; null (sin migración o si falla) = sin sección.
+  const [estado, juegoStand] = await Promise.all([getEstadoEvento(evento.slug), feria ? getEstadoStand() : null]);
+  // Compite cualquier perfil anotado: emprendedores, inversores y aliados.
+  const participantes = estado.participantes;
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
@@ -97,6 +99,8 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
           </div>
         </header>
         )}
+
+        {juegoStand && <TarjetaJuegoStand estado={juegoStand} />}
 
         {/* En la compu: el programa a la izquierda; cómo votar y la votación a la derecha. */}
         <div className="lg:mt-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start lg:gap-10">

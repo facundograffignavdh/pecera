@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { hashtagsDe, normalizarTag } from "@/lib/hashtags";
 import { calcularRacha, type Racha } from "@/lib/racha";
 import type { DatoScore, DocumentoScore, Score } from "@/lib/score";
+import type { EstadoStand } from "@/lib/stand";
 import { scoreDeEmpresa } from "@/lib/score-empresa";
 import type {
   DatoEmpresa,
@@ -743,6 +744,20 @@ const SIN_EVENTO: EstadoEvento = {
   totalVotos: 0,
   resultados: {},
 };
+
+/**
+ * Juego del stand (juego_stand, /stand): lo que muestra la página de la Feria (abierto, número
+ * cargado, cuántas tarjetas quedan). Nunca el número. null si falta la migración o falla la consulta:
+ * la Feria no dibuja la sección. No lanza.
+ */
+export async function getEstadoStand(): Promise<EstadoStand | null> {
+  const { data, error } = await supabase.rpc("stand_estado");
+  if (error) {
+    if (!faltaMigracion(error)) console.error(`Supabase (getEstadoStand): ${error.message}`);
+    return null;
+  }
+  return (data as EstadoStand | null) ?? null;
+}
 
 /**
  * Participantes, total de votos y (si ya se mostraron) resultados. Nunca lanza:

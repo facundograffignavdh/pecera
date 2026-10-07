@@ -5,6 +5,7 @@ import BotonCopiar from "@/components/BotonCopiar";
 import Encabezado from "@/components/Encabezado";
 import AgregarOrganizador from "@/components/admin/AgregarOrganizador";
 import BotonAccion from "@/components/admin/BotonAccion";
+import ConfigStand from "@/components/admin/ConfigStand";
 import GestionFeria, { type DatosFeria } from "@/components/admin/GestionFeria";
 import LibresPared from "@/components/admin/LibresPared";
 import Medicion from "@/app/admin/medicion";
@@ -13,6 +14,7 @@ import {
   funciones,
   interruptorScore,
   configurarEvento,
+  entregarStand,
   marcarOriginalBorrado,
   ocultarEmpresa,
   organizador,
@@ -26,6 +28,7 @@ import type { Canal } from "@/lib/contacto";
 import { faltaMigracion } from "@/lib/datos";
 import { EVENTO_ACTUAL } from "@/lib/eventos";
 import { urlMedia } from "@/lib/media";
+import { telefonoLegible } from "@/lib/paises";
 import { ROLES } from "@/lib/rol";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 import type { Rol } from "@/types/pecera";
@@ -45,6 +48,7 @@ const VISTAS = [
   { id: "empresas", label: "Empresas" },
   { id: "evento", label: EVENTO_ACTUAL.nombre },
   { id: "universidad", label: "Universidad" },
+  { id: "stand", label: "Juego del stand" },
   { id: "drive", label: "Drive" },
   { id: "medicion", label: "Medición" },
 ] as const;
@@ -163,6 +167,7 @@ async function ConSesion({
         {vista === "empresas" && <Empresas supabase={supabase} />}
         {vista === "evento" && <Evento supabase={supabase} />}
         {vista === "universidad" && <Universidad supabase={supabase} />}
+        {vista === "stand" && <JuegoStand supabase={supabase} />}
         {vista === "drive" && <Drive supabase={supabase} />}
         {vista === "medicion" && <Medicion supabase={supabase} filtro={filtro} alcance={alcance} />}
       </div>
@@ -865,6 +870,135 @@ async function Universidad({ supabase }: { supabase: Supabase }) {
                 >
                   Sacar
                 </BotonAccion>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Juego del stand (juego_stand)
+// ---------------------------------------------------------------------------
+
+type JugadorStand = {
+  id: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  quiere_nfc: boolean;
+  intentos: number;
+  acerto: boolean;
+  gano: boolean;
+  codigo: string | null;
+  entregado_at: string | null;
+  created_at: string;
+};
+
+async function JuegoStand({ supabase }: { supabase: Supabase }) {
+  const { data, error } = await supabase.rpc("admin_stand");
+  if (faltaMigracion(error)) {
+    return (
+      <p className={`${CAJA} text-sm text-tinta`}>
+        Falta correr la migración <code>20261019120000_juego_stand.sql</code>. Ver docs/GUIA-FERIA.md §9.
+      </p>
+    );
+  }
+  fallo("admin_stand", error);
+  const d = data as { activo: boolean; listo: boolean; premios: number; quedan: number; jugadores: JugadorStand[] };
+  const ganadores = d.jugadores.filter((j) => j.gano);
+  const nfc = d.jugadores.filter((j) => j.quiere_nfc).length;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-sm leading-relaxed text-tinta">
+        El juego está en{" "}
+        <Link href="/stand" className="font-semibold underline underline-offset-4">
+          /stand
+        </Link>{" "}
+        (y en la página de la Feria). Quien acierta primero gana una tarjeta y un código de 6 letras: pedile la pantalla,
+        buscá el código acá y marcala entregada.
+      </p>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          ["Jugaron", d.jugadores.length],
+          ["Ganaron", ganadores.length],
+          ["Quedan", `${d.quedan} de ${d.premios}`],
+          ["Quieren NFC", nfc],
+        ].map(([t, v]) => (
+          <div key={t} className={CAJA}>
+            <p className="text-xs text-tinta/60">{t}</p>
+            <p className="font-display text-3xl font-semibold tabular-nums text-tinta">{v}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className={CAJA}>
+        <ConfigStand config={{ activo: d.activo, listo: d.listo, premios: d.premios }} />
+      </div>
+
+      <section aria-labelledby="stand-ganadores" className="flex flex-col gap-2">
+        <h2 id="stand-ganadores" className="font-display text-xl font-semibold text-tinta">
+          Ganadores ({ganadores.length})
+        </h2>
+        {ganadores.length === 0 ? (
+          <p className="text-sm text-tinta/70">Todavía nadie.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {ganadores.map((j) => (
+              <li key={j.id} className={`${CAJA} flex flex-wrap items-center justify-between gap-3`}>
+                <div className="min-w-0">
+                  <p className="font-mono text-lg font-bold tracking-[0.15em] text-tinta">{j.codigo}</p>
+                  <p className="text-sm text-tinta">
+                    {j.nombre} {j.apellido} · {telefonoLegible(j.telefono)}
+                  </p>
+                  <p className="text-xs text-tinta/70">
+                    {j.entregado_at ? `Entregada ${new Date(j.entregado_at).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })}` : "Sin entregar"}
+                  </p>
+                </div>
+                <BotonAccion
+                  accion={entregarStand.bind(null, j.id, !j.entregado_at)}
+                  estilo={j.entregado_at ? "secundario" : "primario"}
+                  confirmar={j.entregado_at ? `¿Desmarcar la entrega de ${j.codigo}?` : undefined}
+                >
+                  {j.entregado_at ? "Desmarcar" : "Marcar entregada"}
+                </BotonAccion>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-labelledby="stand-jugadores" className="flex flex-col gap-2">
+        <h2 id="stand-jugadores" className="font-display text-xl font-semibold text-tinta">
+          Jugadores ({d.jugadores.length})
+        </h2>
+        {d.jugadores.length === 0 ? (
+          <p className="text-sm text-tinta/70">Todavía nadie.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {d.jugadores.map((j) => (
+              <li key={j.id} className={`${CAJA} flex flex-wrap items-center justify-between gap-2`}>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-tinta">
+                    {j.nombre} {j.apellido}
+                  </p>
+                  <p className="text-sm text-tinta/80">{telefonoLegible(j.telefono)}</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className={`${PILDORA} ${j.quiere_nfc ? "bg-t-verde-suave text-t-verde" : "bg-tinta/5 text-tinta/70"}`}>
+                    NFC: {j.quiere_nfc ? "sí" : "no"}
+                  </span>
+                  <span className={`${PILDORA} bg-tinta/5 text-tinta/80`}>{j.intentos}/3 intentos</span>
+                  {j.gano ? (
+                    <span className={`${PILDORA} bg-t-arcilla-suave text-t-arcilla`}>Ganó</span>
+                  ) : j.acerto ? (
+                    <span className={`${PILDORA} bg-tinta/5 text-tinta/80`}>Acertó sin tarjeta</span>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>

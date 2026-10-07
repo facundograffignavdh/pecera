@@ -108,6 +108,19 @@ export async function funciones(visitas: boolean, pared: boolean, libres: number
   return rpc("admin_funciones", { p_visitas: visitas, p_pared: pared, p_libres: libres, p_traspaso: traspaso }, "/admin");
 }
 
+/**
+ * Juego del stand (juego_stand): abrir o cerrar, cuántas tarjetas y el número (null = no tocarlo).
+ * El número viaja solo de ida: la base nunca lo devuelve. Revalida la Feria, que muestra cuántas quedan.
+ */
+export async function configurarStand(activo: boolean, premios: number, secreto: number | null) {
+  return rpc("admin_stand_config", { p_activo: activo, p_premios: premios, p_secreto: secreto }, "/eventos");
+}
+
+/** Marca (o desmarca) que la tarjeta de un ganador ya se entregó en el stand. */
+export async function entregarStand(jugador: string, entregado: boolean) {
+  return rpc("admin_stand_entregar", { p_jugador: jugador, p_entregado: entregado }, "/admin");
+}
+
 /** Interruptor del score crediticio (score_switch). Revalida todo: el cambio se ve en la próxima carga. */
 export async function interruptorScore(activo: boolean) {
   return rpc("admin_score", { p_activo: activo }, "/");

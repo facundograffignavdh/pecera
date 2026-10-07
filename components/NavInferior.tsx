@@ -29,10 +29,11 @@ const DERECHA: Item[] = [
   { href: "/academy", label: "Academy", icono: IconoAcademy, rutas: ["/academy", "/docs"] },
 ];
 
-/** Pantallas que no llevan la barra: el stand, la landing (tiene su CTA fijo) y las imprimibles. */
+/** Pantallas que no llevan la barra: el stand, el juego del stand, la landing (tiene su CTA fijo) y las imprimibles. */
 function sinBarra(ruta: string): boolean {
   return (
     ruta.startsWith("/admin/vivo") ||
+    ruta.startsWith("/stand") ||
     ruta.startsWith("/sumate") ||
     ruta.endsWith("/one-pager") ||
     ruta.endsWith("/exportar")
