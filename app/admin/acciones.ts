@@ -73,8 +73,13 @@ export async function representante(empresa: string, perfil: string) {
   return rpc("admin_representante", { p_evento: EVENTO_ACTUAL.slug, p_empresa: empresa, p_perfil: perfil });
 }
 
-/** Agrega o quita #feria21 de la descripción de un pitch. */
+/**
+ * Agrega o quita #feria21 de la descripción de un pitch. Con feria21_sin_tope el tag no cuenta
+ * para los 150 caracteres; sin esa migración, la función de antes (con el tope).
+ */
 export async function pitchFeria(pitch: string, con: boolean) {
+  const r = await rpc("admin_pitch_feria_libre", { p_pitch: pitch, p_con: con });
+  if (r.ok || r.mensaje !== NO_DISPONIBLE) return r;
   return rpc("admin_pitch_feria", { p_pitch: pitch, p_con: con });
 }
 

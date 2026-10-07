@@ -384,6 +384,11 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
     VERIFICADO de la sesión (no recibe emails) → `ReclamoPerfil` → `reclamar_perfil(perfil, consentimiento)`
     (solo cambia `usuario_id` y `consentimiento_at`; empresas sin dueña pasan a ella; borra el email). Si la
     cuenta ya tiene perfil o dice "No es mío" (`rechazar_reclamo`), va a "Para revisar". Nada se fusiona solo.
+- #feria21 sin tope (migración `20261020120000_feria21_sin_tope.sql`, después de alta_rapida; pruebas
+  `supabase/pruebas/feria21_sin_tope.mjs`; vuelta atrás `supabase/rollback-feria21-sin-tope.sql`, que NO es
+  migración): el tag no cuenta para los 150 de `pitches.descripcion` (`pitches_descripcion_valida`; espejo
+  `largoDescripcionPitch` en `lib/pitch.ts`). El panel usa `admin_pitch_feria_libre` (cae a `admin_pitch_feria`
+  sin la migración). El tag no sirve para escribir más: 151 + #feria21 no vale.
 - `landing-liviano/` (rama `landing-liviano`): landing de scroll con video, **proyecto Vite aparte**
   (JS + GSAP + Lenis, su propio `package.json`; no es Next ni parte de `/sumate`). Todos sus CTA
   apuntan por URL absoluta a la app (`pecera-virid.vercel.app`). No lo despliega el proyecto de
