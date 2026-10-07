@@ -2,9 +2,6 @@ import "./style.css";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
-import { setupDemo } from "./demo.js";
-import { setupMapa } from "./mapa.js";
-import { setupPitches } from "./pitches.js";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -61,14 +58,6 @@ function onFrame() {
     bgVideo.currentTime = t;
     lastVideoT = t;
   }
-}
-
-// El video (17 MB) solo baja en escritorio: en el celular se ve el póster fijo y no se pide.
-function cargarVideoFondo() {
-  if (bgVideo.getAttribute("src")) return;
-  bgVideo.preload = "auto";
-  bgVideo.src = `${import.meta.env.BASE_URL}bg.mp4`;
-  bgVideo.pause();
 }
 
 bgVideo.pause();
@@ -289,13 +278,9 @@ function setupNavActiva() {
 setupRevelar();
 setupMagnetic();
 setupSwitch();
-setupPitches({ reduceMotion, alCambiarAlto: () => ScrollTrigger.refresh() });
-setupMapa();
-setupDemo({ reduceMotion });
 
 const mm = gsap.matchMedia();
 mm.add("(hover: hover) and (min-width: 769px)", () => {
-  cargarVideoFondo();
   if (!reduceMotion) setupHero();
   const cleanLema = setupLema();
   const cleanGaleria = setupGaleria();
