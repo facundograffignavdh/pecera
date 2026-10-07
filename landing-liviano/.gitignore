@@ -1,0 +1,3 @@
+# Proyecto Vite aparte de la app Next: el .gitignore de la raíz solo cubre /node_modules.
+node_modules
+dist

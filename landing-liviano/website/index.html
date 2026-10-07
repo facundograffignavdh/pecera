@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Pecera — Construí, fondeá e invertí en startups</title>
+    <meta name="description" content="Startups, inversores y aliados de Latinoamérica en un solo lugar. Mostrá lo que construís con un pitch de 90 segundos, encontrá con quién crecer y escribile directo." />
+    <meta name="theme-color" content="#f5f4ec" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a href="#page" class="saltar">Saltar al contenido</a>
+
+    <!-- Fondo fijo: el video que avanza con el scroll y la luz en capas de la app -->
+    <div class="fondo" aria-hidden="true">
+      <video id="bgv" class="fondo__video" src="/bg.mp4" poster="/img/poster.jpg" muted playsinline preload="auto"></video>
+      <div class="fondo__poster"></div>
+      <span class="pez-rayos"></span>
+      <span class="pez-calido"></span>
+      <span class="fondo__vineta"></span>
+      <span class="pez-burbujas">
+        <i style="left: 8%; width: 5px; height: 5px; animation-duration: 11s; animation-delay: -0s"></i>
+        <i style="left: 17%; width: 3px; height: 3px; animation-duration: 14s; animation-delay: -4s"></i>
+        <i style="left: 26%; width: 6px; height: 6px; animation-duration: 12s; animation-delay: -7s"></i>
+        <i style="left: 35%; width: 4px; height: 4px; animation-duration: 16s; animation-delay: -2s"></i>
+        <i style="left: 47%; width: 3px; height: 3px; animation-duration: 13s; animation-delay: -9s"></i>
+        <i style="left: 58%; width: 5px; height: 5px; animation-duration: 15s; animation-delay: -5s"></i>
+        <i style="left: 67%; width: 3px; height: 3px; animation-duration: 12s; animation-delay: -1s"></i>
+        <i style="left: 76%; width: 6px; height: 6px; animation-duration: 17s; animation-delay: -8s"></i>
+        <i style="left: 85%; width: 4px; height: 4px; animation-duration: 13s; animation-delay: -3s"></i>
+        <i style="left: 93%; width: 3px; height: 3px; animation-duration: 15s; animation-delay: -6s"></i>
+      </span>
+    </div>
+
+    <!-- Header: solo el wordmark, en vidrio -->
+    <header class="nav">
+      <a href="#home" class="nav__logo vidrio" aria-label="Pecera, volver al inicio">
+        <img src="/brand/wordmark-tinta.png" alt="" width="92" height="20" />
+      </a>
+      <nav class="nav__links vidrio" aria-label="Secciones">
+        <a href="#problema">El problema</a>
+        <a href="#transparencia">Transparencia</a>
+        <a href="#para-vos">Para vos</a>
+        <a href="#build-in-public">Build in Public</a>
+      </nav>
+      <div class="nav__acciones">
+        <a href="https://pecera-virid.vercel.app/cuenta" class="nav__entrar vidrio">Entrar</a>
+        <a href="#sumate" class="boton boton--primario boton--sm brillo">Sumate</a>
+      </div>
+      <span id="progreso" class="progreso" aria-hidden="true"></span>
+    </header>
+
+    <main id="page" tabindex="-1">
+      <!-- 1. Hero -->
+      <section id="home" class="hero" aria-labelledby="hero-titulo">
+        <div class="hero__panel vidrio">
+          <a href="https://pecera-virid.vercel.app/eventos/feria-21" class="chip entrada">
+            <span class="chip__estado"><span class="punto-vivo"></span>Se viene</span>
+            Feria 21 · 7, 8 y 9 de octubre <span aria-hidden="true" class="chip__flecha">→</span>
+          </a>
+          <h1 id="hero-titulo" class="hero__titulo">
+            <span class="sr-only">Construí, fondeá e invertí en startups.</span>
+            <span aria-hidden="true"
+              ><span class="rota-palabras"><span>Construí</span><span>Fondeá</span><span>Invertí en</span></span>
+              startups</span
+            >
+          </h1>
+          <p class="hero__bajada entrada" style="animation-delay: 60ms">
+            Capital, talento y ejecución del ecosistema latinoamericano de startups.
+          </p>
+          <p class="hero__texto entrada" style="animation-delay: 120ms">
+            Startups, inversores y aliados de Latinoamérica en un solo lugar. Mostrá lo que construís con un pitch de
+            90&nbsp;segundos, encontrá con quién crecer y escribile directo.
+          </p>
+          <div class="hero__ctas entrada" style="animation-delay: 220ms">
+            <a href="#sumate" class="boton boton--primario boton--lg brillo" data-magnetic>Sumate a Pecera</a>
+            <a href="https://pecera-virid.vercel.app/?ref=landing" class="boton boton--secundario boton--lg">Mirá los pitches</a>
+          </div>
+          <p class="hero__fino entrada" style="animation-delay: 300ms">Gratis · Entrás con Google · Tu perfil en 2 minutos</p>
+          <ul class="roles-mini entrada" aria-label="Para quién es Pecera" style="animation-delay: 380ms">
+            <li><span class="punto punto--arcilla"></span><b>Startups</b><span>Pitch, empresa, avances y ronda</span></li>
+            <li><span class="punto punto--inversor"></span><b>Inversores</b><span>Tesis, portfolio y deal flow temprano</span></li>
+            <li><span class="punto punto--aliado"></span><b>Aliados</b><span>Servicios, casos y startups para acompañar</span></li>
+          </ul>
+        </div>
+        <p class="pista-scroll" aria-hidden="true"><span></span>Bajá y mirá la pecera</p>
+      </section>
+
+      <!-- Respiro: solo el video -->
+      <div class="respiro" aria-hidden="true"></div>
+
+      <!-- 2. Lema (fijado, palabra por palabra con el scroll) -->
+      <section id="lema" class="lema" aria-labelledby="lema-titulo">
+        <div class="lema__pin">
+          <h2 id="lema-titulo" class="lema__titulo">
+            <span class="lema__linea" data-split>Las bocas cerradas</span>
+            <span class="lema__linea lema__linea--acento" data-split>no se alimentan.</span>
+          </h2>
+          <span class="lema__raya" aria-hidden="true"></span>
+        </div>
+      </section>
+
+      <!-- 3. El problema → la solución -->
+      <section id="problema" class="bloque bloque--der" aria-labelledby="problema-titulo">
+        <div class="panel vidrio" data-revelar>
+          <p class="etiqueta"><span class="etiqueta__num">01</span><span class="etiqueta__raya"></span>El problema</p>
+          <h2 id="problema-titulo" class="titulo-seccion" data-palabras>Hoy, encontrarse cuesta demasiado.</h2>
+          <p class="texto">
+            Un fundador reparte su proyecto entre LinkedIn, WhatsApp, un deck en PDF y planillas que nadie actualiza. Un
+            inversor lo busca en grupos, eventos y recomendaciones. La información existe: está desparramada.
+          </p>
+          <div class="desorden" data-escena aria-hidden="true">
+            <ul>
+              <li class="desorden-chip" style="--dx: -6; --dy: 5; --r: -7deg; --i: 0"><span class="antes">LinkedIn</span><span class="despues">Perfil</span></li>
+              <li class="desorden-chip" style="--dx: 9; --dy: -7; --r: 6deg; --i: 1"><span class="antes">Video en Drive</span><span class="despues">Pitch de 90 s</span></li>
+              <li class="desorden-chip" style="--dx: 11; --dy: 9; --r: 8deg; --i: 2"><span class="antes">Grupo de WhatsApp</span><span class="despues">Contacto directo</span></li>
+              <li class="desorden-chip" style="--dx: -12; --dy: 15; --r: -5deg; --i: 3"><span class="antes">Deck en PDF</span><span class="despues">Dataroom</span></li>
+              <li class="desorden-chip" style="--dx: -3; --dy: -11; --r: 4deg; --i: 4"><span class="antes">Planilla de inversores</span><span class="despues">Explorar</span></li>
+              <li class="desorden-chip" style="--dx: 7; --dy: 12; --r: -9deg; --i: 5"><span class="antes">Posteos sueltos</span><span class="despues">Build in Public</span></li>
+            </ul>
+          </div>
+          <p class="sr-only">Lo que hoy está suelto, en Pecera tiene su lugar: LinkedIn pasa a ser tu perfil, el video en Drive tu pitch de 90 segundos, el grupo de WhatsApp contacto directo, el deck en PDF tu Dataroom, la planilla de inversores Explorar y los posteos sueltos Build in Public.</p>
+          <div class="solucion">
+            <p class="etiqueta"><span class="etiqueta__num">02</span><span class="etiqueta__raya"></span>La solución</p>
+            <p class="solucion__texto">Pecera lo ordena: un lugar para cada cosa, y todo conectado.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. El pitch de 90 segundos -->
+      <section id="pitch" class="bloque" aria-labelledby="pitch-titulo">
+        <div class="panel vidrio" data-revelar>
+          <p class="etiqueta"><span class="insignia-pitch">▶ Pitch</span>90 segundos</p>
+          <h2 id="pitch-titulo" class="titulo-seccion" data-palabras>Mostrá lo que construís. Que te encuentren.</h2>
+          <p class="texto">
+            Pitches verticales de 90 segundos, uno atrás del otro. Encontrá proyectos, inversores y aliados sin depender de a
+            quién conocés.
+          </p>
+          <ul class="tildes">
+            <li>Tu pitch en el feed, con subtítulos automáticos.</li>
+            <li>Tocá dos veces para dar un pique: la señal de que algo te interesa.</li>
+            <li>Escribile directo: WhatsApp, email o LinkedIn.</li>
+          </ul>
+          <a href="https://pecera-virid.vercel.app/?ref=landing" class="enlace">Mirá los pitches <span aria-hidden="true">→</span></a>
+        </div>
+      </section>
+
+      <!-- Respiro: el macro del video -->
+      <div class="respiro respiro--largo" aria-hidden="true"></div>
+
+      <!-- 5. Transparencia: el switch de vidrio de la app -->
+      <section id="transparencia" class="bloque bloque--der" aria-labelledby="transparencia-titulo">
+        <div class="panel panel--angosto vidrio" data-revelar>
+          <p class="etiqueta"><span class="etiqueta__raya"></span>Tus datos, tu decisión</p>
+          <h2 id="transparencia-titulo" class="titulo-seccion" data-palabras>Privado o transparente, documento por documento.</h2>
+          <p class="texto">
+            Métricas, deck y documentos se abren uno por uno, cuando la startup decide. Probalo:
+          </p>
+          <div class="doc-ejemplo">
+            <div>
+              <p class="doc-ejemplo__nombre">Análisis de competencia</p>
+              <p class="doc-ejemplo__estado" id="estado-doc">Privado · Solo lo ve tu equipo.</p>
+            </div>
+            <button type="button" class="switch-vidrio" role="switch" aria-checked="false" aria-labelledby="estado-doc" id="switch-doc">
+              <span class="switch-perilla">
+                <svg class="icono-privado" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M6 9V7a4 4 0 1 1 8 0v2M5 9h10v8H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg>
+                <svg class="icono-transparente" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6Z" fill="none" stroke="currentColor" stroke-width="1.8" /><circle cx="10" cy="10" r="2.4" fill="currentColor" /></svg>
+              </span>
+            </button>
+          </div>
+          <p class="fino">Ejemplo. Una inversión figura como confirmada solo si la empresa la acepta.</p>
+        </div>
+      </section>
+
+      <!-- 6. Para vos (galería fijada) -->
+      <section id="para-vos" class="galeria" aria-labelledby="para-vos-titulo">
+        <div class="galeria__pin">
+          <div class="galeria__intro">
+            <p class="etiqueta"><span class="etiqueta__num">03</span><span class="etiqueta__raya"></span>Para vos</p>
+            <h2 id="para-vos-titulo" class="titulo-seccion">Pecera cambia según quién sos.</h2>
+            <p class="galeria__cuenta" aria-hidden="true"><span id="wf-index">01</span> / <span id="wf-total">05</span></p>
+          </div>
+          <div id="galeria-pista" class="galeria__pista">
+            <article class="tarjeta vidrio" style="--rol: var(--arcilla)">
+              <p class="tarjeta__rol"><span class="punto punto--arcilla"></span>Emprendo</p>
+              <h3>Mostrá lo que construís y llegá preparado a la ronda.</h3>
+              <p>La página de tu empresa con equipo, producto y One Pager. Tu ronda y tus métricas, privadas hasta que decidís compartirlas.</p>
+              <a href="https://pecera-virid.vercel.app/cuenta?rol=emprendedor" class="enlace">Entrar como emprendedor <span aria-hidden="true">→</span></a>
+            </article>
+            <article class="tarjeta vidrio" style="--rol: var(--inversor)">
+              <p class="tarjeta__rol"><span class="punto punto--inversor"></span>Invierto</p>
+              <h3>Descubrí temprano y mostrá lo que ya hiciste.</h3>
+              <p>Tu tesis, tu portfolio con inversiones que confirma cada empresa y un track record calculado, no declarado.</p>
+              <a href="https://pecera-virid.vercel.app/cuenta?rol=inversor" class="enlace">Entrar como inversor <span aria-hidden="true">→</span></a>
+            </article>
+            <article class="tarjeta vidrio" style="--rol: var(--aliado)">
+              <p class="tarjeta__rol"><span class="punto punto--aliado"></span>Acompaño</p>
+              <h3>Mostrá cómo ayudás y que te encuentren cuando te necesitan.</h3>
+              <p>Tus servicios, las startups que acompañaste y tus casos de éxito. Aparecés en Explorar cuando alguien busca lo que ofrecés.</p>
+              <a href="https://pecera-virid.vercel.app/cuenta?rol=aliado" class="enlace">Entrar como aliado <span aria-hidden="true">→</span></a>
+            </article>
+            <article class="tarjeta vidrio" style="--rol: var(--naranja-texto)">
+              <p class="tarjeta__rol"><span class="punto punto--pecera"></span>Busco socio/a</p>
+              <h3>Encontrá cofundador/a, como en YC.</h3>
+              <p>El encaje ordena por complemento y te dice el porqué. WhatsApp y email aparecen solo cuando hay match.</p>
+              <a href="https://pecera-virid.vercel.app/cofundadores" class="enlace">Ver cofundadores <span aria-hidden="true">→</span></a>
+            </article>
+            <article class="tarjeta vidrio" style="--rol: var(--t-ocre)">
+              <p class="tarjeta__rol"><span class="punto punto--obra"></span>Aprendo</p>
+              <h3>Aprendé, documentá y llegá preparado.</h3>
+              <p>13 lecciones de Startup Essentials y 10 templates guiados que se vuelven tu Dataroom.</p>
+              <a href="https://pecera-virid.vercel.app/academy" class="enlace">Ver la Academy <span aria-hidden="true">→</span></a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Build in Public -->
+      <section id="build-in-public" class="bloque" aria-labelledby="bip-titulo">
+        <div class="panel panel--ancho vidrio" data-revelar>
+          <div class="bip">
+            <div>
+              <p class="etiqueta"><span class="etiqueta__num">04</span><span class="etiqueta__raya"></span>Build in Public</p>
+              <h2 id="bip-titulo" class="titulo-seccion" data-palabras>Mostrá el avance, no solo la idea.</h2>
+              <p class="texto">
+                El recorrido de tu startup, semana a semana: hitos, avances y números reales. No es el pitch, que cuenta quién
+                sos. Es el proceso.
+              </p>
+              <ol class="pasos">
+                <li class="hito-bip" style="--i: 0"><span>1</span><div><b>Mostrás</b>Marcás hitos y sumás avances cortos.</div></li>
+                <li class="hito-bip" style="--i: 1"><span>2</span><div><b>Te ven</b>Tu equipo, inversores y aliados siguen el recorrido.</div></li>
+                <li class="hito-bip" style="--i: 2"><span>3</span><div><b>Conectan</b>Te escriben con el contexto de lo que ya hiciste.</div></li>
+                <li class="hito-bip" style="--i: 3"><span>4</span><div><b>Oportunidades</b>Clientes, talento, alianzas, una ronda.</div></li>
+              </ol>
+            </div>
+
+            <div class="recorrido" role="img" aria-label="Ejemplo de Build in Public: cuatro hitos, actividad reciente y una racha de seis semanas.">
+              <span class="recorrido__ejemplo">Ejemplo</span>
+              <p class="recorrido__titulo">Raíz Verde · Recorrido</p>
+              <ol class="hitos" aria-hidden="true">
+                <span class="linea-tiempo"></span>
+                <li class="hito-bip hito--logrado" style="--i: 0"><span class="hito__marca">✓</span><div><b>MVP en 3 huertas piloto</b><small>Logrado · Agosto</small></div></li>
+                <li class="hito-bip hito--logrado" style="--i: 1"><span class="hito__marca">✓</span><div><b>Primeras 1.000 bolsas vendidas</b><small>Logrado · Septiembre</small></div></li>
+                <li class="hito-bip hito--curso" style="--i: 2"><span class="hito__marca"><i class="punto-vivo"></i></span><div><b>Beta pública</b><span class="barra"><i class="barra-progreso" style="--p: 0.75; --retraso: 900ms"></i></span><small>75%</small></div></li>
+                <li class="hito-bip hito--proximo" style="--i: 3"><span class="hito__marca"></span><div><b>100 clientes recurrentes</b><small>Próximo · Diciembre</small></div></li>
+              </ol>
+              <div class="actividad" aria-hidden="true">
+                <p class="actividad__titulo"><i class="punto-vivo"></i>Actividad reciente</p>
+                <div class="actividad-bip">
+                  <p style="--i: 0">Día 42 · Lanzamos el nuevo onboarding.<small>hoy</small></p>
+                  <p style="--i: 1">Sumamos 50 usuarios a la beta.<small>hace 1 día</small></p>
+                  <p style="--i: 2">Cerramos con dos viveros de Paraná.<small>hace 2 días</small></p>
+                  <p style="--i: 3">Tienda online en beta cerrada.<small>hace 1 semana</small></p>
+                </div>
+              </div>
+              <div class="racha" aria-hidden="true">
+                <p>
+                  <svg viewBox="0 0 32 40" width="16" height="20"><path class="llama" d="M16 2c1.2 6.4 9.5 10.6 9.5 20.2C25.5 30.4 21.2 37 16 37S6.5 30.4 6.5 22.6c0-5 2.4-8.4 5.1-10.8.3 3.4 1.6 5.6 3.6 6.6C14.6 12.2 15.2 6.4 16 2Z" fill="#f2a53a" /></svg>
+                  6 semanas seguidas
+                </p>
+                <span class="racha__puntos">
+                  <i class="racha-punto" style="--i: 0"></i><i class="racha-punto" style="--i: 1"></i><i class="racha-punto" style="--i: 2"></i><i class="racha-punto" style="--i: 3"></i><i class="racha-punto" style="--i: 4"></i><i class="racha-punto" style="--i: 5"></i>
+                  <i class="racha-punto" data-lleno style="--i: 6"></i><i class="racha-punto" data-lleno style="--i: 7"></i><i class="racha-punto" data-lleno style="--i: 8"></i><i class="racha-punto" data-lleno style="--i: 9"></i><i class="racha-punto" data-lleno style="--i: 10"></i><i class="racha-punto" data-lleno style="--i: 11"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. El ecosistema, conectado -->
+      <section id="ecosistema" class="bloque bloque--der" aria-labelledby="eco-titulo">
+        <div class="panel vidrio" data-revelar>
+          <p class="etiqueta"><span class="etiqueta__num">05</span><span class="etiqueta__raya"></span>El ecosistema</p>
+          <h2 id="eco-titulo" class="titulo-seccion" data-palabras>Todo lo que pasa en la Pecera, conectado.</h2>
+          <dl class="verbos">
+            <div><dt>Descubrir</dt><dd>Feed de pitches y Explorar, con filtros por rol, industria, etapa y portfolio real.</dd></div>
+            <div><dt>Construir</dt><dd>Hitos, avances cortos y una racha que se calcula sola.</dd></div>
+            <div><dt>Conectar</dt><dd>Piques, contacto directo y cofundadores.</dd></div>
+            <div><dt>Fondear</dt><dd>Tu ronda, instrumento y valuación, paso a paso y con cada concepto explicado.</dd></div>
+            <div><dt>Aprender</dt><dd>Academy y un Dataroom que mostrás cuando vos querés.</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- 9. Cierre: sumate -->
+      <section id="sumate" class="bloque bloque--centro" aria-labelledby="sumate-titulo">
+        <div class="panel panel--cierre vidrio" data-revelar>
+          <p class="etiqueta etiqueta--centro">Sumate a la Pecera</p>
+          <h2 id="sumate-titulo" class="cierre__titulo" data-palabras>Empezá a construir a la vista.</h2>
+          <p class="texto">Gratis y sin comisiones: Pecera no toma equity ni cobra por inversión. Tu perfil está listo en 2 minutos.</p>
+          <div class="roles">
+            <a href="https://pecera-virid.vercel.app/cuenta?rol=emprendedor" class="rol" style="--rol: var(--arcilla)">
+              <span class="punto punto--arcilla"></span><b>Estoy construyendo</b><small>Tengo una startup o un proyecto</small>
+            </a>
+            <a href="https://pecera-virid.vercel.app/cuenta?rol=inversor" class="rol" style="--rol: var(--inversor)">
+              <span class="punto punto--inversor"></span><b>Invierto</b><small>Busco startups para invertir</small>
+            </a>
+            <a href="https://pecera-virid.vercel.app/cuenta?rol=aliado" class="rol" style="--rol: var(--aliado)">
+              <span class="punto punto--aliado"></span><b>Acompaño startups</b><small>Mentoría, coaching, aceleración</small>
+            </a>
+          </div>
+          <a href="https://pecera-virid.vercel.app/?ref=landing" class="enlace">Solo quiero mirar <span aria-hidden="true">→</span></a>
+          <p class="fino">Entrás con tu cuenta de Google. Sin contraseñas nuevas.</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Pie -->
+    <footer class="pie">
+      <div class="pie__news">
+        <div>
+          <p class="pie__news-titulo">Lo que pasa en la Pecera, en tu mail.</p>
+          <p>Novedades del ecosistema y de la plataforma.</p>
+        </div>
+        <a href="https://substack.com/@peceravc" target="_blank" rel="noopener" class="boton boton--secundario boton--md">Newsletter en Substack <span aria-hidden="true">↗</span></a>
+      </div>
+      <nav class="pie__cols" aria-label="Pie de página">
+        <div>
+          <p>Pecera</p>
+          <a href="https://pecera-virid.vercel.app/?ref=landing">Feed de pitches</a>
+          <a href="https://pecera-virid.vercel.app/explorar">Explorar</a>
+          <a href="https://pecera-virid.vercel.app/eventos/feria-21">Feria 21</a>
+          <a href="https://pecera-virid.vercel.app/academy">Academy</a>
+        </div>
+        <div>
+          <p>Explorar</p>
+          <a href="https://pecera-virid.vercel.app/explorar?ver=startups">Startups</a>
+          <a href="https://pecera-virid.vercel.app/explorar?ver=inversores">Inversores</a>
+          <a href="https://pecera-virid.vercel.app/explorar?ver=aliados">Aliados</a>
+          <a href="https://pecera-virid.vercel.app/academy/docs">Glosario y documentos</a>
+        </div>
+        <div>
+          <p>Tu cuenta</p>
+          <a href="https://pecera-virid.vercel.app/cuenta">Entrar</a>
+          <a href="https://pecera-virid.vercel.app/subir">Subir mi pitch</a>
+        </div>
+      </nav>
+      <p class="pie__legal">
+        Pecera es una capa de descubrimiento y conexión. No capta fondos del público, no custodia activos ni realiza oferta
+        pública de valores o asesoramiento financiero.
+      </p>
+      <p class="pie__firma">
+        <img src="/brand/wordmark-tinta.png" alt="pecera" width="74" height="16" />
+        Nacida en Córdoba, para toda Latinoamérica · <a href="https://pecera-virid.vercel.app/privacidad">Privacidad</a> ·
+        <a href="https://pecera-virid.vercel.app/terminos">Condiciones</a>
+      </p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

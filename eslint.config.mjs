@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "public/demo-video/**",
     // Pruebas de migraciones: script suelto que corre con PGlite fuera de la app.
     "supabase/pruebas/**",
+    // Landing liviana: proyecto Vite aparte (JS suelto, GSAP, su propio package.json). No es la app.
+    "landing-liviano/**",
   ]),
 ]);
 
