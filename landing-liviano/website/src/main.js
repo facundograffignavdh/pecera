@@ -2,7 +2,6 @@ import "./style.css";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
-import { setupPitches } from "./pitches.js";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -279,7 +278,6 @@ function setupNavActiva() {
 setupRevelar();
 setupMagnetic();
 setupSwitch();
-setupPitches({ reduceMotion, alCambiarAlto: () => ScrollTrigger.refresh() });
 
 const mm = gsap.matchMedia();
 mm.add("(hover: hover) and (min-width: 769px)", () => {

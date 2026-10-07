@@ -369,15 +369,6 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   propósito: sin él Vite toma el `postcss.config.mjs` de Tailwind de la raíz y la build falla.
   `public/bg.mp4` (17 MB) tiene todos los cuadros como keyframe para el scrub; no recomprimirlo
   a mano (`npm run prepare-media` lo regenera).
-  - Carrusel de pitches debajo del lema (`src/pitches.js`, fuera del pin): pide `${VITE_API_BASE}/api/landing/pitches`
-    al acercarse, esqueletos sin saltos, se mueve solo y despacio (con Pausar; nunca con reducir movimiento) y cada
-    tarjeta abre `${VITE_APP_URL}/#<pitch>`. Si falla o viene vacío, desaparece. `VITE_APP_URL` y `VITE_API_BASE` (por
-    defecto `https://pecera.lat`) viven en `website/vite.config.js` y se pisan por entorno (Vercel Preview).
-- Endpoint público de la landing: `GET /api/landing/pitches` (`app/api/landing/pitches/route.ts`, `?n=` 1-20, 12 por
-  defecto). Mismas condiciones que el feed, sin `test-*` ni el perfil `pecera`, solo con poster, orden por `orden` e `id`.
-  Expone EXACTAMENTE `id, poster, descripcion (≤ 90, sin hashtags), nombre, slug, rol, empresa` (armado campo por campo
-  en `forma.ts`, al lado). CORS `*` (GET y OPTIONS), `s-maxage=60, stale-while-revalidate=300`; si falla, 200 con
-  lista vacía. Prueba `node scripts/pruebas/landing-pitches.ts` (0 fallas): agregar un campo = cambiarla a propósito.
 - Próximo: deploy en Vercel; dominio propio para R2 después de la feria.
 
 ## Rama v2-cuentas (reglas)
@@ -454,7 +445,6 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/explorar` (startups, inversores, aliados y hashtags), `/t/[tag]` y `/t/[tag]/feed`
   (sección por hashtag; `#feria21` = la feria), `/cofundadores` (pestañas Cofundadores y Networking),
   `/red` (Mi red: los perfiles que seguís, en el celular)
-- `/api/landing/pitches` → pitches públicos para la landing aparte (ver landing-liviano)
 - `/sumate` → landing de adquisición (ISR 60 s), armada en `components/landing/`: Hero
   (con `EcosistemaVivo`: tarjetas de ejemplo unidas por corrientes y el isotipo quieto en
   el centro), Desparramado (problema → solución), demo,
