@@ -2,7 +2,7 @@ import { WHATSAPP } from "@/lib/cuenta";
 import { supabase } from "@/lib/supabase";
 
 /**
- * Juego del stand de la Feria 21 (/stand): adivinar un número de 3 cifras con 3 intentos; hay
+ * Juego del stand de la Feria 21 (/tarjetas, solo por link o QR): adivinar un número de 3 cifras con 3 intentos; hay
  * N tarjetas NFC en juego. Todo lo decide la base (migración juego_stand): el número nunca llega
  * al navegador y los intentos y el tope de tarjetas se cuentan allá. Acá solo se llama a las RPC
  * con el cliente anon y se traducen los errores. Nunca tira.

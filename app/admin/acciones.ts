@@ -73,8 +73,13 @@ export async function representante(empresa: string, perfil: string) {
   return rpc("admin_representante", { p_evento: EVENTO_ACTUAL.slug, p_empresa: empresa, p_perfil: perfil });
 }
 
-/** Agrega o quita #feria21 de la descripción de un pitch. */
+/**
+ * Agrega o quita #feria21 de la descripción de un pitch. Con feria21_sin_tope el tag no cuenta
+ * para los 150 caracteres; sin esa migración, la función de antes (con el tope).
+ */
 export async function pitchFeria(pitch: string, con: boolean) {
+  const r = await rpc("admin_pitch_feria_libre", { p_pitch: pitch, p_con: con });
+  if (r.ok || r.mensaje !== NO_DISPONIBLE) return r;
   return rpc("admin_pitch_feria", { p_pitch: pitch, p_con: con });
 }
 
@@ -124,4 +129,123 @@ export async function entregarStand(jugador: string, entregado: boolean) {
 /** Interruptor del score crediticio (score_switch). Revalida todo: el cambio se ve en la próxima carga. */
 export async function interruptorScore(activo: boolean) {
   return rpc("admin_score", { p_activo: activo }, "/");
+}
+
+// ---------------------------------------------------------------------------
+// Editar perfiles y empresas desde /admin/perfil/[id] (alta_rapida). Todo queda en
+// `equipo_acciones` (quién, cuándo y qué columnas; nunca los valores).
+// ---------------------------------------------------------------------------
+
+/** Como `rpc`, pero el mensaje del tope habla de la persona, no de quien usa el panel. */
+async function rpcEquipo(nombre: string, args: Record<string, unknown>): Promise<Resultado & { datos?: unknown }> {
+  const supabase = await supabaseConSesion();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, mensaje: SIN_SESION };
+
+  const { data, error } = await supabase.rpc(nombre, args);
+  if (error) {
+    if (error.message === "tope de empresas") return { ok: false, mensaje: "Esa persona ya está en 5 empresas, el máximo." };
+    if (error.message === "esa persona ya representa a otra empresa") {
+      return { ok: false, mensaje: "Ya representa a otra empresa en la feria: destildá «Anotar en la feria» o cambiá el representante." };
+    }
+    return traducir(error, nombre);
+  }
+  // Se ve en /p/<slug>, /e/<slug>, el feed y el evento.
+  revalidatePath("/", "layout");
+  return { ok: true, datos: data };
+}
+
+export type DatosPerfilEquipo = {
+  nombre: string;
+  descripcion: string;
+  rol: string;
+  tipo: string;
+  publicado: boolean;
+  oculto: boolean;
+};
+
+/** Perfil sin cuenta: todo. */
+export async function editarPerfilEquipo(perfil: string, d: DatosPerfilEquipo): Promise<Resultado> {
+  return rpcEquipo("admin_editar_perfil_equipo", {
+    p_perfil: perfil,
+    p_nombre: d.nombre.trim(),
+    p_descripcion: d.descripcion.trim(),
+    p_rol: d.rol,
+    p_tipo: d.tipo,
+    p_publicado: d.publicado,
+    p_oculto: d.oculto,
+  });
+}
+
+/** Perfil con cuenta: solo nombre y descripción, para corregir. */
+export async function editarPerfilCuenta(perfil: string, nombre: string, descripcion: string): Promise<Resultado> {
+  return rpcEquipo("admin_editar_perfil_cuenta", {
+    p_perfil: perfil,
+    p_nombre: nombre.trim(),
+    p_descripcion: descripcion.trim(),
+  });
+}
+
+export async function editarEmpresaEquipo(empresa: string, nombre: string, descripcion: string): Promise<Resultado> {
+  return rpcEquipo("admin_editar_empresa_equipo", {
+    p_empresa: empresa,
+    p_nombre: nombre.trim(),
+    p_descripcion: descripcion.trim() || null,
+  });
+}
+
+export async function agregarEmpresa(
+  perfil: string,
+  nombre: string,
+  descripcion: string,
+  tipo: string,
+  feria: boolean
+): Promise<Resultado> {
+  const r = await rpcEquipo("admin_agregar_empresa", {
+    p_perfil: perfil,
+    p_nombre: nombre.trim(),
+    p_descripcion: descripcion.trim() || null,
+    p_tipo: tipo,
+    p_evento: feria ? EVENTO_ACTUAL.slug : null,
+  });
+  return r.ok ? { ok: true, slug: (r.datos as { slug: string }).slug } : r;
+}
+
+/** Suma el perfil a una empresa existente: no cambia quién la administra ni quién la representa. */
+export async function sumarAEmpresa(perfil: string, empresa: string, cargo: string, feria: boolean): Promise<Resultado> {
+  const r = await rpcEquipo("admin_sumar_a_empresa", {
+    p_perfil: perfil,
+    p_empresa: empresa,
+    p_cargo: cargo || null,
+    p_evento: feria ? EVENTO_ACTUAL.slug : null,
+  });
+  return r.ok ? { ok: true, slug: r.datos as string } : r;
+}
+
+/** Email de Google para que la persona reclame su perfil (vacío = borrarlo). */
+export async function emailReclamo(perfil: string, email: string): Promise<Resultado> {
+  return rpcEquipo("admin_email_reclamo", { p_perfil: perfil, p_email: email.trim() });
+}
+
+/**
+ * Vincula el perfil sin dueña con la cuenta de ese email. La base no dice por qué no pudo (no
+ * revela qué emails tienen cuenta): el mensaje cubre los casos.
+ */
+export async function vincularCuenta(perfil: string, email: string): Promise<Resultado> {
+  const r = await rpcEquipo("admin_vincular_cuenta", { p_perfil: perfil, p_email: email.trim() });
+  if (!r.ok) return r;
+  return r.datos === true
+    ? { ok: true }
+    : {
+        ok: false,
+        mensaje:
+          "No se pudo vincular: la cuenta no existe, no confirmó el email o ya tiene perfil. Pedile que entre una vez con Google y probá de nuevo.",
+      };
+}
+
+/** Derecho de supresión: borra un perfil creado por el equipo que todavía no tiene cuenta. */
+export async function borrarPerfilEquipo(perfil: string): Promise<Resultado> {
+  return rpcEquipo("admin_borrar_perfil_equipo", { p_perfil: perfil });
 }

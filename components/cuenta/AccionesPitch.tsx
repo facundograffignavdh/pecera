@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { editarDescripcionPitch, ocultarPitch } from "@/app/cuenta/pitch";
-import { DESCRIPCION_PITCH_MAX } from "@/lib/pitch";
+import { DESCRIPCION_PITCH_MAX, largoDescripcionPitch } from "@/lib/pitch";
 
 const BOTON =
   "inline-flex min-h-10 items-center rounded-full px-3 text-xs font-semibold text-tinta transition-colors duration-200 ease-pecera focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcilla disabled:opacity-60";
@@ -50,7 +50,9 @@ export default function AccionesPitch({
   }
 
   if (editando) {
-    const restan = DESCRIPCION_PITCH_MAX - texto.length;
+    // #feria21 no cuenta para el tope (lo suma el equipo aunque esté en 150).
+    const restan = DESCRIPCION_PITCH_MAX - largoDescripcionPitch(texto);
+    const delTag = texto.length - largoDescripcionPitch(texto);
     return (
       <div className="flex flex-col gap-2">
         <label htmlFor={`desc-${id}`} className="sr-only">
@@ -60,7 +62,7 @@ export default function AccionesPitch({
           id={`desc-${id}`}
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          maxLength={DESCRIPCION_PITCH_MAX}
+          maxLength={DESCRIPCION_PITCH_MAX + delTag}
           rows={3}
           className="w-full rounded-xl border border-tinta/55 bg-marfil px-3 py-2 text-sm text-tinta focus:outline-2 focus:outline-offset-2 focus:outline-arcilla"
         />

@@ -15,20 +15,26 @@ function appDe(ua: string): string {
   return "esta app";
 }
 
+/** Si la página corre en el navegador interno de una red (en el servidor y al hidratar, no). */
+export function useNavegadorInterno(): boolean {
+  const ua = useSyncExternalStore(sinCambios, () => navigator.userAgent, () => "");
+  return INTERNO.test(ua);
+}
+
 /**
  * Google bloquea el login dentro del navegador de Instagram, LinkedIn y otras apps
  * ("disallowed_useragent"). Si la persona llegó por un link en una red, se lo
  * avisamos antes de que toque "Entrar con Google" y le damos el link para abrirlo
  * en Chrome o Safari.
  */
-export default function AvisoNavegadorInterno() {
+export default function AvisoNavegadorInterno({ id }: { id?: string } = {}) {
   const ua = useSyncExternalStore(sinCambios, () => navigator.userAgent, () => "");
   const [copiado, setCopiado] = useState(false);
   if (!INTERNO.test(ua)) return null;
   const esIos = /iphone|ipad|ipod/i.test(ua);
 
   return (
-    <div role="alert" className="flex flex-col gap-2 rounded-2xl border-2 border-arcilla bg-t-arcilla-suave/50 px-4 py-3 text-sm text-tinta">
+    <div id={id} tabIndex={id ? -1 : undefined} role="alert" className="flex flex-col gap-2 rounded-2xl border-2 border-arcilla bg-t-arcilla-suave/50 px-4 py-3 text-sm text-tinta">
       <p className="font-semibold">Abrí Pecera en {esIos ? "Safari" : "Chrome"} para entrar</p>
       <p>
         Estás en el navegador de {appDe(ua)} y Google no deja iniciar sesión acá. Tocá el menú (⋯ o ⋮) y elegí «Abrir en

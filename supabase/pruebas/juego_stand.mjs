@@ -1,5 +1,5 @@
 // Harness: aplica schema + migraciones de Pecera sobre PGlite (Postgres en WASM) y prueba el juego
-// del stand (20261019120000_juego_stand.sql): permisos, que el número nunca salga, validaciones,
+// del stand (/tarjetas, 20261021120000_juego_stand.sql): permisos, que el número nunca salga, validaciones,
 // 3 intentos por teléfono, el tope de tarjetas, juego cerrado, límite de frecuencia, /admin y el
 // rollback. No toca ninguna base.
 //
@@ -62,8 +62,11 @@ const MIGRACIONES = [
   "20261016120000_panel_organizacion.sql",
   "20261017120000_quien_vio.sql",
   "20261018120000_score_switch.sql",
+  "20261019120000_alta_rapida.sql",
+  "20261019120000_feria_stands_votos.sql",
+  "20261020120000_feria21_sin_tope.sql",
 ];
-const NUEVA = "supabase/migrations/20261019120000_juego_stand.sql";
+const NUEVA = "supabase/migrations/20261021120000_juego_stand.sql";
 const ROLLBACK = "supabase/rollback-juego-stand.sql";
 
 let ok = 0;

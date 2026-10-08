@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { type Resultado, SIN_SESION, traducir } from "@/lib/errores-base";
-import { DESCRIPCION_PITCH_MAX } from "@/lib/pitch";
+import { DESCRIPCION_PITCH_MAX, largoDescripcionPitch } from "@/lib/pitch";
 import { supabaseConSesion } from "@/lib/supabase-servidor";
 
 /**
@@ -32,8 +32,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function editarDescripcionPitch(id: string, descripcion: string): Promise<Resultado> {
   if (!UUID.test(id)) return { ok: false, mensaje: "Ese pitch no existe." };
   const texto = descripcion.trim();
-  if (texto.length > DESCRIPCION_PITCH_MAX) {
-    return { ok: false, mensaje: `Hasta ${DESCRIPCION_PITCH_MAX} caracteres.` };
+  if (largoDescripcionPitch(texto) > DESCRIPCION_PITCH_MAX) {
+    return { ok: false, mensaje: `Hasta ${DESCRIPCION_PITCH_MAX} caracteres (#feria21 no cuenta).` };
   }
   const { supabase, user } = await conSesion();
   if (!user) return { ok: false, mensaje: SIN_SESION };

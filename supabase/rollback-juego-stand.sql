@@ -1,7 +1,7 @@
--- Vuelta atrás de 20261019120000_juego_stand.sql. NO es migración: se corre a mano en el SQL
+-- Vuelta atrás de 20261021120000_juego_stand.sql. NO es migración: se corre a mano en el SQL
 -- editor. CON PÉRDIDA: borra los jugadores, los ganadores y el número. Si solo hace falta frenar el
 -- juego, cerrarlo desde /admin → Juego del stand.
--- Sin estas funciones, /stand muestra "El juego arranca pronto" y la Feria esconde el juego.
+-- Sin estas funciones, /tarjetas muestra "El juego arranca pronto".
 --
 -- Prueba en seco: cambiar el `commit` del final por `rollback`.
 

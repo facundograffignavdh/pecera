@@ -7,8 +7,20 @@ import { NextResponse, type NextRequest } from "next/server";
  * busca/ofrece desde Networking) y /organizacion (el panel de la Universidad). El
  * feed, los perfiles y las empresas no pasan por acá y siguen estáticos. El proxy
  * no hace dinámica a una página: solo renueva la cookie si vence.
+ *
+ * El juego del stand se comparte como "/Tarjetas": cualquier mayúscula va a /tarjetas. Va acá y no en
+ * `redirects()` de next.config porque esas comparan sin distinguir mayúsculas (/tarjetas entraba en bucle).
+ * /tarjetas no necesita sesión: pasa de largo.
  */
 export async function proxy(request: NextRequest) {
+  const ruta = request.nextUrl.pathname;
+  if (ruta.toLowerCase() === "/tarjetas") {
+    if (ruta === "/tarjetas") return NextResponse.next();
+    const destino = request.nextUrl.clone();
+    destino.pathname = "/tarjetas";
+    return NextResponse.redirect(destino);
+  }
+
   let respuesta = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -38,5 +50,15 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cuenta/:path*", "/auth/:path*", "/subir", "/admin/:path*", "/eventos/:path*", "/cofundadores", "/organizacion/:path*"],
+  matcher: [
+    "/cuenta/:path*",
+    "/auth/:path*",
+    "/subir",
+    "/admin/:path*",
+    "/eventos/:path*",
+    "/cofundadores",
+    "/organizacion/:path*",
+    "/Tarjetas",
+    "/TARJETAS",
+  ],
 };

@@ -7,8 +7,7 @@ import PieLegal from "@/components/PieLegal";
 import { EnlaceVolver } from "@/components/VolverAlFeed";
 import { GaleriaEdicion, PortadaFeria21, TituloFeria } from "@/components/eventos/MarcaFeria21";
 import Votacion from "@/components/eventos/Votacion";
-import TarjetaJuegoStand from "@/components/stand/TarjetaJuegoStand";
-import { getEstadoEvento, getEstadoStand } from "@/lib/datos";
+import { getDiasFeria, getEstadoEvento, getLogosParticipantes } from "@/lib/datos";
 import { EVENTO_ACTUAL, EVENTOS, getEventoDefinido } from "@/lib/eventos";
 
 export const revalidate = 60;
@@ -46,12 +45,15 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
   const evento = getEventoDefinido(slug);
   if (!evento) notFound();
 
-  // La Feria 21 lleva la identidad de Semana 21 (verde, mayúsculas, trazo amarillo).
-  const feria = evento.slug === EVENTO_ACTUAL.slug;
-  // El juego del stand solo en la Feria; null (sin migración o si falla) = sin sección.
-  const [estado, juegoStand] = await Promise.all([getEstadoEvento(evento.slug), feria ? getEstadoStand() : null]);
+  const estado = await getEstadoEvento(evento.slug);
   // Compite cualquier perfil anotado: emprendedores, inversores y aliados.
   const participantes = estado.participantes;
+  const [logos, dias] = await Promise.all([
+    getLogosParticipantes(participantes.map((p) => p.empresa_slug)),
+    getDiasFeria(evento.slug),
+  ]);
+  // La Feria 21 lleva la identidad de Semana 21 (verde, mayúsculas, trazo amarillo).
+  const feria = evento.slug === EVENTO_ACTUAL.slug;
 
   return (
     <main className="h-dvh overflow-y-auto overscroll-y-contain bg-marfil">
@@ -100,13 +102,67 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
         </header>
         )}
 
-        {juegoStand && <TarjetaJuegoStand estado={juegoStand} />}
+        {/* Votación: lo primero después de la portada, a todo el ancho. */}
+        <section id="votacion" aria-labelledby="titulo-votacion" className="mt-10 scroll-mt-24">
+          {!estado.disponible ? (
+            <>
+              <Titulo id="titulo-votacion" feria={feria}>
+                Participantes
+              </Titulo>
+              <p className="mt-3 rounded-2xl bg-tinta/5 px-4 py-3 text-sm text-tinta">
+                Estamos preparando la votación. Volvé en un rato.
+              </p>
+            </>
+          ) : (
+            <Votacion
+              evento={evento.slug}
+              participantes={participantes}
+              logos={logos}
+              dias={dias}
+              abierta={estado.votacionAbierta}
+              resultadosVisibles={estado.resultadosVisibles}
+              resultados={estado.resultados}
+              totalVotos={estado.totalVotos}
+            />
+          )}
+        </section>
 
-        {/* En la compu: el programa a la izquierda; cómo votar y la votación a la derecha. */}
-        <div className="lg:mt-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start lg:gap-10">
-        <div className="min-w-0 lg:[&>section:first-child]:mt-0">
-        {/* Programa */}
-        <section aria-labelledby="programa" className="mt-10">
+        {/* Cómo votar: los pasos a la vista y las reglas en un desplegable ("Ver las reglas" lo abre). */}
+        <section aria-labelledby="como-votar" className="mt-10">
+          <Titulo id="como-votar" feria={feria}>
+            Cómo votar
+          </Titulo>
+          <ol className="mt-4 grid gap-2 md:grid-cols-3 md:gap-3">
+            {evento.comoVotar.map((paso, i) => (
+              <li key={paso} className="flex gap-3 rounded-2xl border border-tinta/10 px-4 py-3 text-sm text-tinta">
+                <span
+                  className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                    feria ? "bg-s21-verde-oscuro text-white" : "bg-tinta/10"
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                {paso}
+              </li>
+            ))}
+          </ol>
+          <details id="reglas" className="group mt-3 scroll-mt-24 rounded-2xl bg-tinta/5">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 text-sm font-semibold text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tinta [&::-webkit-details-marker]:hidden">
+              Ver las reglas
+              <span aria-hidden className="transition-transform duration-200 ease-pecera group-open:rotate-180 motion-reduce:transition-none">
+                ▾
+              </span>
+            </summary>
+            <ul className="flex flex-col gap-1 px-4 pb-4 text-sm text-tinta/80">
+              {evento.reglas.map((r) => (
+                <li key={r}>· {r}</li>
+              ))}
+            </ul>
+          </details>
+        </section>
+
+        {/* Programa: la misma línea de tiempo de siempre, con el ancho que tenía en la columna izquierda. */}
+        <section aria-labelledby="programa" className="mt-10 lg:max-w-3xl">
           <Titulo id="programa" feria={feria}>
             Programa
           </Titulo>
@@ -164,71 +220,6 @@ export default async function EventoPage({ params }: PageProps<"/eventos/[slug]"
             })}
           </ol>
         </section>
-
-        </div>
-        <div className="lg:sticky lg:top-24">
-        {/* Cómo votar */}
-        <section aria-labelledby="como-votar" className="mt-4 grid gap-3">
-          <Titulo id="como-votar" feria={feria}>
-            Cómo votar
-          </Titulo>
-          <ol className="flex flex-col gap-2">
-            {evento.comoVotar.map((paso, i) => (
-              <li key={paso} className="flex gap-3 text-sm text-tinta">
-                <span
-                  className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                    feria ? "bg-s21-verde-oscuro text-white" : "bg-tinta/10"
-                  }`}
-                >
-                  {i + 1}
-                </span>
-                {paso}
-              </li>
-            ))}
-          </ol>
-          <div className="rounded-2xl bg-tinta/5 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-tinta/60">Reglas</p>
-            <ul className="mt-1 flex flex-col gap-1 text-sm text-tinta/80">
-              {evento.reglas.map((r) => (
-                <li key={r}>· {r}</li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* Votación */}
-        <section id="votacion" aria-labelledby="titulo-votacion" className="mt-10 scroll-mt-24">
-          <Titulo id="titulo-votacion" feria={feria}>
-            {estado.resultadosVisibles ? "Ranking del público" : "Participantes"}
-          </Titulo>
-          {!estado.disponible ? (
-            <p className="mt-3 rounded-2xl bg-tinta/5 px-4 py-3 text-sm text-tinta">
-              Estamos preparando la votación. Volvé en un rato.
-            </p>
-          ) : participantes.length === 0 ? (
-            <p className="mt-3 rounded-2xl bg-tinta/5 px-4 py-3 text-sm text-tinta">
-              Todavía no se anotó nadie. ¿Vas a estar?{" "}
-              <Link href="/cuenta" className="font-medium underline underline-offset-4">
-                Anotate desde tu perfil
-              </Link>
-              .
-            </p>
-          ) : (
-            <div className="mt-4">
-              <Votacion
-                evento={evento.slug}
-                participantes={participantes}
-                abierta={estado.votacionAbierta}
-                resultadosVisibles={estado.resultadosVisibles}
-                resultados={estado.resultados}
-                totalVotos={estado.totalVotos}
-              />
-            </div>
-          )}
-        </section>
-
-        </div>
-        </div>
 
         {feria && <GaleriaEdicion />}
 

@@ -36,8 +36,8 @@ export default function PrivacidadPage() {
   return (
     <PaginaLegal
       titulo="Política de privacidad"
-      actualizado="6 de octubre de 2026"
-      actualizadoIso="2026-10-06"
+      actualizado="7 de octubre de 2026"
+      actualizadoIso="2026-10-07"
       intro={
         <p>
           Pecera muestra pitches en video y perfiles de emprendedores, empresas, inversores y
@@ -72,6 +72,20 @@ export default function PrivacidadPage() {
             en que aceptaste publicarlo y, si lo cargás, el link a tu newsletter (por ejemplo, de
             Substack) con su título. La foto se achica y se recorta en tu celular antes de
             subirla; en ese paso se borran sus datos internos, incluida la ubicación.
+          </li>
+          <li id="alta-equipo">
+            <strong className="font-semibold text-tinta">Si el equipo armó tu perfil en un
+            evento.</strong> En la Feria 21 y otros eventos, alguien del equipo de Pecera puede
+            crear tu perfil en el momento, solo si le decís que sí: tu nombre, una línea sobre lo
+            que hacés y, si querés, tu emprendimiento (su nombre y una línea). No te pedimos
+            teléfono, redes ni otros contactos. Guardamos que diste tu consentimiento, cuándo, con
+            qué texto y quién del equipo lo cargó (esto último no es público). Si nos das tu email
+            de Google, lo guardamos aparte, no se publica y solo sirve para que, cuando entres con
+            esa cuenta, te preguntemos si el perfil es tuyo y lo reclames; al reclamarlo, el perfil
+            pasa a ser tuyo, lo editás vos y ese email se borra. Mientras no lo reclames, el equipo
+            puede corregirlo y el perfil se ve como cualquier otro. Para que lo borremos, escribinos
+            a <Email /> (ver{" "}
+            <a href="#derechos" className={CLASE_ENLACE}>Tus derechos</a>).
           </li>
           <li>
             <strong className="font-semibold text-tinta">Portfolio, servicios y tesis.</strong> Si
@@ -170,6 +184,16 @@ export default function PrivacidadPage() {
             el canal y la fecha, más un contador para frenar abusos. No está atado a tu nombre;
             si entrás con tu cuenta, se une a ella (ver más abajo).
           </li>
+          <li id="votacion">
+            <strong className="font-semibold text-tinta">Tu voto en la Feria 21.</strong> Podés votar
+            sin cuenta: guardamos el identificador al azar de tu navegador, a quién votaste y la
+            fecha, para que haya un voto por celular y lo puedas cambiar. Si entrás con tu cuenta y
+            votás, vale el voto de la cuenta y el del celular se borra. Nunca mostramos quién votó a
+            quién: solo los totales, cuando el equipo publica los resultados. Para ordenar la
+            votación por día usamos la planilla de stands de la feria (nombre, emprendimiento y día),
+            que guardamos aparte y solo ve el equipo: si tenés cuenta, sirve para mostrarte en tu
+            día y anotarte en la votación.
+          </li>
           <li id="medicion">
             <strong className="font-semibold text-tinta">La actividad y de dónde llegaste.</strong>{" "}
             Con el mismo identificador al azar registramos algunas acciones: cuando empieza una
@@ -214,6 +238,7 @@ export default function PrivacidadPage() {
           <li>Mostrar tu perfil y tus pitches en Pecera para que otras personas te conozcan.</li>
           <li>Que te puedan contactar por los canales que elegiste publicar.</li>
           <li>Saber a qué perfil corresponde cada video que llega por el formulario.</li>
+          <li>Que reclames el perfil que el equipo armó con vos en un evento (con el email que nos diste).</li>
           <li>Contar los piques y las vistas de cada pitch.</li>
           <li>Medir cuántas veces se toca cada canal de contacto, para saber si Pecera sirve para conectar.</li>
           <li>Medir, en números agregados, cuántas conexiones se inician y entre qué tipos de
@@ -360,7 +385,7 @@ export default function PrivacidadPage() {
 
       <Seccion id="juego-stand" titulo="Feria 21: el juego del stand">
         <p>
-          En el stand de Pecera de la Feria 21 hay un juego (en <Link href="/stand" className={CLASE_ENLACE}>/stand</Link>):
+          En el stand de Pecera de la Feria 21 hay un juego al que se entra con el QR o el link del stand:
           adivinar un número de 3 cifras para ganar una tarjeta NFC. No hace falta tener cuenta en Pecera.
         </p>
         <ul>
@@ -432,6 +457,11 @@ export default function PrivacidadPage() {
           organización de la Feria 21 se guarda mientras tu cuenta exista.
         </p>
         <p>
+          Si el equipo armó tu perfil en un evento, el email que nos diste para reclamarlo se
+          guarda hasta que lo reclames (ahí se borra) o hasta que nos pidas borrar el perfil. El
+          registro de quién del equipo lo cargó y cuándo se guarda mientras exista el perfil.
+        </p>
+        <p>
           Cuando eliminás tu cuenta, los videos, fotos, logos e imágenes se borran de nuestros
           servidores en la hora siguiente. Los videos originales del formulario se quedan en
           Google Drive hasta que el equipo los borra a mano, y tus respuestas al formulario siguen
@@ -474,6 +504,14 @@ export default function PrivacidadPage() {
             ella queda sin tu nombre. Qué guardamos
             después y por cuánto, en{" "}
             <a href="#conservacion" className={CLASE_ENLACE}>Cuánto tiempo los guardamos</a>.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Si el equipo armó tu perfil y todavía no
+            lo reclamaste:</strong> escribinos a <Email /> y lo corregimos o lo borramos (con su
+            emprendimiento, si eras la única persona del equipo). También podés entrar con tu
+            cuenta de Google, reclamarlo en{" "}
+            <Link href="/cuenta" className={CLASE_ENLACE}>Mi perfil</Link> y manejarlo vos, incluso
+            eliminarlo.
           </li>
           <li>
             <strong className="font-semibold text-tinta">Pedir tus datos:</strong> escribinos a{" "}

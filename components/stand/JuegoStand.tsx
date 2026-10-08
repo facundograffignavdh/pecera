@@ -38,7 +38,7 @@ async function leer(): Promise<Lectura> {
 }
 
 /**
- * Juego del stand (/stand): datos → número de 3 cifras (3 intentos) → resultado. El número
+ * Juego del stand (/tarjetas): datos → número de 3 cifras (3 intentos) → resultado. El número
  * nunca está acá: la base dice si acertó (lib/stand.ts). Si se recarga la página, retoma el
  * juego de este celular. Va sobre fondo Tinta (`tema-fijo` en la página).
  */

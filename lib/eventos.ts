@@ -114,12 +114,12 @@ export const EVENTO_ACTUAL: Evento = {
   ],
   votacion: VOTACION,
   comoVotar: [
-    "Entrá con tu cuenta de Google (es para que haya un voto por persona).",
-    "Mirá a los participantes (proyectos, inversores y aliados) y tocá «Votar» en tu favorito.",
+    "Elegí el día de la feria o buscá a tu favorito por nombre o emprendimiento.",
+    "Tocá «Votar». No hace falta cuenta: es un voto por celular.",
     "Podés cambiar tu voto mientras la votación esté abierta.",
   ],
   reglas: [
-    "Un voto por cuenta de Google.",
+    "Un voto por celular. Si entrás con tu cuenta de Google y votás, vale el voto de la cuenta.",
     "No te podés votar a vos ni a tu propia empresa.",
     `La votación abre el ${VOTACION.abre} y cierra el ${VOTACION.cierra}.`,
     `Los resultados ${VOTACION.resultados}.`,

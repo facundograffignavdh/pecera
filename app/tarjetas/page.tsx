@@ -12,10 +12,11 @@ export const metadata: Metadata = {
 };
 
 /**
- * Juego del stand de la Feria 21 (QR / link desde la página de la Feria). Estática: el estado
- * y el juego los pide `JuegoStand` en el navegador. Sin barra inferior (NavInferior).
+ * Juego de las tarjetas del stand de la Feria 21. Se entra SOLO por link o QR: ninguna pantalla de
+ * la app lo enlaza (salvo /admin), no va en el sitemap y no se indexa. Estática: el estado y el juego
+ * los pide `JuegoStand` en el navegador. Sin barra inferior ni avisos del layout.
  */
-export default function StandPage() {
+export default function TarjetasPage() {
   return (
     <main className="tema-fijo h-dvh overflow-y-auto overscroll-y-contain bg-tinta text-marfil">
       <div className="mx-auto w-full max-w-md px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">

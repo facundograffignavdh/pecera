@@ -1,9 +1,9 @@
 -- Juego del stand de Pecera en la Feria 21 (rama juego-stand). Solo aditiva: dos tablas nuevas y
--- funciones nuevas; no toca nada existente. Después de 20261018120000_score_switch.sql.
+-- funciones nuevas; no toca nada existente. Después de 20261020120000_feria21_sin_tope.sql.
 -- Vuelta atrás: supabase/rollback-juego-stand.sql (NO es migración; con pérdida de los datos del juego).
 -- Pruebas sin tocar ninguna base: supabase/pruebas/juego_stand.mjs.
 --
--- Cómo se juega (/stand): la persona deja nombre, apellido, teléfono y si quiere una tarjeta NFC
+-- Cómo se juega (/tarjetas, solo por link o QR; la app no lo enlaza): la persona deja nombre, apellido, teléfono y si quiere una tarjeta NFC
 -- personalizada; después tiene 3 intentos para adivinar un número de 3 cifras. Hay N tarjetas en
 -- juego (5 por defecto): las primeras N personas que aciertan ganan un código para retirarla.
 --

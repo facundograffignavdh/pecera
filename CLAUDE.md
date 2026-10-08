@@ -361,16 +361,46 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   **Pendiente legal** (sigue vigente; por eso el score está apagado): el texto de la "i" aclara que mide cuánta información hay, no si es verdadera, y que
   no es una calificación de riesgo regulada ni asesoramiento; antes del lanzamiento, que el abogado revise
   el nombre "crediticio" y los rótulos "Riesgo bajo/alto" (calificadoras de riesgo, CNV).
-- Juego del stand (rama `juego-stand`, migración `20261019120000_juego_stand.sql`, después de score_switch;
+- Alta rápida y reclamo (rama `alta-rapida`, migración `20261019120000_alta_rapida.sql`, después de
+  score_switch; pruebas `supabase/pruebas/alta_rapida.mjs` y `node scripts/pruebas/tarjeta.ts`; vuelta atrás
+  `supabase/rollback-alta-rapida.sql`, que NO es migración y es con pérdida; guía `docs/GUIA-FERIA.md` §9).
+  Todo por funciones `admin_*` security definer (`exigir_admin` + `admin_como_sistema`): un insert con el
+  cliente normal le pondría como dueña al admin (`perfiles_guardian`). Tablas privadas: `perfiles_alta_equipo`
+  (quién y cuándo creó, consentimiento y versión), `perfiles_reclamo` (email de Google para reclamar, NUNCA en
+  `perfiles.email`; `email_canonico`: en Gmail sin puntos ni "+") y `equipo_acciones` (registro: quién, cuándo,
+  qué columnas, nunca valores). **Ninguna tabla nueva con FK a `perfiles` y a `empresas` a la vez** (PGRST201):
+  `empresa_id` ahí es uuid común. Topes con `medicion_limitar(<uid>, …)`.
+  - `/admin/alta` (`components/admin/AltaRapida.tsx`, reglas en `lib/alta-rapida.ts`): perfil sin cuenta,
+    `tipo='persona'`, publicado por defecto, con `CONSENTIMIENTO_ALTA` (versión) obligatorio; empresa nueva
+    (`dueno_id` null) o "Sumar a" una existente (no cambia dueña ni representante); parecidos antes de crear
+    (`admin_parecidos`, "Crear igual"); Deshacer 10 min (solo quien la creó). Stand → link de la tarjeta con
+    `codigoTarjeta` (`lib/tarjeta.ts`: `s<100*(día-6)+stand>`, jue 8 stand 16 = s216), solo se muestra.
+  - `/admin/perfil/[id]` (`components/admin/EditarPerfil.tsx`): sin cuenta, todo + email de reclamo, vincular
+    (`admin_vincular_cuenta`: devuelve false sin decir por qué) y eliminar (solo creados por el equipo);
+    con cuenta, solo nombre y descripción. Empresas: editar (también con dueña), agregar
+    (`dueno_id = usuario_id` de la persona) o sumar, hasta 5. Perfiles: `admin_perfiles_v2`, filtro "Sin empresa"
+    y "Para revisar" (`admin_reclamos_revisar`).
+  - Reclamo: solo en `/cuenta` (nunca en el callback), antes del alta: `mi_reclamo_pendiente()` usa el email
+    VERIFICADO de la sesión (no recibe emails) → `ReclamoPerfil` → `reclamar_perfil(perfil, consentimiento)`
+    (solo cambia `usuario_id` y `consentimiento_at`; empresas sin dueña pasan a ella; borra el email). Si la
+    cuenta ya tiene perfil o dice "No es mío" (`rechazar_reclamo`), va a "Para revisar". Nada se fusiona solo.
+- #feria21 sin tope (migración `20261020120000_feria21_sin_tope.sql`, después de alta_rapida; pruebas
+  `supabase/pruebas/feria21_sin_tope.mjs`; vuelta atrás `supabase/rollback-feria21-sin-tope.sql`, que NO es
+  migración): el tag no cuenta para los 150 de `pitches.descripcion` (`pitches_descripcion_valida`; espejo
+  `largoDescripcionPitch` en `lib/pitch.ts`). El panel usa `admin_pitch_feria_libre` (cae a `admin_pitch_feria`
+  sin la migración). El tag no sirve para escribir más: 151 + #feria21 no vale.
+- Juego del stand (rama `juego-stand`, migración `20261021120000_juego_stand.sql`, después de feria21_sin_tope;
   pruebas `supabase/pruebas/juego_stand.mjs`; vuelta atrás `supabase/rollback-juego-stand.sql`, que NO es
-  migración y es con pérdida; guía `docs/GUIA-FERIA.md` §9). `/stand` (estática, noindex, sin barra inferior):
+  migración y es con pérdida; guía `docs/GUIA-FERIA.md` §10). `/tarjetas` (estática, noindex, fuera del sitemap,
+  sin barra inferior ni `AvisoVisitas`/`AvisoFeria`; `/Tarjetas` y `/TARJETAS` redirigen en `proxy.ts`, no en `redirects()`, que no distingue mayúsculas y entra en bucle). **Solo se entra
+  por link o QR: ninguna pantalla de la app lo enlaza** (salvo /admin), ni /privacidad:
   datos (nombre, apellido, teléfono con `TelefonoPais`, ¿tarjeta NFC con tu logo?, consentimiento) → 3 intentos
   para un número de 3 cifras → N tarjetas (5 por defecto) para los primeros que aciertan, con código de 6 letras.
   **El número nunca va en el repo ni al navegador**: se carga en /admin → Juego del stand (`admin_stand_config`)
   y ninguna función lo devuelve. Todo por RPC `security definer` (`stand_estado`, `stand_registrar`,
   `stand_mi_juego`, `stand_adivinar`): la base cuenta intentos y tarjetas (bloquea la fila del juego), un juego
   por teléfono atado al dispositivo. Cliente en `lib/stand.ts` + `components/stand/JuegoStand.tsx` (retoma con
-  `pecera:stand`); la Feria muestra `TarjetaJuegoStand` con `getEstadoStand` (null sin migración = sin sección).
+  `pecera:stand`).
   /privacidad#juego-stand promete borrar los datos antes del 31/12/2026 (a mano, ver la guía).
 - `landing-liviano/` (rama `landing-liviano`): landing de scroll con video, **proyecto Vite aparte**
   (JS + GSAP + Lenis, su propio `package.json`; no es Next ni parte de `/sumate`). Todos sus CTA
@@ -432,8 +462,38 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/auth/callback` → vuelta de Google (`?next=` a la página de origen)
 - `/e/[slug]` → página de empresa: equipo con cargos, pitches de todos y datos de
   transparencia compartidos (ISR, se genera en la primera visita)
-- `/eventos` y `/eventos/[slug]` → Feria 21: programa, cómo votar y votación
-  (`components/eventos/Votacion.tsx` pide el estado de la sesión al montar)
+- `/eventos` y `/eventos/[slug]` → Feria 21: portada → votación a todo el ancho (`#votacion`) →
+  cómo votar (reglas en `<details id="reglas">`, que abre "Ver las reglas" de la franja) → programa.
+  `components/eventos/Votacion.tsx` pide el estado de la sesión al montar y dibuja `VistaVotacion`
+  (presentacional: franja verde `tema-fijo` con el mensaje según el estado + `EstadoSesion`) y
+  `TarjetaParticipante` (horizontal hasta `lg`; póster → "Ver pitch" en `/#<pitch_id>`, avatar
+  `optimizada`, logo de `getLogosParticipantes`: `empresa_logos` con respaldo en `empresas.logo_url`).
+  Sin resultados, orden al azar por visitante (`lib/orden-votacion.ts`, variable de módulo: votar no
+  reordena; el servidor dibuja esqueletos). "Entrar para votar" de la tarjeta envía el form
+  `entrar-votar` de la franja; en un navegador interno (`useNavegadorInterno`) lleva al aviso.
+  Filtro por día (chips sacados del programa; arranca en el día de hoy de Buenos Aires) y
+  búsqueda (nombre, empresa, descripción); quien no está en la planilla aparece todos los días.
+- Stands y voto sin cuenta (migración `20261019120000_feria_stands_votos.sql`, después de
+  score_switch; pruebas `supabase/pruebas/feria_stands_votos.mjs`; vuelta atrás
+  `supabase/rollback-feria-stands-votos.sql`, que NO es migración y es con pérdida).
+  - `feria_stands` (privada): la planilla de stands. Se carga con un SQL que NO va al repo (nombres
+    de personas sin cuenta). `feria_anotar_stands()` vincula cada stand una sola vez (slug → nombre →
+    perfil con el nombre del emprendimiento → empresa) y lo anota en el evento; corre sola por triggers
+    de perfiles, empresas y empresa_miembros (nunca traba: si falla, nada). Si /admin saca a alguien, no
+    vuelve solo. `feria_dias` (anon) da solo perfil_id → días (`getDiasFeria`).
+  - `votos_dispositivo`: sin sesión se vota con el uuid de `lib/dispositivo.ts` (`lib/voto-feria.ts`,
+    RPC directo desde el navegador) y **vale igual** que el voto con cuenta (decisión del equipo; se
+    infla fácil: /admin muestra cuántos son sin cuenta por participante, `admin_votos_sin_cuenta`).
+    Frenos: límite de frecuencia y, si el dispositivo está vinculado a una cuenta, ni a sí mismo, ni a
+    su empresa, ni si esa cuenta ya votó; si la cuenta vota, el voto del dispositivo vinculado se borra
+    (trigger `votos_sin_doble`). `votar` no cambió; los conteos (`resultados_evento`,
+    `total_votos_evento`, `admin_evento`, `admin_ranking_evento`, `evento_mover_votos`) suman las dos
+    tablas. Sin la migración, se vuelve a pedir sesión.
+  - `components/AvisoFeria.tsx` (layout): con la votación abierta (consulta cacheada 5 min en
+    sessionStorage), pop-up una vez por visita y el sello FERIA 21 en el borde izquierdo hasta que el
+    navegador vote (`pecera:voto-feria`). No va en la página de la votación, /admin, /organizacion,
+    /auth, legales, `/cuenta/eliminar` ni imprimibles. Premio: insignia «Ganador Feria 21» y Verificado
+    de Pecera (los Términos aclaran que no son certificación ni recomendación).
 - `/docs` → redirige a `/academy/docs`; `/docs/conceptos` y `/docs/legales` siguen estáticas
 - `/academy`, `/academy/docs`, `/academy/essentials/[slug]` → Academy (estáticas)
 - `/explorar` → directorio con búsqueda (`?q=`) y vistas (`?ver=startups|inversores|aliados`);
@@ -445,6 +505,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   admin, auth ni subir)
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
 - `/organizacion` (+ `/csv`) → panel de la Universidad para la Feria 21 (emails habilitados en /admin → Universidad, y admins)
+- `/admin/alta` → alta rápida en el stand (solo equipo); `/admin/perfil/[id]` → editor del equipo
 - `/admin/vivo` → pantalla del stand: CI de hoy, ticker anónimo y ranking de la votación, cada 15 s
   (`admin_vivo_en` + `admin_ranking_evento`)
 - `/cuenta/empresa` → Administrar empresa (`?empresa=slug`; sin él, la principal; `?pestana=`): pestañas

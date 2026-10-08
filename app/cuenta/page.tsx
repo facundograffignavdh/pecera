@@ -12,6 +12,7 @@ import SelectorTema from "@/components/SelectorTema";
 import BuildPublico from "@/components/build/BuildPublico";
 import AccionesPitch from "@/components/cuenta/AccionesPitch";
 import AltaPerfil from "@/components/cuenta/AltaPerfil";
+import ReclamoPerfil, { type PerfilReclamable } from "@/components/cuenta/ReclamoPerfil";
 import AvisoCuentaPersonal from "@/components/cuenta/AvisoCuentaPersonal";
 import CompletarPerfil from "@/components/cuenta/CompletarPerfil";
 import EmpresasDueno from "@/components/cuenta/EmpresasDueno";
@@ -73,7 +74,7 @@ const BOTON_PRIMARIO = boton("primario", "lg");
  * hoja. Abajo, lo que no es del perfil: progreso, feria, tarjeta NFC y la cuenta.
  */
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
-  const { error, creado, foto, rol } = await searchParams;
+  const { error, creado, foto, rol, reclamado } = await searchParams;
   const rolInicial = typeof rol === "string" && rol in ROLES ? (rol as Rol) : undefined;
   const supabase = await supabaseConSesion();
   const {
@@ -96,6 +97,17 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     if (faltaMigracion(errorLectura)) ({ data, error: errorLectura } = await leer(COLUMNAS_PROPIO_BASE));
     if (errorLectura) throw new Error(`Supabase (cuenta): ${errorLectura.message}`);
     perfil = data && { ...data, avatar_url: data.avatar_url && urlMedia(data.avatar_url) };
+  }
+
+  // Sin perfil: ¿el equipo armó uno en la feria con el email verificado de esta cuenta?
+  // (alta_rapida). Si falta la migración o falla, el alta de siempre.
+  let reclamables: PerfilReclamable[] = [];
+  if (user && !perfil) {
+    const { data, error: errorReclamo } = await supabase.rpc("mi_reclamo_pendiente");
+    if (errorReclamo && !faltaMigracion(errorReclamo)) {
+      console.error(`Supabase (mi_reclamo_pendiente): ${errorReclamo.code} ${errorReclamo.message}`);
+    }
+    reclamables = ((!errorReclamo && data) || []) as PerfilReclamable[];
   }
 
   // Empresas, evento, links y Build in Public: extras. Si la base todavía no los
@@ -191,13 +203,19 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
           </section>
         ) : !perfil ? (
           <section className="mx-auto mt-8 max-w-md">
-            <AltaPerfil rolInicial={rolInicial} />
+            {reclamables.length > 0 ? <ReclamoPerfil perfiles={reclamables} /> : <AltaPerfil rolInicial={rolInicial} />}
           </section>
         ) : (
           <>
             <EnVivo canal={`perfil-${user.id}`} filtro={`usuario_id=eq.${user.id}`} />
             <div className="mt-2 flex flex-col gap-3">
               {creado === "1" && <Creado perfil={perfil} fotoFallo={foto === "error"} />}
+              {reclamado === "1" && (
+                <p role="status" className="aparecer rounded-2xl border border-tinta/15 bg-tinta/5 px-4 py-3 text-tinta">
+                  <strong className="font-semibold">Listo, el perfil es tuyo.</strong> Revisalo y completalo: tocá{" "}
+                  <strong className="font-semibold">+ Agregar</strong> en cada parte.
+                </p>
+              )}
               <RelacionesPendientes relaciones={pendientes} />
             </div>
 
