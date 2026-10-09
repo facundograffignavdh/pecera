@@ -17,6 +17,7 @@ const INDICE = [
   { id: "publico", titulo: "Qué es público y qué no" },
   { id: "visitas", titulo: "Quién vio tu perfil" },
   { id: "universidad", titulo: "Feria 21: compartir con la organización" },
+  { id: "juego-stand", titulo: "Feria 21: el juego del stand" },
   { id: "proveedores", titulo: "Proveedores y dónde se guardan" },
   { id: "conservacion", titulo: "Cuánto tiempo los guardamos" },
   { id: "derechos", titulo: "Tus derechos" },
@@ -378,6 +379,35 @@ export default function PrivacidadPage() {
             Universidad, y guardamos que la retiraste y la fecha. Lo que la Universidad ya haya
             descargado antes queda de su lado: para que lo borre, escribinos a <Email /> y se lo
             pedimos.
+          </li>
+        </ul>
+      </Seccion>
+
+      <Seccion id="juego-stand" titulo="Feria 21: el juego del stand">
+        <p>
+          En el stand de Pecera de la Feria 21 hay un juego al que se entra con el QR o el link del stand:
+          adivinar un número de 3 cifras para ganar una tarjeta NFC. No hace falta tener cuenta en Pecera.
+        </p>
+        <ul>
+          <li>
+            <strong className="font-semibold text-tinta">Qué guardamos:</strong> tu nombre y apellido, tu
+            teléfono, si te gustaría una tarjeta NFC personalizada con tu logo, tus intentos, si ganaste
+            (con el código para retirarla y si ya la entregamos), la fecha en que aceptaste y el
+            identificador al azar de tu navegador, que ata el juego a tu celular para que nadie use tus
+            intentos o tu código.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Para qué:</strong> para que juegues una sola vez por
+            teléfono, para entregarte la tarjeta si ganás y, si dijiste que sí, para escribirte por la
+            tarjeta NFC personalizada. No lo usamos para otra cosa ni lo compartimos.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Quién lo ve:</strong> solo el equipo de Pecera. No es
+            público y no se une a tu perfil de Pecera, si tenés uno.
+          </li>
+          <li>
+            <strong className="font-semibold text-tinta">Hasta cuándo:</strong> hasta el 31 de diciembre de
+            2026; después lo borramos. Si querés que lo borremos antes, escribinos a <Email />.
           </li>
         </ul>
       </Seccion>

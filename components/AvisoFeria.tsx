@@ -28,12 +28,14 @@ function excluida(ruta: string): boolean {
   return (
     ruta.startsWith(`/eventos/${EVENTO}`) ||
     ruta.startsWith("/admin") ||
+    ruta.startsWith("/tarjetas") ||
     ruta.startsWith("/organizacion") ||
     ruta.startsWith("/auth") ||
     ruta.startsWith("/privacidad") ||
     ruta.startsWith("/terminos") ||
     ruta.startsWith("/cuenta/eliminar") ||
     ruta.endsWith("/one-pager") ||
+    ruta.startsWith("/nfc") ||
     ruta.endsWith("/exportar")
   );
 }

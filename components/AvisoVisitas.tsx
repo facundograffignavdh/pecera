@@ -30,9 +30,11 @@ function sinAviso(ruta: string): boolean {
   return (
     ruta.startsWith("/cuenta/crm") ||
     ruta.startsWith("/admin/vivo") ||
+    ruta.startsWith("/tarjetas") ||
     ruta.startsWith("/sumate") ||
     ruta.startsWith("/auth") ||
     ruta.endsWith("/one-pager") ||
+    ruta.startsWith("/nfc") ||
     ruta.endsWith("/exportar")
   );
 }

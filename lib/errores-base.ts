@@ -76,6 +76,9 @@ const MENSAJES: Record<string, string> = {
   "perfil inexistente": "Ese perfil ya no existe. Recargá la página.",
   "ya es parte de esa empresa": "Ya es parte de esa empresa.",
   "ese perfil ya tiene dueña": "Ese perfil ya tiene una cuenta vinculada.",
+  // juego_stand
+  "ese jugador no ganó una tarjeta": "Esa persona no ganó una tarjeta.",
+  "datos inválidos": "Revisá los datos: alguno no es válido.",
 };
 
 /** Error de Supabase → Resultado con un mensaje que se entiende. Nunca tira. */

@@ -303,3 +303,47 @@ columnas, nunca los valores).
 1. Correr `20261019120000_alta_rapida.sql` en el SQL editor (archivo completo).
 2. Prueba manual: un solo perfil, **sin publicar**, renombrado a `test-…` por SQL, y borrarlo
    después con «Eliminar perfil».
+
+---
+
+## 10. Juego del stand (`/tarjetas`)
+
+Migración `20261021120000_juego_stand.sql` (después de `feria21_sin_tope`). Pruebas sin tocar ninguna
+base: `supabase/pruebas/juego_stand.mjs`. Vuelta atrás: `supabase/rollback-juego-stand.sql` (NO es
+migración y borra los datos del juego).
+
+### Qué es
+
+En el stand hay tarjetas de cartón y un QR a `/tarjetas`. **Solo se entra con ese link o el QR**: la
+app no lo muestra en ningún lado (ni en la Feria ni en la barra), no está en el sitemap y no se indexa.
+`/Tarjetas` y `/TARJETAS` redirigen a `/tarjetas`. La persona deja nombre, apellido, teléfono y si
+quiere una tarjeta NFC personalizada con su logo, acepta la casilla y tiene **3 intentos** para adivinar
+un número de 3 cifras. Las primeras N que aciertan (5 por defecto) ganan una tarjeta NFC y un código de
+6 letras.
+
+- **El número nunca está en el repo (es público) ni llega al navegador.** Se carga en `/admin` → Juego
+  del stand y la base nunca lo devuelve. Sin número, el juego dice "arranca pronto".
+- Todo lo decide la base: los 3 intentos, el tope de tarjetas (aunque dos acierten a la vez) y un juego
+  por teléfono. Desde otro celular, el mismo teléfono no puede seguir jugando (así nadie usa los
+  intentos o el código de otra persona).
+- Si se recarga la página, el juego sigue donde estaba (el celular recuerda al jugador).
+- Límite: no verifica el teléfono. Alguien con varios números puede jugar más de una vez: el control
+  final es el código en el stand.
+
+### Puesta en marcha
+
+1. Correr `20261021120000_juego_stand.sql` en el SQL editor (archivo completo, sin nada seleccionado).
+2. En `/admin` → Juego del stand, cargar el número (3 cifras), revisar cuántas tarjetas hay y guardar.
+3. Imprimir el QR a `https://<dominio>/tarjetas` para el stand.
+4. Cuando alguien gana: pedirle la pantalla, buscar el código en `/admin` → Juego del stand y tocar
+   "Marcar entregada".
+5. Para frenar el juego, destildar "Juego abierto". Quien ya ganó sigue viendo su código.
+
+### Después de la feria
+
+/privacidad promete borrar los datos del juego **antes del 31 de diciembre de 2026**. Antes de esa fecha,
+exportar lo que haga falta (quiénes quieren la tarjeta NFC) y correr en el SQL editor:
+
+```sql
+delete from public.stand_jugadores;
+```

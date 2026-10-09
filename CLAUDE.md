@@ -389,6 +389,19 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   migración): el tag no cuenta para los 150 de `pitches.descripcion` (`pitches_descripcion_valida`; espejo
   `largoDescripcionPitch` en `lib/pitch.ts`). El panel usa `admin_pitch_feria_libre` (cae a `admin_pitch_feria`
   sin la migración). El tag no sirve para escribir más: 151 + #feria21 no vale.
+- Juego del stand (rama `juego-stand`, migración `20261021120000_juego_stand.sql`, después de feria21_sin_tope;
+  pruebas `supabase/pruebas/juego_stand.mjs`; vuelta atrás `supabase/rollback-juego-stand.sql`, que NO es
+  migración y es con pérdida; guía `docs/GUIA-FERIA.md` §10). `/tarjetas` (estática, noindex, fuera del sitemap,
+  sin barra inferior ni `AvisoVisitas`/`AvisoFeria`; `/Tarjetas` y `/TARJETAS` redirigen en `proxy.ts`, no en `redirects()`, que no distingue mayúsculas y entra en bucle). **Solo se entra
+  por link o QR: ninguna pantalla de la app lo enlaza** (salvo /admin), ni /privacidad:
+  datos (nombre, apellido, teléfono con `TelefonoPais`, ¿tarjeta NFC con tu logo?, consentimiento) → 3 intentos
+  para un número de 3 cifras → N tarjetas (5 por defecto) para los primeros que aciertan, con código de 6 letras.
+  **El número nunca va en el repo ni al navegador**: se carga en /admin → Juego del stand (`admin_stand_config`)
+  y ninguna función lo devuelve. Todo por RPC `security definer` (`stand_estado`, `stand_registrar`,
+  `stand_mi_juego`, `stand_adivinar`): la base cuenta intentos y tarjetas (bloquea la fila del juego), un juego
+  por teléfono atado al dispositivo. Cliente en `lib/stand.ts` + `components/stand/JuegoStand.tsx` (retoma con
+  `pecera:stand`). Al pie, `components/nfc/PromoTarjetas.tsx`: la animación de /nfc y un botón a /nfc.
+  /privacidad#juego-stand promete borrar los datos antes del 31/12/2026 (a mano, ver la guía).
 - `landing-liviano/` (rama `landing-liviano`): landing de scroll con video, **proyecto Vite aparte**
   (JS + GSAP + Lenis, su propio `package.json`; no es Next ni parte de `/sumate`). Todos sus CTA
   apuntan por URL absoluta a la app (`pecera-virid.vercel.app`). No lo despliega el proyecto de
@@ -515,6 +528,12 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `#cta-fijo` que se esconde donde hay otro CTA (`data-cta-zona`). Movimiento solo CSS +
   `Movimiento.tsx` (`data-revelar`, `data-escena`, `data-profundidad`, `data-magnetic`,
   barra de lectura); con reducir movimiento todo aparece ya armado.
+- `/nfc` → landing de las tarjetas NFC personalizadas (rama `pagina-nfc`; estática, noindex, fuera del
+  sitemap, `tema-fijo`, sin barra inferior ni `AvisoVisitas`/`AvisoFeria`). **Solo por link o QR: ninguna
+  pantalla de la app la enlaza** (solo la promo al pie de /tarjetas, que también va por link). No es el juego del stand (`/tarjetas`). `components/nfc/AnimacionTarjetas.tsx`:
+  `public/nfc/tarjetas-loop.mp4` (15 s, sin audio, hecho en Higgsfield) con etiquetas sincronizadas por
+  `TRAMOS`; con reducir movimiento no arranca solo. Siglo 21 aparece con su marca (falta su OK por
+  escrito); "Atelier Norte" es inventada. El CTA lleva a `/cuenta` (la tarjeta abre el perfil).
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,
