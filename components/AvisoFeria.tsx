@@ -34,6 +34,7 @@ function excluida(ruta: string): boolean {
     ruta.startsWith("/terminos") ||
     ruta.startsWith("/cuenta/eliminar") ||
     ruta.endsWith("/one-pager") ||
+    ruta.startsWith("/nfc") ||
     ruta.endsWith("/exportar")
   );
 }
