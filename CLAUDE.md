@@ -400,7 +400,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   y ninguna función lo devuelve. Todo por RPC `security definer` (`stand_estado`, `stand_registrar`,
   `stand_mi_juego`, `stand_adivinar`): la base cuenta intentos y tarjetas (bloquea la fila del juego), un juego
   por teléfono atado al dispositivo. Cliente en `lib/stand.ts` + `components/stand/JuegoStand.tsx` (retoma con
-  `pecera:stand`).
+  `pecera:stand`). Al pie, `components/nfc/PromoTarjetas.tsx`: la animación de /nfc y un botón a /nfc.
   /privacidad#juego-stand promete borrar los datos antes del 31/12/2026 (a mano, ver la guía).
 - `landing-liviano/` (rama `landing-liviano`): landing de scroll con video, **proyecto Vite aparte**
   (JS + GSAP + Lenis, su propio `package.json`; no es Next ni parte de `/sumate`). Todos sus CTA
@@ -530,7 +530,7 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   barra de lectura); con reducir movimiento todo aparece ya armado.
 - `/nfc` → landing de las tarjetas NFC personalizadas (rama `pagina-nfc`; estática, noindex, fuera del
   sitemap, `tema-fijo`, sin barra inferior ni `AvisoVisitas`/`AvisoFeria`). **Solo por link o QR: ninguna
-  pantalla de la app la enlaza.** No es el juego del stand (`/tarjetas`). `components/nfc/AnimacionTarjetas.tsx`:
+  pantalla de la app la enlaza** (solo la promo al pie de /tarjetas, que también va por link). No es el juego del stand (`/tarjetas`). `components/nfc/AnimacionTarjetas.tsx`:
   `public/nfc/tarjetas-loop.mp4` (15 s, sin audio, hecho en Higgsfield) con etiquetas sincronizadas por
   `TRAMOS`; con reducir movimiento no arranca solo. Siglo 21 aparece con su marca (falta su OK por
   escrito); "Atelier Norte" es inventada. El CTA lleva a `/cuenta` (la tarjeta abre el perfil).

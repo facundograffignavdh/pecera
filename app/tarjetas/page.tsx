@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import PieLegal from "@/components/PieLegal";
 import { SelloFeria21 } from "@/components/eventos/MarcaFeria21";
+import PromoTarjetas from "@/components/nfc/PromoTarjetas";
 import JuegoStand from "@/components/stand/JuegoStand";
 
 export const metadata: Metadata = {
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
 /**
  * Juego de las tarjetas del stand de la Feria 21. Se entra SOLO por link o QR: ninguna pantalla de
  * la app lo enlaza (salvo /admin), no va en el sitemap y no se indexa. Estática: el estado y el juego
- * los pide `JuegoStand` en el navegador. Sin barra inferior ni avisos del layout.
+ * los pide `JuegoStand` en el navegador. Sin barra inferior ni avisos del layout. Al pie, `PromoTarjetas`
+ * (animación de las tarjetas NFC y botón a /nfc).
  */
 export default function TarjetasPage() {
   return (
@@ -45,6 +47,9 @@ export default function TarjetasPage() {
         </h1>
 
         <JuegoStand />
+
+        {/* Al pie, la promo de las tarjetas NFC personalizadas (lleva a /nfc, que también va solo por link). */}
+        <PromoTarjetas />
 
         <PieLegal tono="oscuro" className="mt-14" />
       </div>
