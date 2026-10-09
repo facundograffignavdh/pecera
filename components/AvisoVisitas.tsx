@@ -34,6 +34,7 @@ function sinAviso(ruta: string): boolean {
     ruta.startsWith("/sumate") ||
     ruta.startsWith("/auth") ||
     ruta.endsWith("/one-pager") ||
+    ruta.startsWith("/nfc") ||
     ruta.endsWith("/exportar")
   );
 }

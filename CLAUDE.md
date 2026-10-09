@@ -528,6 +528,12 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
   `#cta-fijo` que se esconde donde hay otro CTA (`data-cta-zona`). Movimiento solo CSS +
   `Movimiento.tsx` (`data-revelar`, `data-escena`, `data-profundidad`, `data-magnetic`,
   barra de lectura); con reducir movimiento todo aparece ya armado.
+- `/nfc` → landing de las tarjetas NFC personalizadas (rama `pagina-nfc`; estática, noindex, fuera del
+  sitemap, `tema-fijo`, sin barra inferior ni `AvisoVisitas`/`AvisoFeria`). **Solo por link o QR: ninguna
+  pantalla de la app la enlaza.** No es el juego del stand (`/tarjetas`). `components/nfc/AnimacionTarjetas.tsx`:
+  `public/nfc/tarjetas-loop.mp4` (15 s, sin audio, hecho en Higgsfield) con etiquetas sincronizadas por
+  `TRAMOS`; con reducir movimiento no arranca solo. Siglo 21 aparece con su marca (falta su OK por
+  escrito); "Atelier Norte" es inventada. El CTA lleva a `/cuenta` (la tarjeta abre el perfil).
 
 ## Datos
 - `perfiles`: slug, nombre, tipo (startup, emprendimiento, aceleradora, incubadora,

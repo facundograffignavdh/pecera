@@ -36,6 +36,7 @@ function sinBarra(ruta: string): boolean {
     ruta.startsWith("/tarjetas") ||
     ruta.startsWith("/sumate") ||
     ruta.endsWith("/one-pager") ||
+    ruta.startsWith("/nfc") ||
     ruta.endsWith("/exportar")
   );
 }
