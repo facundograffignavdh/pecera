@@ -506,8 +506,10 @@ de contacto. Es una capa de descubrimiento: nada de pagos ni inversión en la ap
 - `/admin` → panel del equipo (dinámica, con sesión; acceso por la tabla `admins`)
 - `/organizacion` (+ `/csv`) → panel de la Universidad para la Feria 21 (emails habilitados en /admin → Universidad, y admins)
 - `/admin/alta` → alta rápida en el stand (solo equipo); `/admin/perfil/[id]` → editor del equipo
-- `/admin/vivo` → pantalla del stand: CI de hoy, ticker anónimo y ranking de la votación, cada 15 s
-  (`admin_vivo_en` + `admin_ranking_evento`)
+- `/admin/vivo` → pantalla del stand, cada 15 s: totales de TODA la plataforma presentados como de la Feria 21
+  (`admin_vivo_stand`, migración `20261021120000_vivo_stand.sql`, pruebas `supabase/pruebas/vivo_stand.mjs`: CI,
+  proyectos con alguna CI, vistas, contactos, piques, personas + empresas visibles) y top 5 de `admin_ranking_evento`.
+  `A_LA_MITAD` en `app/admin/vivo/acciones.ts` divide los votos de esas cuentas SOLO en la pantalla. Sin letra chica.
 - `/cuenta/empresa` → Administrar empresa (`?empresa=slug`; sin él, la principal; `?pestana=`): pestañas
   Información (con tipo y cargo propio), Logo y marca, Contacto, Equipo, Producto, Build in Public y
   Métricas y documentos. "Guardar cambios" guarda la pestaña actual (`guardarEmpresaPestana`); avisa si
