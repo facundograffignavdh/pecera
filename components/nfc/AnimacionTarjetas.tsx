@@ -69,7 +69,7 @@ export default function AnimacionTarjetas() {
         {TARJETAS.map((nombre, i) => (
           <li
             key={nombre}
-            className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors duration-[var(--duracion)] ease-pecera ${
+            className={`rounded-full border px-2.5 py-1.5 text-[0.8125rem] font-semibold transition-colors duration-[var(--duracion)] ease-pecera ${
               i === actual ? "border-tinta bg-tinta text-marfil" : "border-tinta/20 text-tinta/75"
             }`}
           >
